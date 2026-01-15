@@ -15,6 +15,12 @@ import testCaseRoutes from './routes/testcase.routes.js';
 import testSuiteRoutes from './routes/testsuite.routes.js';
 import requirementRoutes from './routes/requirement.routes.js';
 import environmentRoutes from './routes/environment.routes.js';
+import deviceRoutes from './routes/device.routes.js';
+import scriptRoutes from './routes/script.routes.js';
+import aiRoutes from './routes/ai.routes.js';
+import executionRoutes from './routes/execution.routes.js';
+import traceabilityRoutes from './routes/traceability.routes.js';
+import bugRoutes from './routes/bug.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -70,6 +76,12 @@ app.use('/api/test-cases', testCaseRoutes);
 app.use('/api/test-suites', testSuiteRoutes);
 app.use('/api/requirements', requirementRoutes);
 app.use('/api/environments', environmentRoutes);
+app.use('/api/devices', deviceRoutes);
+app.use('/api/scripts', scriptRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/executions', executionRoutes);
+app.use('/api/traceability', traceabilityRoutes);
+app.use('/api/bugs', bugRoutes);
 
 // =============================================================================
 // ERROR HANDLING
