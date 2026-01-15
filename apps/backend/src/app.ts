@@ -1,0 +1,114 @@
+/**
+ * Express App Configuration
+ * Sets up middleware, routes, and error handling
+ */
+
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import { rateLimit } from 'express-rate-limit';
+import { AppError } from './errors/index.js';
+import { logger } from './utils/logger.js';
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import projectRoutes from './routes/project.routes.js';
+import testCaseRoutes from './routes/testcase.routes.js';
+import testSuiteRoutes from './routes/testsuite.routes.js';
+import requirementRoutes from './routes/requirement.routes.js';
+import environmentRoutes from './routes/environment.routes.js';
+
+// =============================================================================
+// APP SETUP
+// =============================================================================
+
+const app = express();
+
+// =============================================================================
+// MIDDLEWARE
+// =============================================================================
+
+// CORS
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+}));
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
+app.use(limiter);
+
+// Request logging
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  logger.info({ method: req.method, path: req.path }, 'Request');
+  next();
+});
+
+// =============================================================================
+// ROUTES
+// =============================================================================
+
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/test-cases', testCaseRoutes);
+app.use('/api/test-suites', testSuiteRoutes);
+app.use('/api/requirements', requirementRoutes);
+app.use('/api/environments', environmentRoutes);
+
+// =============================================================================
+// ERROR HANDLING
+// =============================================================================
+
+// 404 handler
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({
+    error: {
+      code: 'NOT_FOUND',
+      message: 'Route not found',
+    },
+  });
+});
+
+// Global error handler
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ error: err.message }, 'Error');
+
+  if (err instanceof AppError) {
+    res.status(err.statusCode).json({
+      error: {
+        code: err.code,
+        message: err.message,
+        details: err.details,
+      },
+    });
+    return;
+  }
+
+  // Unknown error
+  res.status(500).json({
+    error: {
+      code: 'INTERNAL_ERROR',
+      message: process.env.NODE_ENV === 'production'
+        ? 'An unexpected error occurred'
+        : err.message,
+    },
+  });
+});
+
+export default app;

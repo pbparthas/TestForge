@@ -1,0 +1,455 @@
+// TestForge Database Schema
+// Using Prisma with PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// USERS & AUTH
+// =============================================================================
+
+enum UserRole {
+  admin
+  lead
+  qae
+  dev
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         UserRole @default(qae)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  createdProjects  Project[]     @relation("ProjectCreator")
+  createdTestCases TestCase[]    @relation("TestCaseCreator")
+  createdScripts   Script[]      @relation("ScriptCreator")
+  triggeredExecutions Execution[] @relation("ExecutionTriggerer")
+  auditLogs        AuditLog[]
+  refreshTokens    RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// =============================================================================
+// PROJECTS
+// =============================================================================
+
+enum Framework {
+  playwright
+  cypress
+}
+
+enum Language {
+  typescript
+  javascript
+}
+
+model Project {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?
+  repositoryUrl String?   @map("repository_url")
+  framework     Framework @default(playwright)
+  language      Language  @default(typescript)
+  createdById   String    @map("created_by_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  createdBy    User          @relation("ProjectCreator", fields: [createdById], references: [id])
+  requirements Requirement[]
+  testCases    TestCase[]
+  testSuites   TestSuite[]
+  scripts      Script[]
+  environments Environment[]
+  devices      Device[]
+  executions   Execution[]
+  bugs         Bug[]
+  aiUsage      AiUsage[]
+
+  @@map("projects")
+}
+
+// =============================================================================
+// REQUIREMENTS
+// =============================================================================
+
+enum Priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum Status {
+  active
+  inactive
+  archived
+}
+
+model Requirement {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  externalId  String?  @map("external_id") // Jira/external system ID
+  title       String
+  description String?
+  priority    Priority @default(medium)
+  status      Status   @default(active)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  testCases TestCase[]
+
+  @@index([projectId])
+  @@index([externalId])
+  @@map("requirements")
+}
+
+// =============================================================================
+// TEST CASES
+// =============================================================================
+
+enum TestType {
+  functional
+  integration
+  e2e
+  api
+  performance
+}
+
+model TestCase {
+  id             String   @id @default(uuid())
+  projectId      String   @map("project_id")
+  requirementId  String?  @map("requirement_id")
+  title          String
+  description    String?
+  preconditions  String?
+  steps          Json     @default("[]") // Array of TestStep
+  expectedResult String?  @map("expected_result")
+  testData       Json?    @map("test_data")
+  priority       Priority @default(medium)
+  status         Status   @default(active)
+  type           TestType @default(functional)
+  isAutomated    Boolean  @default(false) @map("is_automated")
+  createdById    String   @map("created_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requirement Requirement?      @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  createdBy   User              @relation("TestCaseCreator", fields: [createdById], references: [id])
+  scripts     Script[]
+  suites      TestSuiteCase[]
+  results     ExecutionResult[]
+  bugs        Bug[]
+
+  @@index([projectId])
+  @@index([requirementId])
+  @@map("test_cases")
+}
+
+// =============================================================================
+// TEST SUITES
+// =============================================================================
+
+model TestSuite {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  testCases  TestSuiteCase[]
+  executions Execution[]
+
+  @@index([projectId])
+  @@map("test_suites")
+}
+
+model TestSuiteCase {
+  suiteId    String @map("suite_id")
+  testCaseId String @map("test_case_id")
+  orderIndex Int    @default(0) @map("order_index")
+
+  // Relations
+  suite    TestSuite @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+  testCase TestCase  @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@id([suiteId, testCaseId])
+  @@map("test_suite_cases")
+}
+
+// =============================================================================
+// SCRIPTS
+// =============================================================================
+
+enum ScriptStatus {
+  draft
+  review
+  approved
+  deprecated
+}
+
+model Script {
+  id          String       @id @default(uuid())
+  testCaseId  String       @map("test_case_id")
+  projectId   String       @map("project_id")
+  name        String
+  code        String
+  language    Language     @default(typescript)
+  framework   Framework    @default(playwright)
+  version     Int          @default(1)
+  status      ScriptStatus @default(draft)
+  generatedBy String?      @map("generated_by") // 'scriptsmith', 'manual', 'framework_agent'
+  createdById String       @map("created_by_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  testCase  TestCase          @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User              @relation("ScriptCreator", fields: [createdById], references: [id])
+  results   ExecutionResult[]
+
+  @@index([testCaseId])
+  @@index([projectId])
+  @@map("scripts")
+}
+
+// =============================================================================
+// ENVIRONMENTS & DEVICES
+// =============================================================================
+
+model Environment {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  name      String
+  baseUrl   String   @map("base_url")
+  variables Json     @default("{}")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  executions Execution[]
+
+  @@index([projectId])
+  @@map("environments")
+}
+
+enum DeviceType {
+  browser
+  mobile
+  tablet
+}
+
+model Device {
+  id        String     @id @default(uuid())
+  projectId String     @map("project_id")
+  name      String
+  type      DeviceType
+  config    Json       // Browser/device configuration
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("devices")
+}
+
+// =============================================================================
+// EXECUTIONS
+// =============================================================================
+
+enum ExecutionStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+enum TriggerType {
+  manual
+  scheduled
+  ci
+}
+
+model Execution {
+  id            String          @id @default(uuid())
+  projectId     String          @map("project_id")
+  suiteId       String?         @map("suite_id")
+  environmentId String?         @map("environment_id")
+  status        ExecutionStatus @default(pending)
+  triggerType   TriggerType     @default(manual) @map("trigger_type")
+  startedAt     DateTime?       @map("started_at")
+  completedAt   DateTime?       @map("completed_at")
+  summary       Json?           // Execution summary stats
+  triggeredById String?         @map("triggered_by_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  suite       TestSuite?        @relation(fields: [suiteId], references: [id], onDelete: SetNull)
+  environment Environment?      @relation(fields: [environmentId], references: [id])
+  triggeredBy User?             @relation("ExecutionTriggerer", fields: [triggeredById], references: [id])
+  results     ExecutionResult[]
+
+  @@index([projectId])
+  @@index([suiteId])
+  @@map("executions")
+}
+
+enum ResultStatus {
+  passed
+  failed
+  skipped
+  error
+}
+
+model ExecutionResult {
+  id                 String       @id @default(uuid())
+  executionId        String       @map("execution_id")
+  testCaseId         String?      @map("test_case_id")
+  scriptId           String?      @map("script_id")
+  status             ResultStatus
+  durationMs         Int?         @map("duration_ms")
+  errorMessage       String?      @map("error_message")
+  errorStack         String?      @map("error_stack")
+  screenshots        Json         @default("[]")
+  videoUrl           String?      @map("video_url")
+  logs               String?
+  selfHealingApplied Boolean      @default(false) @map("self_healing_applied")
+  createdAt          DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  testCase  TestCase? @relation(fields: [testCaseId], references: [id])
+  script    Script?   @relation(fields: [scriptId], references: [id])
+
+  @@index([executionId])
+  @@map("execution_results")
+}
+
+// =============================================================================
+// BUGS
+// =============================================================================
+
+enum BugStatus {
+  open
+  in_progress
+  resolved
+  closed
+  wont_fix
+}
+
+model Bug {
+  id                String    @id @default(uuid())
+  projectId         String    @map("project_id")
+  externalId        String?   @map("external_id") // Bugzilla ID
+  title             String
+  description       String?
+  status            BugStatus @default(open)
+  priority          Priority?
+  linkedTestCaseId  String?   @map("linked_test_case_id")
+  linkedExecutionId String?   @map("linked_execution_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  testCase TestCase? @relation(fields: [linkedTestCaseId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([externalId])
+  @@map("bugs")
+}
+
+// =============================================================================
+// AI COST TRACKING
+// =============================================================================
+
+model AiUsage {
+  id           String   @id @default(uuid())
+  projectId    String   @map("project_id")
+  userId       String?  @map("user_id")
+  agent        String   // Agent name
+  operation    String   // Operation performed
+  model        String   // Model used
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  cachedTokens Int      @default(0) @map("cached_tokens")
+  costUsd      Decimal  @map("cost_usd") @db.Decimal(10, 6)
+  costInr      Decimal  @map("cost_inr") @db.Decimal(10, 4)
+  durationMs   Int?     @map("duration_ms")
+  success      Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
+  @@map("ai_usage")
+}
+
+// =============================================================================
+// AUDIT LOGS
+// =============================================================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String   // Action performed
+  entityType String   @map("entity_type") // Table/entity name
+  entityId   String?  @map("entity_id")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
