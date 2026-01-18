@@ -14,6 +14,7 @@ import { codeGuardianAgent } from '../agents/codeguardian.agent.js';
 import { aiUsageService } from '../services/aiusage.service.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
+import { DEVICE_PROFILES, getDevicesByType } from '../types/deviceTargeting.js';
 
 const router = Router();
 router.use(authenticate);
@@ -135,9 +136,30 @@ router.post('/test-weaver/evolve', authorize(['admin', 'lead', 'qae']), asyncHan
 // SCRIPTSMITH ROUTES
 // =============================================================================
 
+const deviceTargetSchema = z.object({
+  type: z.enum(['desktop', 'tablet', 'mobile']),
+  deviceName: z.string().optional(),
+  viewport: z.object({
+    width: z.number().positive(),
+    height: z.number().positive(),
+  }),
+  userAgent: z.string().optional(),
+  isTouchEnabled: z.boolean().optional(),
+  pixelRatio: z.number().positive().optional(),
+}).optional();
+
+const screenshotAnnotationSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  label: z.string(),
+  type: z.enum(['click', 'input', 'assert', 'highlight']).optional(),
+});
+
 const scriptSmithGenerateSchema = z.object({
   projectId: z.string().uuid(),
-  inputMethod: z.enum(['test_case', 'recording', 'description']),
+  inputMethod: z.enum(['test_case', 'recording', 'description', 'screenshot']),
   testCase: z.object({
     title: z.string(),
     steps: z.array(z.object({
@@ -156,12 +178,26 @@ const scriptSmithGenerateSchema = z.object({
     })),
   }).optional(),
   description: z.string().optional(),
+  screenshot: z.object({
+    base64: z.string().min(100), // Base64 encoded image
+    annotations: z.array(screenshotAnnotationSchema).optional(),
+    url: z.string().optional(),
+  }).optional(),
   options: z.object({
     framework: z.enum(['playwright', 'cypress']).optional(),
     language: z.enum(['typescript', 'javascript']).optional(),
     includePageObjects: z.boolean().optional(),
     useExistingHelpers: z.array(z.string()).optional(),
     baseUrl: z.string().optional(),
+    // Sprint 7: New transformation options
+    extractUtilities: z.boolean().optional(),
+    addLogging: z.boolean().optional(),
+    generateRandomData: z.boolean().optional(),
+    includeComments: z.boolean().optional(),
+    waitStrategy: z.enum(['minimal', 'standard', 'conservative']).optional(),
+    selectorPreference: z.enum(['role', 'testid', 'text', 'css']).optional(),
+    codeStyle: z.enum(['match-project', 'playwright-best-practices']).optional(),
+    deviceTarget: deviceTargetSchema,
   }).optional(),
 });
 
@@ -184,6 +220,7 @@ router.post('/script-smith/generate', authorize(['admin', 'lead', 'qae']), async
     testCase: data.testCase,
     recording: data.recording,
     description: data.description,
+    screenshot: data.screenshot,
     options: data.options,
   });
 
@@ -206,6 +243,21 @@ router.post('/script-smith/generate', authorize(['admin', 'lead', 'qae']), async
     message: 'Script generated',
     data: result.data,
     usage: result.usage,
+  });
+}));
+
+/**
+ * GET /script-smith/devices
+ * Get available device profiles for script generation
+ */
+router.get('/script-smith/devices', asyncHandler(async (_req, res) => {
+  res.json({
+    data: {
+      all: Object.values(DEVICE_PROFILES),
+      desktop: getDevicesByType('desktop'),
+      tablet: getDevicesByType('tablet'),
+      mobile: getDevicesByType('mobile'),
+    },
   });
 }));
 

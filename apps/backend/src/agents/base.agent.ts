@@ -57,6 +57,20 @@ export abstract class BaseAgent {
     this.agentName = agentName;
   }
 
+  /**
+   * Get the Anthropic client instance
+   */
+  protected getClient(): Anthropic {
+    return this.client;
+  }
+
+  /**
+   * Get the configured model ID
+   */
+  protected getModel(): ModelId {
+    return this.config.model;
+  }
+
   protected async call<T>(
     systemPrompt: string,
     userPrompt: string,

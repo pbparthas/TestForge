@@ -102,6 +102,155 @@ describe('AI Routes Integration', () => {
     });
   });
 
+  describe('POST /api/ai/script-smith/generate with new options (Sprint 7)', () => {
+    it('should generate script with device targeting', async () => {
+      mockAnthropicCreate.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({
+          name: 'mobile-login.spec.ts',
+          code: 'test("mobile login", async ({ page }) => { await page.setViewportSize({ width: 390, height: 844 }); });',
+          language: 'typescript',
+          framework: 'playwright',
+        })}],
+        usage: { input_tokens: 150, output_tokens: 250 },
+      });
+
+      const res = await request(app)
+        .post('/api/ai/script-smith/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId,
+          inputMethod: 'description',
+          description: 'Test login on mobile device',
+          options: {
+            framework: 'playwright',
+            deviceTarget: {
+              type: 'mobile',
+              deviceName: 'iPhone 14',
+              viewport: { width: 390, height: 844 },
+              isTouchEnabled: true,
+            },
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe('mobile-login.spec.ts');
+    });
+
+    it('should generate script with transformation options', async () => {
+      mockAnthropicCreate.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({
+          name: 'login.spec.ts',
+          code: '// Test with logging\ntest("login", async ({ page }) => { console.log("Starting test"); });',
+          language: 'typescript',
+          framework: 'playwright',
+          utilities: [{ name: 'helpers', code: '// Helper functions' }],
+        })}],
+        usage: { input_tokens: 150, output_tokens: 250 },
+      });
+
+      const res = await request(app)
+        .post('/api/ai/script-smith/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId,
+          inputMethod: 'description',
+          description: 'Test user login flow',
+          options: {
+            framework: 'playwright',
+            extractUtilities: true,
+            addLogging: true,
+            generateRandomData: true,
+            includeComments: true,
+            waitStrategy: 'conservative',
+            selectorPreference: 'testid',
+            codeStyle: 'playwright-best-practices',
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.utilities).toBeDefined();
+    });
+
+    it('should generate script from screenshot', async () => {
+      // Mock base64 image (valid PNG, must be >= 100 chars for validation)
+      const mockBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==AAAAAAAAAAAAAAAA';
+
+      mockAnthropicCreate.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({
+          name: 'generated-from-screenshot.spec.ts',
+          code: 'test("from screenshot", async ({ page }) => { await page.click("button"); });',
+          language: 'typescript',
+          framework: 'playwright',
+        })}],
+        usage: { input_tokens: 500, output_tokens: 300 },
+      });
+
+      const res = await request(app)
+        .post('/api/ai/script-smith/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId,
+          inputMethod: 'screenshot',
+          screenshot: {
+            base64: mockBase64,
+            annotations: [
+              { x: 100, y: 200, label: 'Click login button', type: 'click' },
+              { x: 150, y: 250, label: 'Enter username', type: 'input' },
+            ],
+            url: 'https://example.com/login',
+          },
+          options: {
+            framework: 'playwright',
+            selectorPreference: 'role',
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe('generated-from-screenshot.spec.ts');
+    });
+
+    it('should reject screenshot input without base64 data', async () => {
+      const res = await request(app)
+        .post('/api/ai/script-smith/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId,
+          inputMethod: 'screenshot',
+          screenshot: {
+            base64: 'short', // Too short
+          },
+        });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('GET /api/ai/script-smith/devices', () => {
+    it('should return available device profiles', async () => {
+      const res = await request(app)
+        .get('/api/ai/script-smith/devices')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.all).toBeDefined();
+      expect(res.body.data.desktop).toBeDefined();
+      expect(res.body.data.tablet).toBeDefined();
+      expect(res.body.data.mobile).toBeDefined();
+      expect(res.body.data.all.length).toBeGreaterThan(10);
+    });
+
+    it('should include iPhone profiles in mobile devices', async () => {
+      const res = await request(app)
+        .get('/api/ai/script-smith/devices')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      const mobileNames = res.body.data.mobile.map((d: { name: string }) => d.name);
+      expect(mobileNames).toContain('iPhone 15 Pro Max');
+      expect(mobileNames).toContain('Samsung Galaxy S24 Ultra');
+    });
+  });
+
   describe('POST /api/ai/script-smith/edit', () => {
     it('should edit existing script', async () => {
       mockAnthropicCreate.mockResolvedValue({
