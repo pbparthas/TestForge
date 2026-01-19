@@ -30,6 +30,7 @@ import {
   TrendingUp,
   Code,
   RefreshCw,
+  Workflow,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -83,6 +84,7 @@ const navGroups = [
     items: [
       { path: '/code-analysis', icon: Code, label: 'Code Analysis' },
       { path: '/test-evolution', icon: RefreshCw, label: 'Test Evolution' },
+      { path: '/testpilot', icon: Workflow, label: 'TestPilot Suite' },
     ],
   },
   {

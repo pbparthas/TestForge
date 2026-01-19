@@ -277,6 +277,11 @@ class ApiClient {
     const { data } = await this.client.get(path, { params });
     return { data };
   }
+
+  async delete<T = Record<string, unknown>>(path: string): Promise<{ data: T }> {
+    const { data } = await this.client.delete(path);
+    return { data };
+  }
 }
 
 export const api = new ApiClient();

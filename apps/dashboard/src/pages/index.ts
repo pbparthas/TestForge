@@ -22,3 +22,4 @@ export { RecorderPage } from './Recorder';
 export { BugPatternsPage } from './BugPatterns';
 export { CodeAnalysisPage } from './CodeAnalysis';
 export { TestEvolutionPage } from './TestEvolution';
+export { TestPilotPage } from './TestPilot';
