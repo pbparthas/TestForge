@@ -27,9 +27,10 @@ export function DashboardPage() {
   const loadProjects = async () => {
     try {
       const response = await api.getProjects();
-      setProjects(response.data.items || response.data);
-      if (!currentProject && response.data.items?.length > 0) {
-        setCurrentProject(response.data.items[0]);
+      const projectsList = response.data?.data || response.data?.items || response.data || [];
+      setProjects(Array.isArray(projectsList) ? projectsList : []);
+      if (!currentProject && projectsList.length > 0) {
+        setCurrentProject(projectsList[0]);
       }
     } catch (err) {
       console.error('Failed to load projects', err);

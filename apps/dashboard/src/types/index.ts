@@ -51,8 +51,13 @@ export interface TestSuite {
   projectId: string;
   name: string;
   description?: string;
+  status: 'draft' | 'active' | 'archived';
+  tags?: string[];
   testCaseIds: string[];
+  testCases?: TestCase[];
+  _count?: { testCases: number };
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Requirement {
@@ -62,9 +67,11 @@ export interface Requirement {
   title: string;
   description?: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'draft' | 'approved' | 'implemented' | 'verified';
+  status: 'draft' | 'active' | 'archived';
   source?: string;
+  _count?: { testCases: number };
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Execution {

@@ -25,7 +25,8 @@ export function ExecutionsPage() {
     setLoading(true);
     try {
       const response = await api.getExecutions(1, 20, currentProject.id);
-      setExecutions(response.data.items || response.data);
+      const items = response.data?.data || response.data?.items || response.data || [];
+      setExecutions(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error('Failed to load executions', err);
     } finally {

@@ -14,8 +14,8 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
+  register: (email: string, username: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
 }
@@ -28,26 +28,26 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       isAuthenticated: false,
 
-      login: async (email: string, password: string) => {
+      login: async (identifier: string, password: string) => {
         set({ isLoading: true });
         try {
-          const response = await api.login(email, password);
-          const { token, user } = response.data;
-          localStorage.setItem('token', token);
-          set({ user, token, isAuthenticated: true, isLoading: false });
+          const response = await api.login(identifier, password);
+          const { accessToken, user } = response.data;
+          localStorage.setItem('token', accessToken);
+          set({ user, token: accessToken, isAuthenticated: true, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
           throw error;
         }
       },
 
-      register: async (email: string, password: string, name: string) => {
+      register: async (email: string, username: string, password: string, name: string) => {
         set({ isLoading: true });
         try {
-          const response = await api.register(email, password, name);
-          const { token, user } = response.data;
-          localStorage.setItem('token', token);
-          set({ user, token, isAuthenticated: true, isLoading: false });
+          const response = await api.register(email, username, password, name);
+          const { accessToken, user } = response.data;
+          localStorage.setItem('token', accessToken);
+          set({ user, token: accessToken, isAuthenticated: true, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
           throw error;

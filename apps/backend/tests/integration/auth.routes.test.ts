@@ -13,6 +13,7 @@ const { mockPrisma, mockBcrypt } = vi.hoisted(() => ({
     user: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
     },
     refreshToken: {
@@ -42,6 +43,7 @@ describe('Auth Routes Integration', () => {
   const mockUser: User = {
     id: 'user-123',
     email: 'test@example.com',
+    username: 'testuser',
     passwordHash: 'hashed_password',
     name: 'Test User',
     role: 'qae' as UserRole,
@@ -65,6 +67,7 @@ describe('Auth Routes Integration', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
+          username: 'testuser',
           password: 'password123',
           name: 'Test User',
         });
@@ -81,6 +84,7 @@ describe('Auth Routes Integration', () => {
         .post('/api/auth/register')
         .send({
           email: 'invalid-email',
+          username: 'testuser',
           password: 'password123',
           name: 'Test User',
         });
@@ -94,6 +98,7 @@ describe('Auth Routes Integration', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
+          username: 'testuser',
           password: 'short',
           name: 'Test User',
         });
@@ -103,12 +108,13 @@ describe('Auth Routes Integration', () => {
     });
 
     it('should return 409 for duplicate email', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findUnique.mockResolvedValueOnce(mockUser);
 
       const response = await request(app)
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
+          username: 'newuser',
           password: 'password123',
           name: 'Test User',
         });
@@ -119,15 +125,15 @@ describe('Auth Routes Integration', () => {
   });
 
   describe('POST /api/auth/login', () => {
-    it('should login with valid credentials', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+    it('should login with valid email credentials', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       mockBcrypt.compare.mockResolvedValue(true);
       mockPrisma.refreshToken.create.mockResolvedValue({});
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@example.com',
+          identifier: 'test@example.com',
           password: 'password123',
         });
 
@@ -137,13 +143,31 @@ describe('Auth Routes Integration', () => {
       expect(response.body.data.refreshToken).toBeDefined();
     });
 
-    it('should return 401 for invalid email', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+    it('should login with valid username credentials', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
+      mockBcrypt.compare.mockResolvedValue(true);
+      mockPrisma.refreshToken.create.mockResolvedValue({});
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'nonexistent@example.com',
+          identifier: 'testuser',
+          password: 'password123',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Login successful');
+      expect(response.body.data.accessToken).toBeDefined();
+      expect(response.body.data.refreshToken).toBeDefined();
+    });
+
+    it('should return 401 for invalid identifier', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          identifier: 'nonexistent@example.com',
           password: 'password123',
         });
 
@@ -152,13 +176,13 @@ describe('Auth Routes Integration', () => {
     });
 
     it('should return 401 for invalid password', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       mockBcrypt.compare.mockResolvedValue(false);
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@example.com',
+          identifier: 'test@example.com',
           password: 'wrongpassword',
         });
 
@@ -167,7 +191,7 @@ describe('Auth Routes Integration', () => {
     });
 
     it('should return 401 for inactive user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findFirst.mockResolvedValue({
         ...mockUser,
         isActive: false,
       });
@@ -175,7 +199,7 @@ describe('Auth Routes Integration', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@example.com',
+          identifier: 'test@example.com',
           password: 'password123',
         });
 

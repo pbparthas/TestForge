@@ -12,10 +12,16 @@ import {
   LoginPage,
   DashboardPage,
   TestCasesPage,
+  TestSuitesPage,
+  RequirementsPage,
   ExecutionsPage,
   BugsPage,
-  AiAgentsPage,
   CoveragePage,
+  ScriptSmithProPage,
+  AIGeneratorPage,
+  CodeGuardianPage,
+  FlowPilotPage,
+  SelfHealingPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -72,35 +78,17 @@ export function App() {
             <Route path="requirements" element={<RequirementsPage />} />
             <Route path="executions" element={<ExecutionsPage />} />
             <Route path="bugs" element={<BugsPage />} />
-            <Route path="ai" element={<AiAgentsPage />} />
             <Route path="coverage" element={<CoveragePage />} />
+            {/* AI Agent Pages */}
+            <Route path="scriptsmith-pro" element={<ScriptSmithProPage />} />
+            <Route path="ai-generator" element={<AIGeneratorPage />} />
+            <Route path="code-guardian" element={<CodeGuardianPage />} />
+            <Route path="flowpilot" element={<FlowPilotPage />} />
+            <Route path="self-healing" element={<SelfHealingPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
-  );
-}
-
-// Placeholder pages for Test Suites and Requirements
-function TestSuitesPage() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Test Suites</h1>
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center text-gray-500">
-        Test Suites management coming soon
-      </div>
-    </div>
-  );
-}
-
-function RequirementsPage() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Requirements</h1>
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center text-gray-500">
-        Requirements management coming soon
-      </div>
-    </div>
   );
 }
 

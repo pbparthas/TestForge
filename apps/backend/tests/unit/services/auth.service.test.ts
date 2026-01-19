@@ -12,6 +12,7 @@ const { mockPrisma, mockBcrypt, mockJwt } = vi.hoisted(() => ({
     user: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
     },
     refreshToken: {
@@ -51,6 +52,7 @@ describe('AuthService', () => {
   const mockUser: User = {
     id: 'user-123',
     email: 'test@example.com',
+    username: 'testuser',
     passwordHash: 'hashed_password',
     name: 'Test User',
     role: 'qae' as UserRole,
@@ -74,6 +76,7 @@ describe('AuthService', () => {
 
       const result = await authService.register({
         email: 'test@example.com',
+        username: 'testuser',
         password: 'password123',
         name: 'Test User',
       });
@@ -84,15 +87,29 @@ describe('AuthService', () => {
     });
 
     it('should throw ConflictError if email already exists', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findUnique.mockResolvedValueOnce(mockUser);
 
       await expect(
         authService.register({
           email: 'test@example.com',
+          username: 'newuser',
           password: 'password123',
           name: 'Test User',
         })
       ).rejects.toThrow('Email already exists');
+    });
+
+    it('should throw ConflictError if username already exists', async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(mockUser);
+
+      await expect(
+        authService.register({
+          email: 'new@example.com',
+          username: 'testuser',
+          password: 'password123',
+          name: 'Test User',
+        })
+      ).rejects.toThrow('Username already exists');
     });
 
     it('should hash password before storing', async () => {
@@ -104,6 +121,7 @@ describe('AuthService', () => {
 
       await authService.register({
         email: 'test@example.com',
+        username: 'testuser',
         password: 'password123',
         name: 'Test User',
       });
@@ -113,14 +131,14 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should return tokens for valid credentials', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+    it('should return tokens for valid credentials with email', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       mockBcrypt.compare.mockResolvedValue(true);
       mockJwt.sign.mockReturnValueOnce('access_token').mockReturnValueOnce('refresh_token');
       mockPrisma.refreshToken.create.mockResolvedValue({});
 
       const result = await authService.login({
-        email: 'test@example.com',
+        identifier: 'test@example.com',
         password: 'password123',
       });
 
@@ -129,38 +147,54 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBe('refresh_token');
     });
 
-    it('should throw UnauthorizedError for invalid email', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+    it('should return tokens for valid credentials with username', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
+      mockBcrypt.compare.mockResolvedValue(true);
+      mockJwt.sign.mockReturnValueOnce('access_token').mockReturnValueOnce('refresh_token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      const result = await authService.login({
+        identifier: 'testuser',
+        password: 'password123',
+      });
+
+      expect(result.user.username).toBe('testuser');
+      expect(result.accessToken).toBe('access_token');
+      expect(result.refreshToken).toBe('refresh_token');
+    });
+
+    it('should throw UnauthorizedError for invalid identifier', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
 
       await expect(
         authService.login({
-          email: 'nonexistent@example.com',
+          identifier: 'nonexistent@example.com',
           password: 'password123',
         })
       ).rejects.toThrow('Invalid credentials');
     });
 
     it('should throw UnauthorizedError for invalid password', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       mockBcrypt.compare.mockResolvedValue(false);
 
       await expect(
         authService.login({
-          email: 'test@example.com',
+          identifier: 'test@example.com',
           password: 'wrongpassword',
         })
       ).rejects.toThrow('Invalid credentials');
     });
 
     it('should throw UnauthorizedError for inactive user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findFirst.mockResolvedValue({
         ...mockUser,
         isActive: false,
       });
 
       await expect(
         authService.login({
-          email: 'test@example.com',
+          identifier: 'test@example.com',
           password: 'password123',
         })
       ).rejects.toThrow('Account is inactive');

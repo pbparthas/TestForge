@@ -15,13 +15,14 @@ import { UnauthorizedError, ConflictError, NotFoundError } from '../errors/index
 
 export interface RegisterInput {
   email: string;
+  username: string;
   password: string;
   name: string;
   role?: UserRole;
 }
 
 export interface LoginInput {
-  email: string;
+  identifier: string; // email or username
   password: string;
 }
 
@@ -60,12 +61,21 @@ export class AuthService {
    */
   async register(input: RegisterInput): Promise<AuthResponse> {
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingEmail = await prisma.user.findUnique({
       where: { email: input.email },
     });
 
-    if (existingUser) {
+    if (existingEmail) {
       throw new ConflictError('Email already exists');
+    }
+
+    // Check if username already exists
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: input.username },
+    });
+
+    if (existingUsername) {
+      throw new ConflictError('Username already exists');
     }
 
     // Hash password
@@ -75,6 +85,7 @@ export class AuthService {
     const user = await prisma.user.create({
       data: {
         email: input.email,
+        username: input.username,
         passwordHash,
         name: input.name,
         role: input.role ?? 'qae',
@@ -97,9 +108,14 @@ export class AuthService {
    * Login user
    */
   async login(input: LoginInput): Promise<AuthResponse> {
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: input.email },
+    // Determine if identifier is email or username
+    const isEmail = input.identifier.includes('@');
+
+    // Find user by email or username
+    const user = await prisma.user.findFirst({
+      where: isEmail
+        ? { email: input.identifier }
+        : { username: input.identifier },
     });
 
     if (!user) {

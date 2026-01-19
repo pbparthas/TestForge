@@ -37,13 +37,13 @@ class ApiClient {
   }
 
   // Auth
-  async login(email: string, password: string) {
-    const { data } = await this.client.post('/auth/login', { email, password });
+  async login(identifier: string, password: string) {
+    const { data } = await this.client.post('/auth/login', { identifier, password });
     return data;
   }
 
-  async register(email: string, password: string, name: string) {
-    const { data } = await this.client.post('/auth/register', { email, password, name });
+  async register(email: string, username: string, password: string, name: string) {
+    const { data } = await this.client.post('/auth/register', { email, username, password, name });
     return data;
   }
 
@@ -95,9 +95,49 @@ class ApiClient {
     return data;
   }
 
+  async getTestSuite(id: string) {
+    const { data } = await this.client.get(`/test-suites/${id}`);
+    return data;
+  }
+
+  async getTestSuiteWithCases(id: string) {
+    const { data } = await this.client.get(`/test-suites/${id}/with-cases`);
+    return data;
+  }
+
+  async createTestSuite(suite: { projectId: string; name: string; description?: string; tags?: string[] }) {
+    const { data } = await this.client.post('/test-suites', suite);
+    return data;
+  }
+
+  async updateTestSuite(id: string, updates: Record<string, unknown>) {
+    const { data } = await this.client.patch(`/test-suites/${id}`, updates);
+    return data;
+  }
+
+  async duplicateTestSuite(id: string) {
+    const { data } = await this.client.post(`/test-suites/${id}/duplicate`);
+    return data;
+  }
+
   // Requirements
   async getRequirements(page = 1, limit = 10, projectId?: string) {
     const { data } = await this.client.get('/requirements', { params: { page, limit, projectId } });
+    return data;
+  }
+
+  async getRequirement(id: string) {
+    const { data } = await this.client.get(`/requirements/${id}`);
+    return data;
+  }
+
+  async createRequirement(requirement: { projectId: string; title: string; description?: string; priority?: string; source?: string; externalId?: string }) {
+    const { data } = await this.client.post('/requirements', requirement);
+    return data;
+  }
+
+  async updateRequirement(id: string, updates: Record<string, unknown>) {
+    const { data } = await this.client.patch(`/requirements/${id}`, updates);
     return data;
   }
 
@@ -157,6 +197,73 @@ class ApiClient {
 
   async getAiDailyCosts(projectId: string, days = 30) {
     const { data } = await this.client.get(`/ai/usage/daily/${projectId}`, { params: { days } });
+    return data;
+  }
+
+  // Framework Agent
+  async analyzeFramework(projectId: string, codeSnippet: string, language: string) {
+    const { data } = await this.client.post('/ai/framework/analyze', { projectId, codeSnippet, language });
+    return data;
+  }
+
+  async reviewCode(projectId: string, codeSnippet: string, language: string, reviewType: string) {
+    const { data } = await this.client.post('/ai/framework/review', { projectId, codeSnippet, language, reviewType });
+    return data;
+  }
+
+  // Self-Healing Agent
+  async diagnoseFailure(projectId: string, testCaseId: string, errorMessage: string, screenshot?: string) {
+    const { data } = await this.client.post('/ai/self-healing/diagnose', { projectId, testCaseId, errorMessage, screenshot });
+    return data;
+  }
+
+  async fixLocator(projectId: string, testCaseId: string, oldLocator: string, pageHtml?: string) {
+    const { data } = await this.client.post('/ai/self-healing/fix', { projectId, testCaseId, oldLocator, pageHtml });
+    return data;
+  }
+
+  // FlowPilot Agent
+  async generateApiTests(projectId: string, openApiSpec: string, endpoints?: string[]) {
+    const { data } = await this.client.post('/ai/flow-pilot/generate', { projectId, openApiSpec, endpoints });
+    return data;
+  }
+
+  async generateApiChain(projectId: string, userFlow: string, endpoints: { method: string; path: string; description: string }[]) {
+    const { data } = await this.client.post('/ai/flow-pilot/chain', { projectId, userFlow, endpoints });
+    return data;
+  }
+
+  // CodeGuardian Agent
+  async generateUnitTests(projectId: string, sourceCode: string, language: string, framework?: string) {
+    const { data } = await this.client.post('/ai/code-guardian/generate', { projectId, sourceCode, language, framework });
+    return data;
+  }
+
+  async analyzeTestCoverage(projectId: string, sourceCode: string, existingTests: string) {
+    const { data } = await this.client.post('/ai/code-guardian/analyze', { projectId, sourceCode, existingTests });
+    return data;
+  }
+
+  // Bugs - Create
+  async createBug(bug: { projectId: string; title: string; description?: string; priority?: string; linkedTestCaseId?: string }) {
+    const { data } = await this.client.post('/bugs', bug);
+    return data;
+  }
+
+  async updateBug(id: string, updates: Record<string, unknown>) {
+    const { data } = await this.client.patch(`/bugs/${id}`, updates);
+    return data;
+  }
+
+  // TestWeaver - Evolve test cases
+  async evolveTestCases(projectId: string, existingTests: string, feedback: string) {
+    const { data } = await this.client.post('/ai/test-weaver/evolve', { projectId, existingTests, feedback });
+    return data;
+  }
+
+  // FlowPilot - Validate API flow
+  async validateApiFlow(projectId: string, apiFlow: string, baseUrl?: string) {
+    const { data } = await this.client.post('/ai/flow-pilot/validate', { projectId, apiFlow, baseUrl });
     return data;
   }
 }

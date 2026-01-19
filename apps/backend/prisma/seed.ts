@@ -18,12 +18,13 @@ async function main(): Promise<void> {
     update: {},
     create: {
       email: 'admin@testforge.dev',
+      username: 'admin',
       passwordHash: adminPassword,
       name: 'Admin User',
       role: UserRole.admin,
     },
   });
-  console.log(`Created admin user: ${admin.email}`);
+  console.log(`Created admin user: ${admin.username} (${admin.email})`);
 
   // Create lead user
   const leadPassword = await bcrypt.hash('lead123', 10);
@@ -32,12 +33,13 @@ async function main(): Promise<void> {
     update: {},
     create: {
       email: 'lead@testforge.dev',
+      username: 'lead',
       passwordHash: leadPassword,
       name: 'Lead User',
       role: UserRole.lead,
     },
   });
-  console.log(`Created lead user: ${lead.email}`);
+  console.log(`Created lead user: ${lead.username} (${lead.email})`);
 
   // Create QAE user
   const qaePassword = await bcrypt.hash('qae123', 10);
@@ -46,12 +48,13 @@ async function main(): Promise<void> {
     update: {},
     create: {
       email: 'qae@testforge.dev',
+      username: 'qae',
       passwordHash: qaePassword,
       name: 'QA Engineer',
       role: UserRole.qae,
     },
   });
-  console.log(`Created QAE user: ${qae.email}`);
+  console.log(`Created QAE user: ${qae.username} (${qae.email})`);
 
   // Create dev user
   const devPassword = await bcrypt.hash('dev123', 10);
@@ -60,12 +63,13 @@ async function main(): Promise<void> {
     update: {},
     create: {
       email: 'dev@testforge.dev',
+      username: 'developer',
       passwordHash: devPassword,
       name: 'Developer',
       role: UserRole.dev,
     },
   });
-  console.log(`Created dev user: ${dev.email}`);
+  console.log(`Created dev user: ${dev.username} (${dev.email})`);
 
   // Create sample project
   const project = await prisma.project.upsert({

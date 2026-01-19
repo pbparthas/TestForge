@@ -11,8 +11,8 @@ import { useAuthStore } from '../stores/auth';
 import { Button, Input } from '../components/ui';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email'),
-  password: z.string().min(1, 'Password required'),
+  identifier: z.string().min(1, 'Username or email is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -29,7 +29,7 @@ export function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     try {
       setError('');
-      await login(data.email, data.password);
+      await login(data.identifier, data.password);
       navigate('/');
     } catch (err) {
       setError('Invalid credentials');
@@ -40,7 +40,7 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">QualityPilot</h1>
+          <h1 className="text-3xl font-bold text-gray-900">TestForge</h1>
           <p className="mt-2 text-gray-600">Sign in to your account</p>
         </div>
 
@@ -52,12 +52,12 @@ export function LoginPage() {
           )}
 
           <Input
-            id="email"
-            type="email"
-            label="Email"
-            placeholder="you@example.com"
-            error={errors.email?.message}
-            {...register('email')}
+            id="identifier"
+            type="text"
+            label="Username or Email"
+            placeholder="admin or admin@testforge.dev"
+            error={errors.identifier?.message}
+            {...register('identifier')}
           />
 
           <Input
@@ -73,6 +73,10 @@ export function LoginPage() {
             Sign in
           </Button>
         </form>
+
+        <div className="text-center text-sm text-gray-600">
+          <p>Don't have access? Contact your administrator.</p>
+        </div>
       </div>
     </div>
   );

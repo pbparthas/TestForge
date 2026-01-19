@@ -25,7 +25,8 @@ export function BugsPage() {
     setLoading(true);
     try {
       const response = await api.getBugs(1, 50, currentProject.id);
-      setBugs(response.data.items || response.data);
+      const items = response.data?.data || response.data?.items || response.data || [];
+      setBugs(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error('Failed to load bugs', err);
     } finally {
