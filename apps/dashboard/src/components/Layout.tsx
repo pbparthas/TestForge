@@ -25,6 +25,9 @@ import {
   Compass,
   Heart,
   Wrench,
+  Eye,
+  Video,
+  TrendingUp,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -57,6 +60,8 @@ const navGroups = [
       { path: '/code-guardian', icon: Shield, label: 'CodeGuardian' },
       { path: '/flowpilot', icon: Compass, label: 'FlowPilot' },
       { path: '/self-healing', icon: Heart, label: 'Self-Healing' },
+      { path: '/visual-testing', icon: Eye, label: 'Visual Testing' },
+      { path: '/recorder', icon: Video, label: 'Recorder' },
     ],
   },
   {
@@ -66,6 +71,7 @@ const navGroups = [
     items: [
       { path: '/executions', icon: Play, label: 'Executions' },
       { path: '/bugs', icon: Bug, label: 'Bugs' },
+      { path: '/bug-patterns', icon: TrendingUp, label: 'Bug Patterns' },
     ],
   },
   {

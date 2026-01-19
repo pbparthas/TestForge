@@ -22,6 +22,9 @@ import {
   CodeGuardianPage,
   FlowPilotPage,
   SelfHealingPage,
+  VisualTestingPage,
+  RecorderPage,
+  BugPatternsPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -85,6 +88,9 @@ export function App() {
             <Route path="code-guardian" element={<CodeGuardianPage />} />
             <Route path="flowpilot" element={<FlowPilotPage />} />
             <Route path="self-healing" element={<SelfHealingPage />} />
+            <Route path="visual-testing" element={<VisualTestingPage />} />
+            <Route path="recorder" element={<RecorderPage />} />
+            <Route path="bug-patterns" element={<BugPatternsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

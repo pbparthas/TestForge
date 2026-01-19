@@ -18,9 +18,12 @@ import environmentRoutes from './routes/environment.routes.js';
 import deviceRoutes from './routes/device.routes.js';
 import scriptRoutes from './routes/script.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import visualRoutes from './routes/visual.routes.js';
+import recorderRoutes from './routes/recorder.routes.js';
 import executionRoutes from './routes/execution.routes.js';
 import traceabilityRoutes from './routes/traceability.routes.js';
 import bugRoutes from './routes/bug.routes.js';
+import bugPatternRoutes from './routes/bugpattern.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -79,9 +82,12 @@ app.use('/api/environments', environmentRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/scripts', scriptRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/visual', visualRoutes);
+app.use('/api/recorder', recorderRoutes);
 app.use('/api/executions', executionRoutes);
 app.use('/api/traceability', traceabilityRoutes);
 app.use('/api/bugs', bugRoutes);
+app.use('/api/bug-patterns', bugPatternRoutes);
 
 // =============================================================================
 // ERROR HANDLING

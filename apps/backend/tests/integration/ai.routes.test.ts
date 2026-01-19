@@ -257,6 +257,54 @@ describe('AI Routes Integration', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('should reject conversation input without conversation history', async () => {
+      const res = await request(app)
+        .post('/api/ai/test-weaver/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId,
+          inputMethod: 'conversation',
+          // conversation is missing
+        });
+
+      expect(res.status).toBe(500); // Agent throws error for missing conversation
+    });
+
+    it('should reject invalid media type for screenshot', async () => {
+      const mockBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==AAAAAAAAAAAAAAAA';
+
+      const res = await request(app)
+        .post('/api/ai/test-weaver/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId,
+          inputMethod: 'screenshot',
+          screenshot: {
+            base64: mockBase64,
+            mediaType: 'image/bmp', // Invalid - not supported
+          },
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should reject invalid MIME type for file upload', async () => {
+      const res = await request(app)
+        .post('/api/ai/test-weaver/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId,
+          inputMethod: 'file_upload',
+          fileUpload: {
+            content: 'some content',
+            fileName: 'test.xml',
+            mimeType: 'application/xml', // Invalid - not supported
+          },
+        });
+
+      expect(res.status).toBe(400);
+    });
   });
 
   describe('POST /api/ai/test-weaver/batch - Sprint 8', () => {

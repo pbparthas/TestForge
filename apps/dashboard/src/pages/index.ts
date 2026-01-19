@@ -17,3 +17,6 @@ export { AIGeneratorPage } from './AIGenerator';
 export { CodeGuardianPage } from './CodeGuardian';
 export { FlowPilotPage } from './FlowPilot';
 export { SelfHealingPage } from './SelfHealing';
+export { VisualTestingPage } from './VisualTesting';
+export { RecorderPage } from './Recorder';
+export { BugPatternsPage } from './BugPatterns';
