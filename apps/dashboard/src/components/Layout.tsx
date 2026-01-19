@@ -28,6 +28,8 @@ import {
   Eye,
   Video,
   TrendingUp,
+  Code,
+  RefreshCw,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -72,6 +74,15 @@ const navGroups = [
       { path: '/executions', icon: Play, label: 'Executions' },
       { path: '/bugs', icon: Bug, label: 'Bugs' },
       { path: '/bug-patterns', icon: TrendingUp, label: 'Bug Patterns' },
+    ],
+  },
+  {
+    title: 'AI Analysis',
+    icon: Code,
+    defaultOpen: true,
+    items: [
+      { path: '/code-analysis', icon: Code, label: 'Code Analysis' },
+      { path: '/test-evolution', icon: RefreshCw, label: 'Test Evolution' },
     ],
   },
   {

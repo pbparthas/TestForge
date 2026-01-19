@@ -24,6 +24,8 @@ import executionRoutes from './routes/execution.routes.js';
 import traceabilityRoutes from './routes/traceability.routes.js';
 import bugRoutes from './routes/bug.routes.js';
 import bugPatternRoutes from './routes/bugpattern.routes.js';
+import codeAnalysisRoutes from './routes/codeanalysis.routes.js';
+import testEvolutionRoutes from './routes/testevolution.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -88,6 +90,8 @@ app.use('/api/executions', executionRoutes);
 app.use('/api/traceability', traceabilityRoutes);
 app.use('/api/bugs', bugRoutes);
 app.use('/api/bug-patterns', bugPatternRoutes);
+app.use('/api/code-analysis', codeAnalysisRoutes);
+app.use('/api/test-evolution', testEvolutionRoutes);
 
 // =============================================================================
 // ERROR HANDLING

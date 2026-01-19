@@ -20,3 +20,5 @@ export { SelfHealingPage } from './SelfHealing';
 export { VisualTestingPage } from './VisualTesting';
 export { RecorderPage } from './Recorder';
 export { BugPatternsPage } from './BugPatterns';
+export { CodeAnalysisPage } from './CodeAnalysis';
+export { TestEvolutionPage } from './TestEvolution';

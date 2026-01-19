@@ -25,6 +25,8 @@ import {
   VisualTestingPage,
   RecorderPage,
   BugPatternsPage,
+  CodeAnalysisPage,
+  TestEvolutionPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -91,6 +93,8 @@ export function App() {
             <Route path="visual-testing" element={<VisualTestingPage />} />
             <Route path="recorder" element={<RecorderPage />} />
             <Route path="bug-patterns" element={<BugPatternsPage />} />
+            <Route path="code-analysis" element={<CodeAnalysisPage />} />
+            <Route path="test-evolution" element={<TestEvolutionPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
