@@ -46,6 +46,22 @@ const DEFAULT_CONFIG: Required<AgentConfig> = {
   maxRetries: 3,
 };
 
+export interface ImageContent {
+  type: 'image';
+  source: {
+    type: 'base64';
+    media_type: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+    data: string;
+  };
+}
+
+export interface TextContent {
+  type: 'text';
+  text: string;
+}
+
+export type MessageContent = TextContent | ImageContent;
+
 export abstract class BaseAgent {
   protected client: Anthropic;
   protected config: Required<AgentConfig>;
@@ -69,6 +85,93 @@ export abstract class BaseAgent {
    */
   protected getModel(): ModelId {
     return this.config.model;
+  }
+
+  /**
+   * Call with multi-turn conversation support
+   */
+  protected async callWithHistory<T>(
+    systemPrompt: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string | MessageContent[] }>,
+    parser: (text: string) => T
+  ): Promise<AgentResponse<T>> {
+    const startTime = Date.now();
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
+      try {
+        const response = await this.client.messages.create({
+          model: this.config.model,
+          max_tokens: this.config.maxTokens,
+          temperature: this.config.temperature,
+          system: systemPrompt,
+          messages: messages.map(m => ({
+            role: m.role,
+            content: m.content,
+          })) as Anthropic.MessageParam[],
+        });
+
+        const durationMs = Date.now() - startTime;
+        const firstContent = response.content[0];
+        const text = firstContent && firstContent.type === 'text' ? firstContent.text : '';
+
+        const data = parser(text);
+        const usage = this.calculateUsage(response.usage, durationMs);
+
+        logger.info({
+          agent: this.agentName,
+          model: this.config.model,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          costUsd: usage.costUsd,
+          durationMs,
+        }, 'Agent call with history completed');
+
+        return { data, usage };
+      } catch (error) {
+        lastError = error as Error;
+        logger.warn({
+          agent: this.agentName,
+          attempt,
+          error: lastError.message,
+        }, 'Agent call failed, retrying');
+
+        if (attempt < this.config.maxRetries) {
+          await this.delay(Math.pow(2, attempt) * 1000);
+        }
+      }
+    }
+
+    logger.error({ agent: this.agentName, error: lastError?.message }, 'Agent call failed after retries');
+    throw lastError;
+  }
+
+  /**
+   * Call with vision support (image + text)
+   */
+  protected async callWithVision<T>(
+    systemPrompt: string,
+    textPrompt: string,
+    imageBase64: string,
+    mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+    parser: (text: string) => T
+  ): Promise<AgentResponse<T>> {
+    const content: MessageContent[] = [
+      {
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType,
+          data: imageBase64,
+        },
+      },
+      {
+        type: 'text',
+        text: textPrompt,
+      },
+    ];
+
+    return this.callWithHistory<T>(systemPrompt, [{ role: 'user', content }], parser);
   }
 
   protected async call<T>(

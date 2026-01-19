@@ -266,6 +266,17 @@ class ApiClient {
     const { data } = await this.client.post('/ai/flow-pilot/validate', { projectId, apiFlow, baseUrl });
     return data;
   }
+
+  // Generic HTTP methods for Sprint 8 features
+  async post<T = Record<string, unknown>>(path: string, body: Record<string, unknown>): Promise<{ data: T }> {
+    const { data } = await this.client.post(path, body);
+    return { data };
+  }
+
+  async get<T = Record<string, unknown>>(path: string, params?: Record<string, unknown>): Promise<{ data: T }> {
+    const { data } = await this.client.get(path, { params });
+    return { data };
+  }
 }
 
 export const api = new ApiClient();
