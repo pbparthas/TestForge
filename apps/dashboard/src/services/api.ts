@@ -267,6 +267,83 @@ class ApiClient {
     return data;
   }
 
+  // ==========================================================================
+  // ScriptSmith Sessions (Sprint 13)
+  // ==========================================================================
+
+  // Create a new ScriptSmith session
+  async createScriptSmithSession(input: {
+    projectId?: string;
+    inputMethod: 'record' | 'upload' | 'screenshot' | 'describe' | 'edit';
+    projectPath?: string;
+    deviceType?: string;
+    deviceConfig?: Record<string, unknown>;
+  }) {
+    const { data } = await this.client.post('/scriptsmith/sessions', input);
+    return data;
+  }
+
+  // Get user's ScriptSmith sessions
+  async getScriptSmithSessions(params?: {
+    page?: number;
+    limit?: number;
+    projectId?: string;
+    status?: string;
+    inputMethod?: string;
+  }) {
+    const { data } = await this.client.get('/scriptsmith/sessions', { params });
+    return data;
+  }
+
+  // Get a specific session with files
+  async getScriptSmithSession(sessionId: string) {
+    const { data } = await this.client.get(`/scriptsmith/sessions/${sessionId}`);
+    return data;
+  }
+
+  // Update session input (Step 2)
+  async updateScriptSmithSessionInput(sessionId: string, input: Record<string, unknown>) {
+    const { data } = await this.client.post(`/scriptsmith/sessions/${sessionId}/input`, input);
+    return data;
+  }
+
+  // Transform session (Step 3)
+  async transformScriptSmithSession(sessionId: string, projectId: string, options?: {
+    framework?: 'playwright' | 'cypress';
+    language?: 'typescript' | 'javascript';
+    includePageObjects?: boolean;
+    extractUtilities?: boolean;
+    waitStrategy?: 'minimal' | 'standard' | 'conservative';
+    selectorPreference?: 'role' | 'testid' | 'text' | 'css';
+  }) {
+    const { data } = await this.client.post(`/scriptsmith/sessions/${sessionId}/transform`, {
+      projectId,
+      options,
+    });
+    return data;
+  }
+
+  // Save session to framework (Step 4)
+  async saveScriptSmithSession(sessionId: string, targetDir: string, overwrite?: boolean) {
+    const { data } = await this.client.post(`/scriptsmith/sessions/${sessionId}/save`, {
+      targetDir,
+      overwrite,
+    });
+    return data;
+  }
+
+  // Delete a session
+  async deleteScriptSmithSession(sessionId: string) {
+    const { data } = await this.client.delete(`/scriptsmith/sessions/${sessionId}`);
+    return data;
+  }
+
+  // Analyze project framework structure (ScriptSmith)
+  async analyzeProjectFramework(projectPath: string) {
+    const { data } = await this.client.post('/scriptsmith/analyze-framework', { projectPath });
+    return data;
+  }
+
   // Generic HTTP methods for Sprint 8 features
   async post<T = Record<string, unknown>>(path: string, body: Record<string, unknown>): Promise<{ data: T }> {
     const { data } = await this.client.post(path, body);

@@ -33,12 +33,13 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  createdProjects  Project[]     @relation("ProjectCreator")
-  createdTestCases TestCase[]    @relation("TestCaseCreator")
-  createdScripts   Script[]      @relation("ScriptCreator")
-  triggeredExecutions Execution[] @relation("ExecutionTriggerer")
-  auditLogs        AuditLog[]
-  refreshTokens    RefreshToken[]
+  createdProjects     Project[]            @relation("ProjectCreator")
+  createdTestCases    TestCase[]           @relation("TestCaseCreator")
+  createdScripts      Script[]             @relation("ScriptCreator")
+  triggeredExecutions Execution[]          @relation("ExecutionTriggerer")
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+  scriptSmithSessions ScriptSmithSession[]
 
   @@map("users")
 }
@@ -85,16 +86,17 @@ model Project {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  createdBy    User          @relation("ProjectCreator", fields: [createdById], references: [id])
-  requirements Requirement[]
-  testCases    TestCase[]
-  testSuites   TestSuite[]
-  scripts      Script[]
-  environments Environment[]
-  devices      Device[]
-  executions   Execution[]
-  bugs         Bug[]
-  aiUsage      AiUsage[]
+  createdBy           User                 @relation("ProjectCreator", fields: [createdById], references: [id])
+  requirements        Requirement[]
+  testCases           TestCase[]
+  testSuites          TestSuite[]
+  scripts             Script[]
+  environments        Environment[]
+  devices             Device[]
+  executions          Execution[]
+  bugs                Bug[]
+  aiUsage             AiUsage[]
+  scriptSmithSessions ScriptSmithSession[]
 
   @@map("projects")
 }
@@ -283,7 +285,7 @@ model Device {
   projectId String     @map("project_id")
   name      String
   type      DeviceType
-  config    Json       // Browser/device configuration
+  config    Json // Browser/device configuration
   isActive  Boolean    @default(true) @map("is_active")
   createdAt DateTime   @default(now()) @map("created_at")
 
@@ -321,7 +323,7 @@ model Execution {
   triggerType   TriggerType     @default(manual) @map("trigger_type")
   startedAt     DateTime?       @map("started_at")
   completedAt   DateTime?       @map("completed_at")
-  summary       Json?           // Execution summary stats
+  summary       Json? // Execution summary stats
   triggeredById String?         @map("triggered_by_id")
   createdAt     DateTime        @default(now()) @map("created_at")
 
@@ -410,9 +412,9 @@ model AiUsage {
   id           String   @id @default(uuid())
   projectId    String   @map("project_id")
   userId       String?  @map("user_id")
-  agent        String   // Agent name
-  operation    String   // Operation performed
-  model        String   // Model used
+  agent        String // Agent name
+  operation    String // Operation performed
+  model        String // Model used
   inputTokens  Int      @map("input_tokens")
   outputTokens Int      @map("output_tokens")
   cachedTokens Int      @default(0) @map("cached_tokens")
@@ -431,13 +433,153 @@ model AiUsage {
 }
 
 // =============================================================================
+// SCRIPTSMITH SESSIONS (Sprint 13)
+// =============================================================================
+
+enum ScriptSmithInputMethod {
+  record
+  upload
+  screenshot
+  describe
+  edit
+}
+
+enum ScriptSmithSessionStatus {
+  created
+  input_received
+  analyzing
+  transforming
+  reviewing
+  completed
+  failed
+}
+
+enum ScriptSmithFileType {
+  test
+  page_object
+  utility
+  fixture
+}
+
+model ScriptSmithSession {
+  id                String                   @id @default(uuid())
+  userId            String                   @map("user_id")
+  projectId         String?                  @map("project_id")
+  inputMethod       ScriptSmithInputMethod   @map("input_method")
+  status            ScriptSmithSessionStatus @default(created)
+  rawInput          Json?                    @map("raw_input")
+  transformedScript String?                  @map("transformed_script")
+  frameworkAnalysis Json?                    @map("framework_analysis")
+  costEstimate      Decimal?                 @map("cost_estimate") @db.Decimal(10, 4)
+  projectPath       String?                  @map("project_path")
+  deviceType        String?                  @map("device_type")
+  deviceConfig      Json?                    @map("device_config")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  completedAt       DateTime?                @map("completed_at")
+
+  // Relations
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  files   ScriptSmithFile[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([projectId])
+  @@map("scriptsmith_sessions")
+}
+
+model ScriptSmithFile {
+  id        String              @id @default(uuid())
+  sessionId String              @map("session_id")
+  filePath  String              @map("file_path")
+  fileType  ScriptSmithFileType @map("file_type")
+  content   String
+  imports   String[]            @default([])
+  exports   String[]            @default([])
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  session ScriptSmithSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("scriptsmith_files")
+}
+
+// =============================================================================
+// WORKFLOW EXECUTIONS (Sprint 12 - TestPilot)
+// =============================================================================
+
+enum WorkflowExecutionStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+model Workflow {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  steps       Json // Workflow step definitions
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  executions WorkflowExecution[]
+
+  @@map("workflows")
+}
+
+model WorkflowExecution {
+  id           String                  @id @default(uuid())
+  workflowId   String                  @map("workflow_id")
+  status       WorkflowExecutionStatus @default(pending)
+  input        Json?
+  output       Json?
+  error        String?
+  totalCostUsd Decimal?                @map("total_cost_usd") @db.Decimal(10, 4)
+  startedAt    DateTime?               @map("started_at")
+  completedAt  DateTime?               @map("completed_at")
+  createdAt    DateTime                @default(now()) @map("created_at")
+
+  // Relations
+  workflow Workflow                @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  steps    WorkflowExecutionStep[]
+
+  @@index([workflowId])
+  @@index([status])
+  @@map("workflow_executions")
+}
+
+model WorkflowExecutionStep {
+  id          String    @id @default(uuid())
+  executionId String    @map("execution_id")
+  stepId      String    @map("step_id")
+  status      String
+  input       Json?
+  output      Json?
+  error       String?
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  execution WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@map("workflow_execution_steps")
+}
+
+// =============================================================================
 // AUDIT LOGS
 // =============================================================================
 
 model AuditLog {
   id         String   @id @default(uuid())
   userId     String?  @map("user_id")
-  action     String   // Action performed
+  action     String // Action performed
   entityType String   @map("entity_type") // Table/entity name
   entityId   String?  @map("entity_id")
   oldValue   Json?    @map("old_value")
