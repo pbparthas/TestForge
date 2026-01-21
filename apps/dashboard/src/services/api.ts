@@ -359,6 +359,196 @@ class ApiClient {
     const { data } = await this.client.delete(path);
     return { data };
   }
+
+  // ==========================================================================
+  // Flaky Tests (Sprint 14)
+  // ==========================================================================
+
+  // Get flaky tests for a project
+  async getFlakyTests(projectId: string, params?: {
+    threshold?: number;
+    isQuarantined?: boolean;
+    fixStatus?: string;
+    patternType?: string;
+  }) {
+    const { data } = await this.client.get(`/flaky/${projectId}`, { params });
+    return data;
+  }
+
+  // Get flaky test summary for a project
+  async getFlakyTestSummary(projectId: string) {
+    const { data } = await this.client.get(`/flaky/${projectId}/summary`);
+    return data;
+  }
+
+  // Get flaky test trends
+  async getFlakyTestTrends(projectId: string, days = 30) {
+    const { data } = await this.client.get(`/flaky/${projectId}/trends`, { params: { days } });
+    return data;
+  }
+
+  // Get quarantined tests
+  async getQuarantinedTests(projectId: string) {
+    const { data } = await this.client.get(`/flaky/${projectId}/quarantined`);
+    return data;
+  }
+
+  // Get detected patterns
+  async getFlakyPatterns(projectId: string) {
+    const { data } = await this.client.get(`/flaky/${projectId}/patterns`);
+    return data;
+  }
+
+  // Get single flaky test
+  async getFlakyTest(id: string) {
+    const { data } = await this.client.get(`/flaky/test/${id}`);
+    return data;
+  }
+
+  // Quarantine a test
+  async quarantineTest(id: string, reason: string) {
+    const { data } = await this.client.post(`/flaky/test/${id}/quarantine`, { reason });
+    return data;
+  }
+
+  // Unquarantine a test
+  async unquarantineTest(id: string) {
+    const { data } = await this.client.post(`/flaky/test/${id}/unquarantine`);
+    return data;
+  }
+
+  // Update fix status
+  async updateFlakyFixStatus(id: string, status: string) {
+    const { data } = await this.client.post(`/flaky/test/${id}/fix-status`, { status });
+    return data;
+  }
+
+  // Mark test as fixed
+  async markTestAsFixed(id: string) {
+    const { data } = await this.client.post(`/flaky/test/${id}/mark-fixed`);
+    return data;
+  }
+
+  // Update pattern type
+  async updateFlakyPatternType(id: string, patternType: string) {
+    const { data } = await this.client.post(`/flaky/test/${id}/pattern`, { patternType });
+    return data;
+  }
+
+  // Reset test metrics
+  async resetFlakyMetrics(id: string) {
+    const { data } = await this.client.post(`/flaky/test/${id}/reset`);
+    return data;
+  }
+
+  // AI Analysis - Root cause analysis
+  async analyzeRootCause(input: {
+    testName: string;
+    testCode: string;
+    executionHistory: Array<{
+      executionId: string;
+      timestamp: string;
+      status: 'passed' | 'failed';
+      duration: number;
+      errorMessage?: string;
+    }>;
+    flakinessScore: number;
+    recentErrors: string[];
+  }) {
+    const { data } = await this.client.post('/flaky/ai/analyze', input);
+    return data;
+  }
+
+  // AI Analysis - Detect patterns
+  async detectFlakyPatterns(projectId: string, flakyTests: Array<{
+    testName: string;
+    flakinessScore: number;
+    totalRuns: number;
+    passRate: number;
+    recentErrors: string[];
+  }>) {
+    const { data } = await this.client.post('/flaky/ai/patterns', { projectId, flakyTests });
+    return data;
+  }
+
+  // AI Analysis - Generate report
+  async generateFlakyReport(input: {
+    projectId: string;
+    projectName: string;
+    flakyTests: Array<{
+      testName: string;
+      flakinessScore: number;
+      patternType: string | null;
+      isQuarantined: boolean;
+      fixStatus: string;
+    }>;
+    patterns: Array<{
+      patternType: string;
+      description: string;
+      affectedCount: number;
+    }>;
+    trends: {
+      totalFlaky: number;
+      newFlaky: number;
+      fixed: number;
+      quarantined: number;
+      avgScore: number;
+    };
+  }) {
+    const { data } = await this.client.post('/flaky/ai/report', input);
+    return data;
+  }
+
+  // AI Analysis - Suggest fix
+  async suggestFlakyFix(input: {
+    testName: string;
+    testCode: string;
+    patternType: string;
+    errorMessages: string[];
+  }) {
+    const { data } = await this.client.post('/flaky/ai/suggest-fix', input);
+    return data;
+  }
+
+  // AI Analysis - Classify pattern
+  async classifyFlakyPattern(testName: string, errorMessages: string[]) {
+    const { data } = await this.client.post('/flaky/ai/classify', { testName, errorMessages });
+    return data;
+  }
+
+  // ==========================================================================
+  // Duplicate Detection (Sprint 14)
+  // ==========================================================================
+
+  // Check test case for duplicates
+  async checkTestCaseDuplicate(content: string, projectId: string, testCaseId?: string) {
+    const { data } = await this.client.post('/duplicate/test-case', { content, projectId, testCaseId });
+    return data;
+  }
+
+  // Check script for duplicates
+  async checkScriptDuplicate(code: string, projectId: string, scriptId?: string) {
+    const { data } = await this.client.post('/duplicate/script', { code, projectId, scriptId });
+    return data;
+  }
+
+  // Check session for duplicates
+  async checkSessionDuplicate(sessionId: string) {
+    const { data } = await this.client.post(`/duplicate/session/${sessionId}`);
+    return data;
+  }
+
+  // Get duplicate check by ID
+  async getDuplicateCheck(id: string) {
+    const { data } = await this.client.get(`/duplicate/check/${id}`);
+    return data;
+  }
+
+  // Get duplicate checks for project
+  async getProjectDuplicateChecks(projectId: string, limit = 50) {
+    const { data } = await this.client.get(`/duplicate/project/${projectId}`, { params: { limit } });
+    return data;
+  }
 }
 
 export const api = new ApiClient();

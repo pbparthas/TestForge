@@ -23,3 +23,4 @@ export { BugPatternsPage } from './BugPatterns';
 export { CodeAnalysisPage } from './CodeAnalysis';
 export { TestEvolutionPage } from './TestEvolution';
 export { TestPilotPage } from './TestPilot';
+export { FlakyTestsPage } from './FlakyTests';

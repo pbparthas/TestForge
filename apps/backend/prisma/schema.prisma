@@ -33,13 +33,15 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  createdProjects     Project[]            @relation("ProjectCreator")
-  createdTestCases    TestCase[]           @relation("TestCaseCreator")
-  createdScripts      Script[]             @relation("ScriptCreator")
-  triggeredExecutions Execution[]          @relation("ExecutionTriggerer")
-  auditLogs           AuditLog[]
-  refreshTokens       RefreshToken[]
-  scriptSmithSessions ScriptSmithSession[]
+  createdProjects       Project[]            @relation("ProjectCreator")
+  createdTestCases      TestCase[]           @relation("TestCaseCreator")
+  createdScripts        Script[]             @relation("ScriptCreator")
+  triggeredExecutions   Execution[]          @relation("ExecutionTriggerer")
+  auditLogs             AuditLog[]
+  refreshTokens         RefreshToken[]
+  scriptSmithSessions   ScriptSmithSession[]
+  quarantinedFlakyTests FlakyTest[]          @relation("FlakyQuarantiner")
+  fixedFlakyTests       FlakyTest[]          @relation("FlakyFixer")
 
   @@map("users")
 }
@@ -97,6 +99,9 @@ model Project {
   bugs                Bug[]
   aiUsage             AiUsage[]
   scriptSmithSessions ScriptSmithSession[]
+  flakyTests          FlakyTest[]
+  flakyPatterns       FlakyPattern[]
+  duplicateChecks     DuplicateCheck[]
 
   @@map("projects")
 }
@@ -176,6 +181,7 @@ model TestCase {
   suites      TestSuiteCase[]
   results     ExecutionResult[]
   bugs        Bug[]
+  flakyTests  FlakyTest[]
 
   @@index([projectId])
   @@index([requirementId])
@@ -243,10 +249,11 @@ model Script {
   updatedAt   DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  testCase  TestCase          @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
-  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy User              @relation("ScriptCreator", fields: [createdById], references: [id])
-  results   ExecutionResult[]
+  testCase   TestCase          @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy  User              @relation("ScriptCreator", fields: [createdById], references: [id])
+  results    ExecutionResult[]
+  flakyTests FlakyTest[]
 
   @@index([testCaseId])
   @@index([projectId])
@@ -479,9 +486,10 @@ model ScriptSmithSession {
   completedAt       DateTime?                @map("completed_at")
 
   // Relations
-  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  files   ScriptSmithFile[]
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  files           ScriptSmithFile[]
+  duplicateChecks DuplicateCheck[]
 
   @@index([userId])
   @@index([status])
@@ -570,6 +578,133 @@ model WorkflowExecutionStep {
 
   @@index([executionId])
   @@map("workflow_execution_steps")
+}
+
+// =============================================================================
+// FLAKY TESTS (Sprint 14)
+// =============================================================================
+
+enum FlakyPatternType {
+  timing
+  race_condition
+  flaky_selector
+  network
+  state_dependent
+  environment
+  data_dependent
+  unknown
+}
+
+enum FlakyFixStatus {
+  open
+  investigating
+  fixed
+  wont_fix
+}
+
+model FlakyTest {
+  id                String          @id @default(uuid())
+  projectId         String          @map("project_id")
+  testCaseId        String?         @map("test_case_id")
+  scriptId          String?         @map("script_id")
+  testName          String          @map("test_name")
+  flakinessScore    Decimal         @default(0) @map("flakiness_score") @db.Decimal(5, 2) // 0-100
+  totalRuns         Int             @default(0) @map("total_runs")
+  passCount         Int             @default(0) @map("pass_count")
+  failCount         Int             @default(0) @map("fail_count")
+  lastPassAt        DateTime?       @map("last_pass_at")
+  lastFailAt        DateTime?       @map("last_fail_at")
+  isQuarantined     Boolean         @default(false) @map("is_quarantined")
+  quarantinedAt     DateTime?       @map("quarantined_at")
+  quarantinedById   String?         @map("quarantined_by_id")
+  quarantineReason  String?         @map("quarantine_reason")
+  patternType       FlakyPatternType? @map("pattern_type")
+  rootCauseAnalysis Json?           @map("root_cause_analysis")
+  fixStatus         FlakyFixStatus  @default(open) @map("fix_status")
+  fixedAt           DateTime?       @map("fixed_at")
+  fixedById         String?         @map("fixed_by_id")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  testCase      TestCase? @relation(fields: [testCaseId], references: [id], onDelete: SetNull)
+  script        Script?   @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  quarantinedBy User?     @relation("FlakyQuarantiner", fields: [quarantinedById], references: [id])
+  fixedBy       User?     @relation("FlakyFixer", fields: [fixedById], references: [id])
+
+  @@unique([projectId, testCaseId, scriptId])
+  @@index([projectId])
+  @@index([flakinessScore(sort: Desc)])
+  @@index([isQuarantined])
+  @@index([fixStatus])
+  @@map("flaky_tests")
+}
+
+enum FlakyPatternSeverity {
+  critical
+  high
+  medium
+  low
+}
+
+model FlakyPattern {
+  id              String               @id @default(uuid())
+  projectId       String               @map("project_id")
+  patternType     FlakyPatternType     @map("pattern_type")
+  description     String
+  severity        FlakyPatternSeverity
+  affectedTestIds String[]             @map("affected_test_ids")
+  confidence      Decimal              @db.Decimal(5, 2) // 0-100
+  suggestedFix    String?              @map("suggested_fix")
+  detectedAt      DateTime             @default(now()) @map("detected_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([patternType])
+  @@map("flaky_patterns")
+}
+
+// =============================================================================
+// DUPLICATE DETECTION (Sprint 14)
+// =============================================================================
+
+enum DuplicateSourceType {
+  test_case
+  script
+  session
+}
+
+enum DuplicateMatchType {
+  exact
+  near
+  semantic
+}
+
+model DuplicateCheck {
+  id           String               @id @default(uuid())
+  projectId    String               @map("project_id")
+  sessionId    String?              @map("session_id")
+  sourceType   DuplicateSourceType  @map("source_type")
+  sourceId     String               @map("source_id")
+  contentHash  String?              @map("content_hash") // For exact match detection
+  isDuplicate  Boolean              @default(false) @map("is_duplicate")
+  confidence   Decimal?             @db.Decimal(5, 2) // 0-100
+  matchType    DuplicateMatchType?  @map("match_type")
+  similarItems Json?                @map("similar_items") // [{id, name, similarity, path}]
+  reason       String?
+  checkedAt    DateTime             @default(now()) @map("checked_at")
+
+  // Relations
+  project Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  session ScriptSmithSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([sourceType, sourceId])
+  @@index([contentHash])
+  @@map("duplicate_checks")
 }
 
 // =============================================================================

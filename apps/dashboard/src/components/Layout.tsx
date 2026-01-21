@@ -31,6 +31,7 @@ import {
   Code,
   RefreshCw,
   Workflow,
+  AlertTriangle,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -75,6 +76,7 @@ const navGroups = [
       { path: '/executions', icon: Play, label: 'Executions' },
       { path: '/bugs', icon: Bug, label: 'Bugs' },
       { path: '/bug-patterns', icon: TrendingUp, label: 'Bug Patterns' },
+      { path: '/flaky-tests', icon: AlertTriangle, label: 'Flaky Tests' },
     ],
   },
   {
