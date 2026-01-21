@@ -1011,6 +1011,7 @@ function SaveStep({
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
+  const [skippedFiles, setSkippedFiles] = useState<string[]>([]);
 
   const handleSave = async () => {
     if (!targetDir.trim()) {
@@ -1024,6 +1025,7 @@ function SaveStep({
     try {
       const response = await api.saveScriptSmithSession(session.id, targetDir, overwrite);
       setSavedFiles(response.data?.savedFiles || []);
+      setSkippedFiles(response.data?.skipped || []);
       setSaved(true);
     } catch (err) {
       setError('Failed to save files');
@@ -1041,7 +1043,7 @@ function SaveStep({
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Files Saved Successfully!</h3>
           <p className="text-gray-500 mb-6">
-            {savedFiles.length} file(s) have been saved to your project.
+            {savedFiles.length} file(s) saved{skippedFiles.length > 0 && `, ${skippedFiles.length} skipped (already exist)`}.
           </p>
 
           {savedFiles.length > 0 && (
@@ -1050,7 +1052,21 @@ function SaveStep({
               <ul className="space-y-1">
                 {savedFiles.map((file, index) => (
                   <li key={index} className="text-sm text-gray-600 flex items-center gap-2">
-                    <FileCode className="w-4 h-4 text-purple-500" />
+                    <FileCode className="w-4 h-4 text-green-500" />
+                    {file}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {skippedFiles.length > 0 && (
+            <div className="max-w-md mx-auto mb-6 text-left">
+              <p className="text-sm font-medium text-gray-700 mb-2">Skipped (already exist):</p>
+              <ul className="space-y-1">
+                {skippedFiles.map((file, index) => (
+                  <li key={index} className="text-sm text-gray-400 flex items-center gap-2">
+                    <FileCode className="w-4 h-4 text-gray-400" />
                     {file}
                   </li>
                 ))}

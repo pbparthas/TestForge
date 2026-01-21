@@ -9,6 +9,8 @@
  * 4. Save to Framework (persist to disk)
  */
 
+import { promises as fs } from 'fs';
+import * as path from 'path';
 import type {
   ScriptSmithSession,
   ScriptSmithFile,
@@ -345,9 +347,9 @@ export class ScriptSmithSessionService {
    */
   async saveToFramework(
     sessionId: string,
-    _targetDir: string,
-    _overwrite = false
-  ): Promise<{ savedFiles: string[]; sessionId: string }> {
+    targetDir: string,
+    overwrite = false
+  ): Promise<{ savedFiles: string[]; sessionId: string; skipped: string[] }> {
     const session = await this.findByIdWithFiles(sessionId);
 
     if (session.status !== 'reviewing') {
@@ -358,10 +360,43 @@ export class ScriptSmithSessionService {
       throw new ValidationError('No files to save');
     }
 
-    // TODO: In real implementation, would write files to disk using targetDir and overwrite
-    // For now, just mark as completed
-    const savedFiles = session.files.map(f => f.filePath);
+    const savedFiles: string[] = [];
+    const skipped: string[] = [];
 
+    // Write each file to disk
+    for (const file of session.files) {
+      const fullPath = path.join(targetDir, file.filePath);
+      const dir = path.dirname(fullPath);
+
+      try {
+        // Create directory if it doesn't exist
+        await fs.mkdir(dir, { recursive: true });
+
+        // Check if file exists
+        let fileExists = false;
+        try {
+          await fs.access(fullPath);
+          fileExists = true;
+        } catch {
+          // File doesn't exist
+        }
+
+        // Skip if file exists and overwrite is false
+        if (fileExists && !overwrite) {
+          skipped.push(file.filePath);
+          continue;
+        }
+
+        // Write file content
+        await fs.writeFile(fullPath, file.content, 'utf-8');
+        savedFiles.push(file.filePath);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        throw new ValidationError(`Failed to save file ${file.filePath}: ${message}`);
+      }
+    }
+
+    // Mark session as completed
     await prisma.scriptSmithSession.update({
       where: { id: sessionId },
       data: {
@@ -370,7 +405,7 @@ export class ScriptSmithSessionService {
       },
     });
 
-    return { savedFiles, sessionId };
+    return { savedFiles, sessionId, skipped };
   }
 
   /**

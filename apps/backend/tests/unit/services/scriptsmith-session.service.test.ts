@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // All mocks must be hoisted
-const { mockPrisma, mockScriptSmithAgent, mockAiUsageService, mockFrameworkAnalysisService } = vi.hoisted(() => ({
+const { mockPrisma, mockScriptSmithAgent, mockAiUsageService, mockFrameworkAnalysisService, mockFs } = vi.hoisted(() => ({
   mockPrisma: {
     scriptSmithSession: {
       create: vi.fn(),
@@ -31,6 +31,11 @@ const { mockPrisma, mockScriptSmithAgent, mockAiUsageService, mockFrameworkAnaly
   mockFrameworkAnalysisService: {
     analyzeProject: vi.fn(),
   },
+  mockFs: {
+    mkdir: vi.fn(),
+    access: vi.fn(),
+    writeFile: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/utils/prisma.js', () => ({ prisma: mockPrisma }));
@@ -42,6 +47,9 @@ vi.mock('../../../src/services/aiusage.service.js', () => ({
 }));
 vi.mock('../../../src/services/framework-analysis.service.js', () => ({
   frameworkAnalysisService: mockFrameworkAnalysisService,
+}));
+vi.mock('fs', () => ({
+  promises: mockFs,
 }));
 
 import { ScriptSmithSessionService } from '../../../src/services/scriptsmith-session.service.js';
@@ -401,6 +409,13 @@ describe('ScriptSmithSessionService', () => {
   // ==========================================================================
 
   describe('saveToFramework', () => {
+    beforeEach(() => {
+      // Mock fs operations for file writing
+      mockFs.mkdir.mockResolvedValue(undefined);
+      mockFs.access.mockRejectedValue(new Error('File not found')); // File doesn't exist
+      mockFs.writeFile.mockResolvedValue(undefined);
+    });
+
     it('should save files and mark session completed', async () => {
       mockPrisma.scriptSmithSession.findUnique.mockResolvedValue({
         ...mockSessionWithFiles,
@@ -420,12 +435,61 @@ describe('ScriptSmithSessionService', () => {
 
       expect(result.savedFiles.length).toBe(1);
       expect(result.sessionId).toBe(mockSession.id);
+      expect(result.skipped.length).toBe(0);
+      expect(mockFs.mkdir).toHaveBeenCalled();
+      expect(mockFs.writeFile).toHaveBeenCalled();
       expect(mockPrisma.scriptSmithSession.update).toHaveBeenCalledWith({
         where: { id: mockSession.id },
         data: expect.objectContaining({
           status: 'completed',
         }),
       });
+    });
+
+    it('should skip existing files when overwrite is false', async () => {
+      mockFs.access.mockResolvedValue(undefined); // File exists
+      mockPrisma.scriptSmithSession.findUnique.mockResolvedValue({
+        ...mockSessionWithFiles,
+        status: 'reviewing' as const,
+      });
+      mockPrisma.scriptSmithSession.update.mockResolvedValue({
+        ...mockSessionWithFiles,
+        status: 'completed',
+        completedAt: new Date(),
+      });
+
+      const result = await service.saveToFramework(
+        mockSession.id,
+        '/output/dir',
+        false
+      );
+
+      expect(result.savedFiles.length).toBe(0);
+      expect(result.skipped.length).toBe(1);
+      expect(mockFs.writeFile).not.toHaveBeenCalled();
+    });
+
+    it('should overwrite existing files when overwrite is true', async () => {
+      mockFs.access.mockResolvedValue(undefined); // File exists
+      mockPrisma.scriptSmithSession.findUnique.mockResolvedValue({
+        ...mockSessionWithFiles,
+        status: 'reviewing' as const,
+      });
+      mockPrisma.scriptSmithSession.update.mockResolvedValue({
+        ...mockSessionWithFiles,
+        status: 'completed',
+        completedAt: new Date(),
+      });
+
+      const result = await service.saveToFramework(
+        mockSession.id,
+        '/output/dir',
+        true
+      );
+
+      expect(result.savedFiles.length).toBe(1);
+      expect(result.skipped.length).toBe(0);
+      expect(mockFs.writeFile).toHaveBeenCalled();
     });
 
     it('should reject save from invalid status', async () => {
