@@ -31,6 +31,8 @@ import scriptSmithSessionRoutes from './routes/scriptsmith-session.routes.js';
 import flakyRoutes from './routes/flaky.routes.js';
 import duplicateRoutes from './routes/duplicate.routes.js';
 import jenkinsRoutes from './routes/jenkins.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import helpRoutes from './routes/help.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -102,6 +104,8 @@ app.use('/api/scriptsmith', scriptSmithSessionRoutes);
 app.use('/api/flaky', flakyRoutes);
 app.use('/api/duplicate', duplicateRoutes);
 app.use('/api/jenkins', jenkinsRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/help', helpRoutes);
 
 // =============================================================================
 // ERROR HANDLING

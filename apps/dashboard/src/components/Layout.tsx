@@ -8,6 +8,8 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth';
 import { useProjectStore } from '../stores/project';
 import { cn } from '../utils/cn';
+import { ChatWidget } from './ChatWidget';
+import { FeedbackWidget, FeedbackButton } from './FeedbackWidget';
 import {
   LayoutDashboard,
   FileText,
@@ -113,6 +115,9 @@ export function Layout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { currentProject } = useProjectStore();
+
+  // Feedback widget state
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Track which groups are open/closed
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
@@ -270,6 +275,13 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Chat Widget */}
+      <ChatWidget />
+
+      {/* Feedback Button & Widget */}
+      <FeedbackButton onClick={() => setFeedbackOpen(true)} />
+      <FeedbackWidget isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

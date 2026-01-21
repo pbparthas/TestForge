@@ -42,6 +42,8 @@ model User {
   scriptSmithSessions   ScriptSmithSession[]
   quarantinedFlakyTests FlakyTest[]          @relation("FlakyQuarantiner")
   fixedFlakyTests       FlakyTest[]          @relation("FlakyFixer")
+  chatConversations     ChatConversation[]
+  helpFeedback          HelpFeedback[]
 
   @@map("users")
 }
@@ -768,6 +770,141 @@ model JenkinsBuild {
   @@index([executionId])
   @@index([status])
   @@map("jenkins_builds")
+}
+
+// =============================================================================
+// CHAT SYSTEM (Sprint 16)
+// =============================================================================
+
+enum ChatConversationStatus {
+  active
+  closed
+  archived
+}
+
+enum ChatMessageRole {
+  user
+  assistant
+  system
+}
+
+enum ChatSuggestionType {
+  code_change
+  config_change
+  test_case
+  script
+  fix_suggestion
+  explanation
+  navigation
+}
+
+enum ChatSuggestionStatus {
+  pending
+  acknowledged
+  dismissed
+}
+
+enum ChatConversationCategory {
+  help_question
+  feature_request
+  bug_report
+}
+
+enum HelpFeedbackType {
+  bug
+  feature
+  question
+  other
+}
+
+enum HelpFeedbackStatus {
+  new_feedback
+  reviewed
+  resolved
+}
+
+model ChatConversation {
+  id          String                      @id @default(uuid())
+  userId      String                      @map("user_id")
+  projectId   String?                     @map("project_id")
+  contextType String?                     @map("context_type") // page, test_case, script, etc.
+  contextId   String?                     @map("context_id")
+  title       String?
+  category    ChatConversationCategory    @default(help_question)
+  status      ChatConversationStatus      @default(active)
+  createdAt   DateTime                    @default(now()) @map("created_at")
+  updatedAt   DateTime                    @updatedAt @map("updated_at")
+  closedAt    DateTime?                   @map("closed_at")
+
+  // Relations
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    ChatMessage[]
+  suggestions ChatSuggestion[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String          @id @default(uuid())
+  conversationId String          @map("conversation_id")
+  role           ChatMessageRole
+  content        String
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  suggestions  ChatSuggestion[]
+
+  @@index([conversationId])
+  @@map("chat_messages")
+}
+
+model ChatSuggestion {
+  id               String               @id @default(uuid())
+  conversationId   String               @map("conversation_id")
+  messageId        String?              @map("message_id")
+  suggestionType   ChatSuggestionType   @map("suggestion_type")
+  targetType       String?              @map("target_type") // file, test_case, script
+  targetId         String?              @map("target_id")
+  targetPath       String?              @map("target_path")
+  originalContent  String?              @map("original_content")
+  suggestedContent String               @map("suggested_content")
+  description      String?
+  status           ChatSuggestionStatus @default(pending)
+  acknowledgedById String?              @map("acknowledged_by_id")
+  acknowledgedAt   DateTime?            @map("acknowledged_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      ChatMessage?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId])
+  @@index([messageId])
+  @@index([status])
+  @@map("chat_suggestions")
+}
+
+model HelpFeedback {
+  id            String             @id @default(uuid())
+  userId        String?            @map("user_id")
+  feedbackType  HelpFeedbackType   @map("feedback_type")
+  pageContext   String?            @map("page_context")
+  content       String
+  screenshotUrl String?            @map("screenshot_url")
+  status        HelpFeedbackStatus @default(new_feedback)
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([feedbackType])
+  @@index([status])
+  @@map("help_feedback")
 }
 
 // =============================================================================

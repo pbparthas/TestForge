@@ -656,6 +656,150 @@ class ApiClient {
     const { data } = await this.client.get(`/jenkins/build/${buildId}/console`);
     return data;
   }
+
+  // ===========================================================================
+  // Chat API (Sprint 16)
+  // ===========================================================================
+
+  // Create conversation
+  async createConversation(input: {
+    projectId?: string;
+    contextType?: string;
+    contextId?: string;
+    title?: string;
+    category?: 'help_question' | 'feature_request' | 'bug_report';
+  }) {
+    const { data } = await this.client.post('/chat/conversations', input);
+    return data;
+  }
+
+  // Get user conversations
+  async getConversations(params?: {
+    status?: string;
+    category?: string;
+    projectId?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const { data } = await this.client.get('/chat/conversations', { params });
+    return data;
+  }
+
+  // Get single conversation
+  async getConversation(id: string) {
+    const { data } = await this.client.get(`/chat/conversations/${id}`);
+    return data;
+  }
+
+  // Update conversation
+  async updateConversation(id: string, input: { title?: string; status?: string }) {
+    const { data } = await this.client.patch(`/chat/conversations/${id}`, input);
+    return data;
+  }
+
+  // Delete conversation
+  async deleteConversation(id: string) {
+    const { data } = await this.client.delete(`/chat/conversations/${id}`);
+    return data;
+  }
+
+  // Send message
+  async sendMessage(conversationId: string, content: string) {
+    const { data } = await this.client.post(`/chat/conversations/${conversationId}/messages`, { content });
+    return data;
+  }
+
+  // Get messages
+  async getMessages(conversationId: string, params?: { limit?: number; offset?: number }) {
+    const { data } = await this.client.get(`/chat/conversations/${conversationId}/messages`, { params });
+    return data;
+  }
+
+  // Get suggestions
+  async getSuggestions(conversationId: string, params?: { status?: string }) {
+    const { data } = await this.client.get(`/chat/conversations/${conversationId}/suggestions`, { params });
+    return data;
+  }
+
+  // Acknowledge suggestion
+  async acknowledgeSuggestion(suggestionId: string) {
+    const { data } = await this.client.post(`/chat/suggestions/${suggestionId}/acknowledge`);
+    return data;
+  }
+
+  // Dismiss suggestion
+  async dismissSuggestion(suggestionId: string) {
+    const { data } = await this.client.post(`/chat/suggestions/${suggestionId}/dismiss`);
+    return data;
+  }
+
+  // Get contextual help
+  async getContextualHelp(contextType: string) {
+    const { data } = await this.client.get(`/chat/help/${contextType}`);
+    return data;
+  }
+
+  // Search help
+  async searchHelp(query?: string) {
+    const { data } = await this.client.get('/chat/help', { params: { q: query } });
+    return data;
+  }
+
+  // ===========================================================================
+  // Help/Feedback API (Sprint 16)
+  // ===========================================================================
+
+  // Submit feedback
+  async submitFeedback(input: {
+    feedbackType: 'bug' | 'feature' | 'question' | 'other';
+    content: string;
+    pageContext?: string;
+    screenshotUrl?: string;
+  }) {
+    const { data } = await this.client.post('/help/feedback', input);
+    return data;
+  }
+
+  // Get user's feedback
+  async getMyFeedback(params?: {
+    status?: string;
+    feedbackType?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const { data } = await this.client.get('/help/feedback/me', { params });
+    return data;
+  }
+
+  // Get all feedback (admin)
+  async getAllFeedback(params?: {
+    status?: string;
+    feedbackType?: string;
+    userId?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const { data } = await this.client.get('/help/feedback', { params });
+    return data;
+  }
+
+  // Get feedback stats (admin)
+  async getFeedbackStats() {
+    const { data } = await this.client.get('/help/feedback/stats');
+    return data;
+  }
+
+  // Update feedback status (admin)
+  async updateFeedbackStatus(id: string, status: 'new_feedback' | 'reviewed' | 'resolved') {
+    const { data } = await this.client.patch(`/help/feedback/${id}`, { status });
+    return data;
+  }
+
+  // Delete feedback (admin)
+  async deleteFeedback(id: string) {
+    const { data } = await this.client.delete(`/help/feedback/${id}`);
+    return data;
+  }
 }
 
 export const api = new ApiClient();
