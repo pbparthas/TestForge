@@ -549,6 +549,113 @@ class ApiClient {
     const { data } = await this.client.get(`/duplicate/project/${projectId}`, { params: { limit } });
     return data;
   }
+
+  // ==========================================================================
+  // Jenkins Integration (Sprint 15)
+  // ==========================================================================
+
+  // Create Jenkins integration
+  async createJenkinsIntegration(integration: {
+    projectId: string;
+    integrationName: string;
+    serverUrl: string;
+    username: string;
+    apiToken: string;
+    jobPath: string;
+    defaultEnvironment?: string;
+    defaultBrowser?: string;
+    buildParameters?: Record<string, unknown>;
+  }) {
+    const { data } = await this.client.post('/jenkins/integrations', integration);
+    return data;
+  }
+
+  // Get project integrations
+  async getProjectJenkinsIntegrations(projectId: string, isActive?: boolean) {
+    const { data } = await this.client.get(`/jenkins/integrations/${projectId}`, {
+      params: isActive !== undefined ? { isActive } : undefined,
+    });
+    return data;
+  }
+
+  // Get single integration
+  async getJenkinsIntegration(id: string) {
+    const { data } = await this.client.get(`/jenkins/integration/${id}`);
+    return data;
+  }
+
+  // Update integration
+  async updateJenkinsIntegration(id: string, updates: {
+    integrationName?: string;
+    serverUrl?: string;
+    username?: string;
+    apiToken?: string;
+    jobPath?: string;
+    defaultEnvironment?: string;
+    defaultBrowser?: string;
+    buildParameters?: Record<string, unknown>;
+    isActive?: boolean;
+  }) {
+    const { data } = await this.client.put(`/jenkins/integration/${id}`, updates);
+    return data;
+  }
+
+  // Delete integration
+  async deleteJenkinsIntegration(id: string) {
+    const { data } = await this.client.delete(`/jenkins/integration/${id}`);
+    return data;
+  }
+
+  // Test connection
+  async testJenkinsConnection(params: {
+    serverUrl: string;
+    username: string;
+    apiToken: string;
+  }) {
+    const { data } = await this.client.post('/jenkins/test-connection', params);
+    return data;
+  }
+
+  // Trigger build
+  async triggerJenkinsBuild(integrationId: string, params?: {
+    environment?: string;
+    browser?: string;
+    testSuiteId?: string;
+    testCaseIds?: string[];
+    customParams?: Record<string, string>;
+    executionId?: string;
+  }) {
+    const { data } = await this.client.post(`/jenkins/integration/${integrationId}/trigger`, params || {});
+    return data;
+  }
+
+  // Get integration builds
+  async getJenkinsBuilds(integrationId: string, params?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const { data } = await this.client.get(`/jenkins/integration/${integrationId}/builds`, { params });
+    return data;
+  }
+
+  // Get single build
+  async getJenkinsBuild(buildId: string) {
+    const { data } = await this.client.get(`/jenkins/build/${buildId}`);
+    return data;
+  }
+
+  // Poll build status
+  async pollJenkinsBuildStatus(buildId: string) {
+    const { data } = await this.client.post(`/jenkins/build/${buildId}/poll`);
+    return data;
+  }
+
+  // Get console log
+  async getJenkinsBuildConsoleLog(buildId: string) {
+    const { data } = await this.client.get(`/jenkins/build/${buildId}/console`);
+    return data;
+  }
 }
 
 export const api = new ApiClient();

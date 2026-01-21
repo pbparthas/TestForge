@@ -32,6 +32,7 @@ import {
   RefreshCw,
   Workflow,
   AlertTriangle,
+  Settings2,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -95,6 +96,14 @@ const navGroups = [
     defaultOpen: true,
     items: [
       { path: '/coverage', icon: BarChart3, label: 'Coverage' },
+    ],
+  },
+  {
+    title: 'Settings',
+    icon: Settings2,
+    defaultOpen: true,
+    items: [
+      { path: '/jenkins', icon: Settings2, label: 'CI/CD Integrations' },
     ],
   },
 ];

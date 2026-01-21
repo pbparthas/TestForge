@@ -30,6 +30,7 @@ import testPilotRoutes from './routes/testpilot.routes.js';
 import scriptSmithSessionRoutes from './routes/scriptsmith-session.routes.js';
 import flakyRoutes from './routes/flaky.routes.js';
 import duplicateRoutes from './routes/duplicate.routes.js';
+import jenkinsRoutes from './routes/jenkins.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -100,6 +101,7 @@ app.use('/api/testpilot', testPilotRoutes);
 app.use('/api/scriptsmith', scriptSmithSessionRoutes);
 app.use('/api/flaky', flakyRoutes);
 app.use('/api/duplicate', duplicateRoutes);
+app.use('/api/jenkins', jenkinsRoutes);
 
 // =============================================================================
 // ERROR HANDLING

@@ -29,6 +29,7 @@ import {
   TestEvolutionPage,
   TestPilotPage,
   FlakyTestsPage,
+  JenkinsIntegrationsPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -99,6 +100,7 @@ export function App() {
             <Route path="test-evolution" element={<TestEvolutionPage />} />
             <Route path="testpilot" element={<TestPilotPage />} />
             <Route path="flaky-tests" element={<FlakyTestsPage />} />
+            <Route path="jenkins" element={<JenkinsIntegrationsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

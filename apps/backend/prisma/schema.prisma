@@ -88,20 +88,21 @@ model Project {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  createdBy           User                 @relation("ProjectCreator", fields: [createdById], references: [id])
-  requirements        Requirement[]
-  testCases           TestCase[]
-  testSuites          TestSuite[]
-  scripts             Script[]
-  environments        Environment[]
-  devices             Device[]
-  executions          Execution[]
-  bugs                Bug[]
-  aiUsage             AiUsage[]
-  scriptSmithSessions ScriptSmithSession[]
-  flakyTests          FlakyTest[]
-  flakyPatterns       FlakyPattern[]
-  duplicateChecks     DuplicateCheck[]
+  createdBy            User                  @relation("ProjectCreator", fields: [createdById], references: [id])
+  requirements         Requirement[]
+  testCases            TestCase[]
+  testSuites           TestSuite[]
+  scripts              Script[]
+  environments         Environment[]
+  devices              Device[]
+  executions           Execution[]
+  bugs                 Bug[]
+  aiUsage              AiUsage[]
+  scriptSmithSessions  ScriptSmithSession[]
+  flakyTests           FlakyTest[]
+  flakyPatterns        FlakyPattern[]
+  duplicateChecks      DuplicateCheck[]
+  jenkinsIntegrations  JenkinsIntegration[]
 
   @@map("projects")
 }
@@ -705,6 +706,68 @@ model DuplicateCheck {
   @@index([sourceType, sourceId])
   @@index([contentHash])
   @@map("duplicate_checks")
+}
+
+// =============================================================================
+// JENKINS INTEGRATION (Sprint 15)
+// =============================================================================
+
+enum JenkinsBuildStatus {
+  pending
+  building
+  success
+  failure
+  aborted
+}
+
+model JenkinsIntegration {
+  id                  String   @id @default(uuid())
+  projectId           String   @map("project_id")
+  integrationName     String   @map("integration_name")
+  serverUrl           String   @map("server_url")
+  username            String
+  apiTokenEncrypted   String   @map("api_token_encrypted") // AES-256 encrypted
+  jobPath             String   @map("job_path")
+  defaultEnvironment  String?  @map("default_environment")
+  defaultBrowser      String?  @map("default_browser")
+  buildParameters     Json?    @map("build_parameters")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdById         String?  @map("created_by_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project  Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  builds   JenkinsBuild[]
+
+  @@index([projectId])
+  @@map("jenkins_integrations")
+}
+
+model JenkinsBuild {
+  id                 String             @id @default(uuid())
+  integrationId      String             @map("integration_id")
+  executionId        String?            @map("execution_id")
+  jenkinsBuildNumber Int                @map("jenkins_build_number")
+  jenkinsBuildUrl    String             @map("jenkins_build_url")
+  status             JenkinsBuildStatus @default(pending)
+  parameters         Json?
+  startedAt          DateTime?          @map("started_at")
+  completedAt        DateTime?          @map("completed_at")
+  durationMs         Int?               @map("duration_ms")
+  totalTests         Int?               @map("total_tests")
+  passedTests        Int?               @map("passed_tests")
+  failedTests        Int?               @map("failed_tests")
+  consoleLogUrl      String?            @map("console_log_url")
+  createdAt          DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  integration JenkinsIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId])
+  @@index([executionId])
+  @@index([status])
+  @@map("jenkins_builds")
 }
 
 // =============================================================================
