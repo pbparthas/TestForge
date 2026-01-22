@@ -800,6 +800,403 @@ class ApiClient {
     const { data } = await this.client.delete(`/help/feedback/${id}`);
     return data;
   }
+
+  // ===========================================================================
+  // Reports API (Sprint 17)
+  // ===========================================================================
+
+  // Generate report
+  async generateReport(input: {
+    projectId: string;
+    type: 'execution_summary' | 'coverage' | 'flaky_analysis' | 'trend' | 'ai_cost' | 'custom';
+    format?: 'pdf' | 'excel' | 'json';
+    title?: string;
+    description?: string;
+    executionId?: string;
+    templateId?: string;
+    parameters?: {
+      dateRange?: { startDate: string; endDate: string };
+      trendDays?: number;
+      includeFlaky?: boolean;
+      includeCoverage?: boolean;
+      includeTrends?: boolean;
+    };
+  }) {
+    const { data } = await this.client.post('/reports/generate', input);
+    return data;
+  }
+
+  // Get reports
+  async getReports(params?: {
+    page?: number;
+    limit?: number;
+    projectId?: string;
+    type?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const { data } = await this.client.get('/reports', { params });
+    return data;
+  }
+
+  // Get single report
+  async getReport(id: string) {
+    const { data } = await this.client.get(`/reports/${id}`);
+    return data;
+  }
+
+  // Download report
+  async downloadReport(id: string) {
+    const response = await this.client.get(`/reports/${id}/download`, { responseType: 'blob' });
+    return response;
+  }
+
+  // Delete report
+  async deleteReport(id: string) {
+    const { data } = await this.client.delete(`/reports/${id}`);
+    return data;
+  }
+
+  // Create template
+  async createReportTemplate(input: {
+    projectId: string;
+    name: string;
+    description?: string;
+    type: 'execution_summary' | 'coverage' | 'flaky_analysis' | 'trend' | 'ai_cost' | 'custom';
+    config: {
+      sections: Array<{
+        id: string;
+        type: string;
+        title: string;
+        enabled: boolean;
+        config?: Record<string, unknown>;
+      }>;
+      filters?: Record<string, unknown>;
+      styling?: Record<string, unknown>;
+    };
+    isDefault?: boolean;
+  }) {
+    const { data } = await this.client.post('/reports/templates', input);
+    return data;
+  }
+
+  // Get templates
+  async getReportTemplates(projectId: string) {
+    const { data } = await this.client.get('/reports/templates', { params: { projectId } });
+    return data;
+  }
+
+  // Get template
+  async getReportTemplate(id: string) {
+    const { data } = await this.client.get(`/reports/templates/${id}`);
+    return data;
+  }
+
+  // Update template
+  async updateReportTemplate(id: string, input: {
+    name?: string;
+    description?: string;
+    config?: Record<string, unknown>;
+    isDefault?: boolean;
+  }) {
+    const { data } = await this.client.put(`/reports/templates/${id}`, input);
+    return data;
+  }
+
+  // Delete template
+  async deleteReportTemplate(id: string) {
+    const { data } = await this.client.delete(`/reports/templates/${id}`);
+    return data;
+  }
+
+  // Create schedule
+  async createReportSchedule(input: {
+    projectId: string;
+    templateId: string;
+    name: string;
+    cronExpression: string;
+    timezone?: string;
+    format?: 'pdf' | 'excel' | 'json';
+    parameters?: Record<string, unknown>;
+    recipients?: string[];
+  }) {
+    const { data } = await this.client.post('/reports/schedules', input);
+    return data;
+  }
+
+  // Get schedules
+  async getReportSchedules(projectId: string) {
+    const { data } = await this.client.get('/reports/schedules', { params: { projectId } });
+    return data;
+  }
+
+  // Get schedule
+  async getReportSchedule(id: string) {
+    const { data } = await this.client.get(`/reports/schedules/${id}`);
+    return data;
+  }
+
+  // Update schedule
+  async updateReportSchedule(id: string, input: {
+    name?: string;
+    cronExpression?: string;
+    format?: 'pdf' | 'excel' | 'json';
+    recipients?: string[];
+    isActive?: boolean;
+  }) {
+    const { data } = await this.client.put(`/reports/schedules/${id}`, input);
+    return data;
+  }
+
+  // Delete schedule
+  async deleteReportSchedule(id: string) {
+    const { data } = await this.client.delete(`/reports/schedules/${id}`);
+    return data;
+  }
+
+  // Trigger scheduled report
+  async triggerScheduledReport(id: string) {
+    const { data } = await this.client.post(`/reports/schedules/${id}/run`);
+    return data;
+  }
+
+  // ===========================================================================
+  // Quality Gates API (Sprint 17)
+  // ===========================================================================
+
+  // Create quality gate
+  async createQualityGate(input: {
+    projectId: string;
+    name: string;
+    description?: string;
+    isDefault?: boolean;
+    failOnBreach?: boolean;
+    conditions: Array<{
+      metric: 'pass_rate' | 'coverage' | 'flakiness' | 'duration' | 'failed_count' | 'critical_failures';
+      operator: 'gte' | 'lte' | 'gt' | 'lt' | 'eq';
+      threshold: number;
+      severity?: 'error' | 'warning';
+      description?: string;
+    }>;
+  }) {
+    const { data } = await this.client.post('/quality-gates', input);
+    return data;
+  }
+
+  // Get quality gates
+  async getQualityGates(params?: {
+    page?: number;
+    limit?: number;
+    projectId?: string;
+    isActive?: boolean;
+  }) {
+    const { data } = await this.client.get('/quality-gates', { params });
+    return data;
+  }
+
+  // Get quality gate
+  async getQualityGate(id: string) {
+    const { data } = await this.client.get(`/quality-gates/${id}`);
+    return data;
+  }
+
+  // Get project quality gates
+  async getProjectQualityGates(projectId: string) {
+    const { data } = await this.client.get(`/quality-gates/project/${projectId}`);
+    return data;
+  }
+
+  // Get project quality summary
+  async getQualityGateSummary(projectId: string, days?: number) {
+    const { data } = await this.client.get(`/quality-gates/project/${projectId}/summary`, {
+      params: days ? { days } : undefined,
+    });
+    return data;
+  }
+
+  // Update quality gate
+  async updateQualityGate(id: string, input: {
+    name?: string;
+    description?: string;
+    isDefault?: boolean;
+    isActive?: boolean;
+    failOnBreach?: boolean;
+    conditions?: Array<{
+      metric: 'pass_rate' | 'coverage' | 'flakiness' | 'duration' | 'failed_count' | 'critical_failures';
+      operator: 'gte' | 'lte' | 'gt' | 'lt' | 'eq';
+      threshold: number;
+      severity?: 'error' | 'warning';
+    }>;
+  }) {
+    const { data } = await this.client.put(`/quality-gates/${id}`, input);
+    return data;
+  }
+
+  // Delete quality gate
+  async deleteQualityGate(id: string) {
+    const { data } = await this.client.delete(`/quality-gates/${id}`);
+    return data;
+  }
+
+  // Set quality gate as default
+  async setDefaultQualityGate(id: string) {
+    const { data } = await this.client.post(`/quality-gates/${id}/set-default`);
+    return data;
+  }
+
+  // Evaluate execution against quality gate
+  async evaluateQualityGate(executionId: string, qualityGateId?: string) {
+    const { data } = await this.client.post('/quality-gates/evaluate', {
+      executionId,
+      qualityGateId,
+    });
+    return data;
+  }
+
+  // Get execution evaluations
+  async getExecutionEvaluations(executionId: string) {
+    const { data } = await this.client.get(`/quality-gates/evaluations/${executionId}`);
+    return data;
+  }
+
+  // ============================================================================
+  // HITL APPROVAL WORKFLOWS (Sprint 18)
+  // ============================================================================
+
+  // Get artifacts
+  async getArtifacts(params: {
+    page?: number;
+    limit?: number;
+    projectId?: string;
+    type?: string;
+    state?: string;
+    riskLevel?: string;
+  } = {}) {
+    const { data } = await this.client.get('/approvals/artifacts', { params });
+    return data;
+  }
+
+  // Get artifact by ID
+  async getArtifact(id: string) {
+    const { data } = await this.client.get(`/approvals/artifacts/${id}`);
+    return data;
+  }
+
+  // Create artifact
+  async createArtifact(input: {
+    projectId: string;
+    type: 'test_case' | 'script' | 'bug_analysis' | 'chat_suggestion' | 'self_healing_fix';
+    title: string;
+    description?: string;
+    content: Record<string, unknown>;
+    sourceAgent: string;
+    aiConfidenceScore?: number;
+  }) {
+    const { data } = await this.client.post('/approvals/artifacts', input);
+    return data;
+  }
+
+  // Delete artifact
+  async deleteArtifact(id: string) {
+    const { data } = await this.client.delete(`/approvals/artifacts/${id}`);
+    return data;
+  }
+
+  // Submit artifact for review
+  async submitArtifact(id: string, comment?: string) {
+    const { data } = await this.client.post(`/approvals/artifacts/${id}/submit`, { comment });
+    return data;
+  }
+
+  // Claim artifact for review
+  async claimArtifact(id: string) {
+    const { data } = await this.client.post(`/approvals/artifacts/${id}/claim`);
+    return data;
+  }
+
+  // Approve artifact
+  async approveArtifact(id: string, comment?: string) {
+    const { data } = await this.client.post(`/approvals/artifacts/${id}/approve`, { comment });
+    return data;
+  }
+
+  // Reject artifact
+  async rejectArtifact(id: string, comment: string, feedback: Array<{
+    category: string;
+    severity: string;
+    description: string;
+    suggestedFix?: string;
+  }>) {
+    const { data } = await this.client.post(`/approvals/artifacts/${id}/reject`, { comment, feedback });
+    return data;
+  }
+
+  // Revise artifact
+  async reviseArtifact(id: string, content: Record<string, unknown>, comment?: string) {
+    const { data } = await this.client.post(`/approvals/artifacts/${id}/revise`, { content, comment });
+    return data;
+  }
+
+  // Archive artifact
+  async archiveArtifact(id: string, reason?: string) {
+    const { data } = await this.client.post(`/approvals/artifacts/${id}/archive`, { reason });
+    return data;
+  }
+
+  // Get review queue
+  async getReviewQueue() {
+    const { data } = await this.client.get('/approvals/queue');
+    return data;
+  }
+
+  // Get artifact history
+  async getArtifactHistory(id: string) {
+    const { data } = await this.client.get(`/approvals/artifacts/${id}/history`);
+    return data;
+  }
+
+  // Get artifact feedback
+  async getArtifactFeedback(id: string) {
+    const { data } = await this.client.get(`/approvals/artifacts/${id}/feedback`);
+    return data;
+  }
+
+  // Get SLA status
+  async getSLAStatus(artifactId: string) {
+    const { data } = await this.client.get(`/approvals/sla/${artifactId}`);
+    return data;
+  }
+
+  // Get approaching SLAs
+  async getApproachingSLAs(projectId?: string) {
+    const { data } = await this.client.get('/approvals/sla/approaching', { params: { projectId } });
+    return data;
+  }
+
+  // Get breached SLAs
+  async getBreachedSLAs(projectId?: string) {
+    const { data } = await this.client.get('/approvals/sla/breached', { params: { projectId } });
+    return data;
+  }
+
+  // Escalate SLA
+  async escalateSLA(artifactId: string, reason: string) {
+    const { data } = await this.client.post(`/approvals/sla/${artifactId}/escalate`, { reason });
+    return data;
+  }
+
+  // Get approval settings
+  async getApprovalSettings(projectId: string) {
+    const { data } = await this.client.get(`/approvals/settings/${projectId}`);
+    return data;
+  }
+
+  // Update approval settings
+  async updateApprovalSettings(projectId: string, settings: Record<string, unknown>) {
+    const { data } = await this.client.put(`/approvals/settings/${projectId}`, settings);
+    return data;
+  }
 }
 
 export const api = new ApiClient();

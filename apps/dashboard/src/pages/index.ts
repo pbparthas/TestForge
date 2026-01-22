@@ -25,3 +25,5 @@ export { TestEvolutionPage } from './TestEvolution';
 export { TestPilotPage } from './TestPilot';
 export { FlakyTestsPage } from './FlakyTests';
 export { JenkinsIntegrationsPage } from './JenkinsIntegrations';
+export { ReportsPage } from './Reports';
+export { ApprovalsPage } from './Approvals';

@@ -105,6 +105,12 @@ model Project {
   flakyPatterns        FlakyPattern[]
   duplicateChecks      DuplicateCheck[]
   jenkinsIntegrations  JenkinsIntegration[]
+  reports              Report[]
+  reportTemplates      ReportTemplate[]
+  reportSchedules      ReportSchedule[]
+  qualityGates         QualityGate[]
+  artifacts            Artifact[]
+  approvalSettings     ApprovalSettings?
 
   @@map("projects")
 }
@@ -338,11 +344,13 @@ model Execution {
   createdAt     DateTime        @default(now()) @map("created_at")
 
   // Relations
-  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  suite       TestSuite?        @relation(fields: [suiteId], references: [id], onDelete: SetNull)
-  environment Environment?      @relation(fields: [environmentId], references: [id])
-  triggeredBy User?             @relation("ExecutionTriggerer", fields: [triggeredById], references: [id])
-  results     ExecutionResult[]
+  project                Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  suite                  TestSuite?              @relation(fields: [suiteId], references: [id], onDelete: SetNull)
+  environment            Environment?            @relation(fields: [environmentId], references: [id])
+  triggeredBy            User?                   @relation("ExecutionTriggerer", fields: [triggeredById], references: [id])
+  results                ExecutionResult[]
+  reports                Report[]
+  qualityGateEvaluations QualityGateEvaluation[]
 
   @@index([projectId])
   @@index([suiteId])
@@ -908,6 +916,200 @@ model HelpFeedback {
 }
 
 // =============================================================================
+// REPORTS (Sprint 17)
+// =============================================================================
+
+enum ReportType {
+  execution_summary
+  coverage
+  flaky_analysis
+  trend
+  ai_cost
+  custom
+}
+
+enum ReportFormat {
+  pdf
+  excel
+  json
+}
+
+enum ReportStatus {
+  pending
+  generating
+  completed
+  failed
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  projectId   String       @map("project_id")
+  executionId String?      @map("execution_id")
+  templateId  String?      @map("template_id")
+  type        ReportType
+  format      ReportFormat @default(pdf)
+  status      ReportStatus @default(pending)
+  title       String
+  description String?
+  parameters  Json?
+  data        Json?
+  filePath    String?      @map("file_path")
+  fileSize    Int?         @map("file_size")
+  generatedAt DateTime?    @map("generated_at")
+  expiresAt   DateTime?    @map("expires_at")
+  error       String?
+  createdById String?      @map("created_by_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  execution Execution?      @relation(fields: [executionId], references: [id], onDelete: SetNull)
+  template  ReportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  schedule  ReportSchedule?
+
+  @@index([projectId])
+  @@index([executionId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reports")
+}
+
+model ReportTemplate {
+  id          String     @id @default(uuid())
+  projectId   String     @map("project_id")
+  name        String
+  description String?
+  type        ReportType
+  config      Json
+  isDefault   Boolean    @default(false) @map("is_default")
+  createdById String?    @map("created_by_id")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reports   Report[]
+  schedules ReportSchedule[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@index([type])
+  @@map("report_templates")
+}
+
+model ReportSchedule {
+  id             String       @id @default(uuid())
+  reportId       String?      @unique @map("report_id")
+  templateId     String       @map("template_id")
+  projectId      String       @map("project_id")
+  name           String
+  cronExpression String       @map("cron_expression")
+  timezone       String       @default("UTC")
+  format         ReportFormat @default(pdf)
+  parameters     Json?
+  recipients     String[]     @default([])
+  isActive       Boolean      @default(true) @map("is_active")
+  lastRunAt      DateTime?    @map("last_run_at")
+  nextRunAt      DateTime?    @map("next_run_at")
+  createdById    String?      @map("created_by_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  template   ReportTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lastReport Report?        @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([isActive])
+  @@index([nextRunAt])
+  @@map("report_schedules")
+}
+
+// =============================================================================
+// QUALITY GATES (Sprint 17)
+// =============================================================================
+
+enum QualityGateMetric {
+  pass_rate
+  coverage
+  flakiness
+  duration
+  failed_count
+  critical_failures
+}
+
+enum QualityGateStatus {
+  passed
+  failed
+  warning
+  skipped
+}
+
+model QualityGate {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  name        String
+  description String?
+  isDefault   Boolean  @default(false) @map("is_default")
+  isActive    Boolean  @default(true) @map("is_active")
+  failOnBreach Boolean @default(true) @map("fail_on_breach")
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project     Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  conditions  QualityGateCondition[]
+  evaluations QualityGateEvaluation[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@index([isDefault])
+  @@map("quality_gates")
+}
+
+model QualityGateCondition {
+  id            String            @id @default(uuid())
+  qualityGateId String            @map("quality_gate_id")
+  metric        QualityGateMetric
+  operator      String
+  threshold     Decimal           @db.Decimal(10, 2)
+  severity      String            @default("error")
+  description   String?
+  orderIndex    Int               @default(0) @map("order_index")
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  qualityGate QualityGate @relation(fields: [qualityGateId], references: [id], onDelete: Cascade)
+
+  @@index([qualityGateId])
+  @@map("quality_gate_conditions")
+}
+
+model QualityGateEvaluation {
+  id            String            @id @default(uuid())
+  qualityGateId String            @map("quality_gate_id")
+  executionId   String            @map("execution_id")
+  projectId     String            @map("project_id")
+  status        QualityGateStatus
+  results       Json
+  summary       String?
+  evaluatedAt   DateTime          @default(now()) @map("evaluated_at")
+
+  // Relations
+  qualityGate QualityGate @relation(fields: [qualityGateId], references: [id], onDelete: Cascade)
+  execution   Execution   @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@unique([qualityGateId, executionId])
+  @@index([executionId])
+  @@index([projectId])
+  @@index([status])
+  @@map("quality_gate_evaluations")
+}
+
+// =============================================================================
 // AUDIT LOGS
 // =============================================================================
 
@@ -930,4 +1132,228 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// =============================================================================
+// HITL APPROVAL WORKFLOWS (Sprint 18)
+// =============================================================================
+
+enum ArtifactType {
+  test_case
+  script
+  bug_analysis
+  chat_suggestion
+  self_healing_fix
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum ArtifactState {
+  draft
+  pending_review
+  in_review
+  approved
+  rejected
+  archived
+}
+
+enum SLAStatus {
+  within_sla
+  approaching_sla
+  breached
+  escalated
+}
+
+enum RejectionCategory {
+  accuracy
+  incomplete
+  style_violation
+  security_concern
+  performance
+  scope_creep
+  duplicate
+  other
+}
+
+model Artifact {
+  id                String        @id @default(uuid())
+  projectId         String        @map("project_id")
+  type              ArtifactType
+  state             ArtifactState @default(draft)
+  riskLevel         RiskLevel     @map("risk_level")
+  sourceAgent       String        @map("source_agent")
+  sourceSessionId   String?       @map("source_session_id")
+  sourceType        String?       @map("source_type")
+  title             String
+  description       String?
+  content           Json
+  metadata          Json?
+  riskScore         Decimal       @map("risk_score") @db.Decimal(5, 2)
+  riskFactors       Json?         @map("risk_factors")
+  aiConfidenceScore Decimal?      @map("ai_confidence_score") @db.Decimal(5, 2)
+  targetEntityType  String?       @map("target_entity_type")
+  targetEntityId    String?       @map("target_entity_id")
+  submittedAt       DateTime?     @map("submitted_at")
+  approvedAt        DateTime?     @map("approved_at")
+  rejectedAt        DateTime?     @map("rejected_at")
+  archivedAt        DateTime?     @map("archived_at")
+  createdById       String        @map("created_by_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  version           Int           @default(1)
+  previousVersionId String?       @map("previous_version_id")
+
+  // Relations
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  previousVersion Artifact?         @relation("ArtifactVersions", fields: [previousVersionId], references: [id])
+  newVersions     Artifact[]        @relation("ArtifactVersions")
+  workflow        ApprovalWorkflow?
+  slaTracking     SLATracking?
+  history         ArtifactHistory[]
+  feedback        ApprovalFeedback[]
+
+  @@index([projectId])
+  @@index([type])
+  @@index([state])
+  @@index([riskLevel])
+  @@index([createdById])
+  @@index([submittedAt])
+  @@map("artifacts")
+}
+
+model ApprovalWorkflow {
+  id                String    @id @default(uuid())
+  artifactId        String    @unique @map("artifact_id")
+  requiredApprovals Int       @default(1) @map("required_approvals")
+  currentApprovals  Int       @default(0) @map("current_approvals")
+  requiresAdmin     Boolean   @default(false) @map("requires_admin")
+  requiresLead      Boolean   @default(false) @map("requires_lead")
+  autoApproved      Boolean   @default(false) @map("auto_approved")
+  autoApproveReason String?   @map("auto_approve_reason")
+  startedAt         DateTime  @default(now()) @map("started_at")
+  completedAt       DateTime? @map("completed_at")
+
+  // Relations
+  artifact Artifact       @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  steps    ApprovalStep[]
+
+  @@index([artifactId])
+  @@map("approval_workflows")
+}
+
+model ApprovalStep {
+  id           String    @id @default(uuid())
+  workflowId   String    @map("workflow_id")
+  stepOrder    Int       @map("step_order")
+  requiredRole UserRole? @map("required_role")
+  assignedToId String?   @map("assigned_to_id")
+  status       String    @default("pending")
+  actionById   String?   @map("action_by_id")
+  actionAt     DateTime? @map("action_at")
+  comment      String?
+
+  // Relations
+  workflow ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([assignedToId])
+  @@index([status])
+  @@map("approval_steps")
+}
+
+model SLATracking {
+  id               String    @id @default(uuid())
+  artifactId       String    @unique @map("artifact_id")
+  riskLevel        RiskLevel @map("risk_level")
+  deadlineHours    Int       @map("deadline_hours")
+  deadline         DateTime
+  status           SLAStatus @default(within_sla)
+  warningThreshold Int       @default(75) @map("warning_threshold")
+  warningSentAt    DateTime? @map("warning_sent_at")
+  escalatedAt      DateTime? @map("escalated_at")
+  escalatedToId    String?   @map("escalated_to_id")
+  escalationReason String?   @map("escalation_reason")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  artifact Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  @@index([artifactId])
+  @@index([deadline])
+  @@index([status])
+  @@map("sla_tracking")
+}
+
+model ArtifactHistory {
+  id         String         @id @default(uuid())
+  artifactId String         @map("artifact_id")
+  fromState  ArtifactState? @map("from_state")
+  toState    ArtifactState  @map("to_state")
+  action     String
+  actionById String?        @map("action_by_id")
+  actionAt   DateTime       @default(now()) @map("action_at")
+  comment    String?
+  metadata   Json?
+
+  // Relations
+  artifact Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  @@index([artifactId])
+  @@index([actionAt])
+  @@map("artifact_history")
+}
+
+model ApprovalFeedback {
+  id               String            @id @default(uuid())
+  artifactId       String            @map("artifact_id")
+  category         RejectionCategory
+  severity         String
+  description      String
+  suggestedFix     String?           @map("suggested_fix")
+  affectedSection  String?           @map("affected_section")
+  correctedContent String?           @map("corrected_content")
+  createdById      String            @map("created_by_id")
+  createdAt        DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  artifact Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  @@index([artifactId])
+  @@index([category])
+  @@index([createdAt])
+  @@map("approval_feedback")
+}
+
+model ApprovalSettings {
+  id                       String    @id @default(uuid())
+  projectId                String    @unique @map("project_id")
+  lowRiskThreshold         Decimal   @default(25) @map("low_risk_threshold") @db.Decimal(5, 2)
+  mediumRiskThreshold      Decimal   @default(50) @map("medium_risk_threshold") @db.Decimal(5, 2)
+  highRiskThreshold        Decimal   @default(75) @map("high_risk_threshold") @db.Decimal(5, 2)
+  lowRiskSlaHours          Int       @default(1) @map("low_risk_sla_hours")
+  mediumRiskSlaHours       Int       @default(4) @map("medium_risk_sla_hours")
+  highRiskSlaHours         Int       @default(24) @map("high_risk_sla_hours")
+  criticalRiskSlaHours     Int       @default(48) @map("critical_risk_sla_hours")
+  autoApproveEnabled       Boolean   @default(true) @map("auto_approve_enabled")
+  autoApproveMaxRisk       RiskLevel @default(low) @map("auto_approve_max_risk")
+  autoApproveMinConfidence Decimal   @default(90) @map("auto_approve_min_confidence") @db.Decimal(5, 2)
+  notifyOnSubmission       Boolean   @default(true) @map("notify_on_submission")
+  notifyOnApproval         Boolean   @default(true) @map("notify_on_approval")
+  notifyOnRejection        Boolean   @default(true) @map("notify_on_rejection")
+  notifyOnSlaWarning       Boolean   @default(true) @map("notify_on_sla_warning")
+  escalationEnabled        Boolean   @default(true) @map("escalation_enabled")
+  escalationChain          String[]  @default([]) @map("escalation_chain")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("approval_settings")
 }

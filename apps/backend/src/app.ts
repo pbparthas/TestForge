@@ -33,6 +33,9 @@ import duplicateRoutes from './routes/duplicate.routes.js';
 import jenkinsRoutes from './routes/jenkins.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import helpRoutes from './routes/help.routes.js';
+import reportRoutes from './routes/report.routes.js';
+import qualityGateRoutes from './routes/qualitygate.routes.js';
+import approvalRoutes from './routes/approval.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -106,6 +109,9 @@ app.use('/api/duplicate', duplicateRoutes);
 app.use('/api/jenkins', jenkinsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/help', helpRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/quality-gates', qualityGateRoutes);
+app.use('/api/approvals', approvalRoutes);
 
 // =============================================================================
 // ERROR HANDLING

@@ -35,6 +35,8 @@ import {
   Workflow,
   AlertTriangle,
   Settings2,
+  FileBarChart,
+  CheckCircle2,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -98,6 +100,8 @@ const navGroups = [
     defaultOpen: true,
     items: [
       { path: '/coverage', icon: BarChart3, label: 'Coverage' },
+      { path: '/reports', icon: FileBarChart, label: 'Reports & Gates' },
+      { path: '/approvals', icon: CheckCircle2, label: 'Approvals' },
     ],
   },
   {
