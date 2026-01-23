@@ -36,6 +36,12 @@ import helpRoutes from './routes/help.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import qualityGateRoutes from './routes/qualitygate.routes.js';
 import approvalRoutes from './routes/approval.routes.js';
+// Sprint 19: Advanced Features
+import teamRoutes from './routes/team.routes.js';
+import permissionRoutes from './routes/permission.routes.js';
+import roleRoutes from './routes/role.routes.js';
+import auditRoutes from './routes/audit.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -112,6 +118,12 @@ app.use('/api/help', helpRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/quality-gates', qualityGateRoutes);
 app.use('/api/approvals', approvalRoutes);
+// Sprint 19: Advanced Features
+app.use('/api/teams', teamRoutes);
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // =============================================================================
 // ERROR HANDLING

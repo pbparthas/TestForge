@@ -1357,3 +1357,309 @@ model ApprovalSettings {
 
   @@map("approval_settings")
 }
+
+// =============================================================================
+// TEAMS (Sprint 19)
+// =============================================================================
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  members        TeamMember[]
+  projectAccess  TeamProjectAccess[]
+
+  @@map("teams")
+}
+
+enum TeamMemberRole {
+  owner
+  admin
+  member
+}
+
+model TeamMember {
+  id        String         @id @default(uuid())
+  teamId    String         @map("team_id")
+  userId    String         @map("user_id")
+  role      TeamMemberRole @default(member)
+  joinedAt  DateTime       @default(now()) @map("joined_at")
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+enum TeamAccessLevel {
+  read
+  write
+  admin
+}
+
+model TeamProjectAccess {
+  id          String          @id @default(uuid())
+  teamId      String          @map("team_id")
+  projectId   String          @map("project_id")
+  accessLevel TeamAccessLevel @default(read) @map("access_level")
+  grantedAt   DateTime        @default(now()) @map("granted_at")
+  grantedById String?         @map("granted_by_id")
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, projectId])
+  @@index([teamId])
+  @@index([projectId])
+  @@map("team_project_access")
+}
+
+// =============================================================================
+// RBAC/PERMISSIONS (Sprint 19)
+// =============================================================================
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  resource    String   // e.g., 'project', 'test_case', 'script'
+  action      String   // e.g., 'create', 'read', 'update', 'delete'
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@map("permissions")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system") // System roles cannot be deleted
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  permissions RolePermission[]
+  userRoles   UserRoleAssignment[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserRoleAssignment {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  roleId     String    @map("role_id")
+  projectId  String?   @map("project_id") // null = global role, non-null = project-specific
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+  assignedBy String?   @map("assigned_by")
+  expiresAt  DateTime? @map("expires_at")
+
+  // Relations
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, projectId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([projectId])
+  @@map("user_role_assignments")
+}
+
+model UserPermission {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  permissionId String    @map("permission_id")
+  projectId    String?   @map("project_id") // null = global permission
+  isGranted    Boolean   @default(true) @map("is_granted") // false = explicit deny
+  grantedAt    DateTime  @default(now()) @map("granted_at")
+  grantedBy    String?   @map("granted_by")
+  expiresAt    DateTime? @map("expires_at")
+
+  // Relations
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId, projectId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([projectId])
+  @@map("user_permissions")
+}
+
+// =============================================================================
+// ENHANCED AUDIT LOGGING (Sprint 19)
+// =============================================================================
+
+enum AuditSeverity {
+  info
+  warning
+  critical
+}
+
+enum AuditCategory {
+  authentication
+  authorization
+  data_access
+  data_modification
+  system
+  security
+}
+
+model AuditLogEnhanced {
+  id           String        @id @default(uuid())
+  userId       String?       @map("user_id")
+  sessionId    String?       @map("session_id")
+  action       String
+  category     AuditCategory
+  severity     AuditSeverity @default(info)
+  resource     String        // e.g., 'project', 'test_case'
+  resourceId   String?       @map("resource_id")
+  projectId    String?       @map("project_id")
+  description  String?
+  oldValue     Json?         @map("old_value")
+  newValue     Json?         @map("new_value")
+  metadata     Json?
+  ipAddress    String?       @map("ip_address")
+  userAgent    String?       @map("user_agent")
+  requestId    String?       @map("request_id")
+  durationMs   Int?          @map("duration_ms")
+  success      Boolean       @default(true)
+  errorMessage String?       @map("error_message")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([category])
+  @@index([severity])
+  @@index([resource, resourceId])
+  @@index([projectId])
+  @@index([createdAt])
+  @@index([sessionId])
+  @@map("audit_logs_enhanced")
+}
+
+// =============================================================================
+// WEBSOCKET CONNECTIONS (Sprint 19)
+// =============================================================================
+
+enum WebSocketConnectionStatus {
+  connected
+  disconnected
+  idle
+}
+
+model WebSocketConnection {
+  id           String                    @id @default(uuid())
+  socketId     String                    @unique @map("socket_id")
+  userId       String                    @map("user_id")
+  status       WebSocketConnectionStatus @default(connected)
+  connectedAt  DateTime                  @default(now()) @map("connected_at")
+  lastPingAt   DateTime?                 @map("last_ping_at")
+  disconnectedAt DateTime?               @map("disconnected_at")
+  userAgent    String?                   @map("user_agent")
+  ipAddress    String?                   @map("ip_address")
+  metadata     Json?
+
+  // Relations - subscriptions to specific resources
+  subscriptions WebSocketSubscription[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([connectedAt])
+  @@map("websocket_connections")
+}
+
+model WebSocketSubscription {
+  id           String   @id @default(uuid())
+  connectionId String   @map("connection_id")
+  channel      String   // e.g., 'execution:123', 'project:456'
+  subscribedAt DateTime @default(now()) @map("subscribed_at")
+
+  // Relations
+  connection WebSocketConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, channel])
+  @@index([connectionId])
+  @@index([channel])
+  @@map("websocket_subscriptions")
+}
+
+// =============================================================================
+// EXECUTIVE DASHBOARD (Sprint 19)
+// =============================================================================
+
+enum MetricType {
+  count
+  percentage
+  duration
+  score
+  trend
+}
+
+enum MetricPeriod {
+  hourly
+  daily
+  weekly
+  monthly
+}
+
+model DashboardMetric {
+  id          String       @id @default(uuid())
+  projectId   String?      @map("project_id") // null = global metric
+  name        String
+  type        MetricType
+  value       Decimal      @db.Decimal(15, 4)
+  previousValue Decimal?   @map("previous_value") @db.Decimal(15, 4)
+  changePercent Decimal?   @map("change_percent") @db.Decimal(10, 2)
+  period      MetricPeriod
+  periodStart DateTime     @map("period_start")
+  periodEnd   DateTime     @map("period_end")
+  metadata    Json?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@index([name])
+  @@index([period])
+  @@index([periodStart, periodEnd])
+  @@map("dashboard_metrics")
+}
+
+model DashboardSnapshot {
+  id          String   @id @default(uuid())
+  projectId   String?  @map("project_id") // null = global snapshot
+  snapshotAt  DateTime @map("snapshot_at")
+  data        Json     // Full dashboard state at snapshot time
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@index([snapshotAt])
+  @@map("dashboard_snapshots")
+}
