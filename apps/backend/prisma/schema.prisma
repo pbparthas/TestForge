@@ -44,6 +44,8 @@ model User {
   fixedFlakyTests       FlakyTest[]          @relation("FlakyFixer")
   chatConversations     ChatConversation[]
   helpFeedback          HelpFeedback[]
+  postmanImports        PostmanImport[]
+  createdTemplates      TestTemplate[]     @relation("TemplateCreator")
 
   @@map("users")
 }
@@ -111,6 +113,8 @@ model Project {
   qualityGates         QualityGate[]
   artifacts            Artifact[]
   approvalSettings     ApprovalSettings?
+  postmanImports       PostmanImport[]
+  testTemplates        TestTemplate[]
 
   @@map("projects")
 }
@@ -1662,4 +1666,96 @@ model DashboardSnapshot {
   @@index([projectId])
   @@index([snapshotAt])
   @@map("dashboard_snapshots")
+}
+
+// =============================================================================
+// POSTMAN IMPORT (Sprint 20)
+// =============================================================================
+
+enum PostmanImportType {
+  test_cases
+  scripts
+  both
+}
+
+enum PostmanImportStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model PostmanImport {
+  id             String              @id @default(uuid())
+  userId         String              @map("user_id")
+  projectId      String              @map("project_id")
+  fileName       String              @map("file_name")
+  collectionName String              @map("collection_name")
+  collectionId   String?             @map("collection_id") // Postman collection ID if present
+  requestCount   Int                 @map("request_count")
+  importedCount  Int                 @default(0) @map("imported_count")
+  skippedCount   Int                 @default(0) @map("skipped_count")
+  importType     PostmanImportType   @map("import_type")
+  status         PostmanImportStatus @default(pending)
+  errorMessage   String?             @map("error_message")
+  importedItems  Json?               @map("imported_items") // [{type, id, name}]
+  mappingConfig  Json?               @map("mapping_config") // User-defined mappings
+  createdAt      DateTime            @default(now()) @map("created_at")
+  completedAt    DateTime?           @map("completed_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("postman_imports")
+}
+
+// =============================================================================
+// TEST TEMPLATES (Sprint 20)
+// =============================================================================
+
+enum TestTemplateCategory {
+  auth
+  crud
+  api
+  forms
+  e2e
+  performance
+  security
+  custom
+}
+
+model TestTemplate {
+  id          String               @id @default(uuid())
+  name        String
+  description String?
+  category    TestTemplateCategory
+  content     Json                 // { steps: [], expectedResult, preconditions }
+  variables   String[]             @default([]) // ['{{username}}', '{{password}}']
+  tags        String[]             @default([])
+  testType    TestType             @default(functional) @map("test_type")
+  priority    Priority             @default(medium)
+  isBuiltIn   Boolean              @default(false) @map("is_built_in")
+  isPublic    Boolean              @default(true) @map("is_public") // visible to all users
+  projectId   String?              @map("project_id") // null = global template
+  createdById String?              @map("created_by_id")
+  usageCount  Int                  @default(0) @map("usage_count")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  // Relations
+  creator User?    @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([name, projectId])
+  @@index([category])
+  @@index([isBuiltIn])
+  @@index([projectId])
+  @@index([createdById])
+  @@index([usageCount(sort: Desc)])
+  @@map("test_templates")
 }

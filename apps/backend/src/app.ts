@@ -42,6 +42,9 @@ import permissionRoutes from './routes/permission.routes.js';
 import roleRoutes from './routes/role.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+// Sprint 20: Postman Import & Templates
+import postmanRoutes from './routes/postman.routes.js';
+import templateRoutes from './routes/template.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -124,6 +127,9 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+// Sprint 20: Postman Import & Templates
+app.use('/api/postman', postmanRoutes);
+app.use('/api/templates', templateRoutes);
 
 // =============================================================================
 // ERROR HANDLING
