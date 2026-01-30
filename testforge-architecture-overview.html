@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestForge - Platform Architecture Overview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #242424;
+      --border: #333;
+      --text-primary: #e0e0e0;
+      --text-secondary: #888;
+      --text-muted: #666;
+      --accent-blue: #3b82f6;
+      --accent-green: #22c55e;
+      --accent-purple: #a855f7;
+      --accent-orange: #f97316;
+      --accent-pink: #ec4899;
+      --accent-cyan: #06b6d4;
+      --accent-yellow: #eab308;
+      --accent-red: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f0f0f 100%);
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .logo-text h1 {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, #888);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-text p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 32px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent-blue);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .main-content {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      padding: 12px 24px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .nav-tab:hover {
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+    }
+
+    .nav-tab.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: white;
+    }
+
+    .view-container {
+      display: none;
+    }
+
+    .view-container.active {
+      display: block;
+    }
+
+    /* Architecture Diagram View */
+    .architecture-diagram {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      overflow-x: auto;
+    }
+
+    .arch-layer {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .arch-layer-label {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      padding: 16px 8px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+    }
+
+    .arch-layer-content {
+      flex: 1;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .arch-box {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      min-width: 200px;
+      flex: 1;
+      transition: all 0.2s;
+    }
+
+    .arch-box:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+    }
+
+    .arch-box-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .arch-box-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .arch-box-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .arch-item {
+      padding: 4px 10px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .connector {
+      display: flex;
+      justify-content: center;
+      padding: 8px 0;
+    }
+
+    .connector-line {
+      width: 2px;
+      height: 24px;
+      background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple));
+      position: relative;
+    }
+
+    .connector-line::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid var(--accent-purple);
+    }
+
+    /* Features Grid View */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-4px);
+    }
+
+    .feature-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .feature-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .feature-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .feature-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .feature-capabilities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .capability-tag {
+      padding: 4px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* Data Flow View */
+    .data-flow {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .flow-node {
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 24px;
+      text-align: center;
+      min-width: 140px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .flow-node:hover {
+      transform: scale(1.05);
+    }
+
+    .flow-node-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .flow-node-label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .flow-node-sublabel {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .flow-arrow {
+      font-size: 20px;
+      color: var(--accent-blue);
+    }
+
+    .flow-arrow.down {
+      transform: rotate(90deg);
+    }
+
+    .flow-section {
+      margin-bottom: 40px;
+    }
+
+    .flow-section-title {
+      text-align: center;
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Tech Stack View */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 1200px) {
+      .tech-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .tech-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tech-category {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .tech-category-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tech-category-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .tech-category-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .tech-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tech-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+    }
+
+    .tech-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .tech-info {
+      flex: 1;
+    }
+
+    .tech-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .tech-purpose {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* Services View */
+    .services-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .service-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+
+    .service-card:hover {
+      border-color: var(--accent-blue);
+    }
+
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .service-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .service-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .service-category {
+      font-size: 10px;
+      padding: 2px 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      margin-left: auto;
+    }
+
+    .service-description {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Category Filter */
+    .category-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: white;
+    }
+
+    /* Database Schema View */
+    .schema-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .schema-entity {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .schema-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .schema-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .schema-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .schema-count {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .schema-fields {
+      padding: 12px 16px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .schema-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+      border-bottom: 1px solid var(--bg-tertiary);
+    }
+
+    .schema-field:last-child {
+      border-bottom: none;
+    }
+
+    .field-key {
+      color: var(--accent-yellow);
+      font-size: 10px;
+    }
+
+    .field-name {
+      color: var(--text-primary);
+      font-family: monospace;
+    }
+
+    .field-type {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .schema-relations {
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border);
+    }
+
+    .relation-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .relation-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .relation-tag {
+      padding: 2px 8px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      font-size: 10px;
+      color: var(--accent-cyan);
+    }
+
+    /* Sprint Timeline View */
+    .timeline-container {
+      position: relative;
+      padding-left: 40px;
+    }
+
+    .timeline-line {
+      position: absolute;
+      left: 16px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), var(--accent-pink));
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 32px;
+      padding: 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -32px;
+      top: 24px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-primary);
+    }
+
+    .timeline-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .timeline-sprint {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .timeline-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .timeline-status {
+      margin-left: auto;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+    }
+
+    .timeline-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .timeline-feature {
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Integrations View */
+    .integrations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .integration-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .integration-card:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-4px);
+    }
+
+    .integration-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .integration-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .integration-type {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .integration-features {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .integration-feature {
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Prompt Output */
+    .prompt-section {
+      margin-top: 40px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .prompt-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      padding: 8px 20px;
+      background: var(--accent-blue);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #2563eb;
+    }
+
+    .copy-btn.copied {
+      background: var(--accent-green);
+    }
+
+    .prompt-output {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* Color Classes */
+    .bg-blue { background: rgba(59, 130, 246, 0.2); }
+    .bg-green { background: rgba(34, 197, 94, 0.2); }
+    .bg-purple { background: rgba(168, 85, 247, 0.2); }
+    .bg-orange { background: rgba(249, 115, 22, 0.2); }
+    .bg-pink { background: rgba(236, 72, 153, 0.2); }
+    .bg-cyan { background: rgba(6, 182, 212, 0.2); }
+    .bg-yellow { background: rgba(234, 179, 8, 0.2); }
+    .bg-red { background: rgba(239, 68, 68, 0.2); }
+
+    .border-blue { border-color: var(--accent-blue) !important; }
+    .border-green { border-color: var(--accent-green) !important; }
+    .border-purple { border-color: var(--accent-purple) !important; }
+    .border-orange { border-color: var(--accent-orange) !important; }
+    .border-pink { border-color: var(--accent-pink) !important; }
+    .border-cyan { border-color: var(--accent-cyan) !important; }
+
+    .text-blue { color: var(--accent-blue); }
+    .text-green { color: var(--accent-green); }
+    .text-purple { color: var(--accent-purple); }
+    .text-orange { color: var(--accent-orange); }
+    .text-pink { color: var(--accent-pink); }
+    .text-cyan { color: var(--accent-cyan); }
+    .text-yellow { color: var(--accent-yellow); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">TF</div>
+        <div class="logo-text">
+          <h1>TestForge</h1>
+          <p>AI-Powered Test Management Platform</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat">
+          <div class="stat-value">33</div>
+          <div class="stat-label">Services</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color: var(--accent-purple);">13</div>
+          <div class="stat-label">AI Agents</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color: var(--accent-green);">35</div>
+          <div class="stat-label">API Routes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color: var(--accent-orange);">25</div>
+          <div class="stat-label">Pages</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color: var(--accent-pink);">20</div>
+          <div class="stat-label">Sprints</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-view="architecture">Architecture</button>
+      <button class="nav-tab" data-view="features">Features</button>
+      <button class="nav-tab" data-view="dataflow">Data Flow</button>
+      <button class="nav-tab" data-view="services">Services</button>
+      <button class="nav-tab" data-view="database">Database</button>
+      <button class="nav-tab" data-view="techstack">Tech Stack</button>
+      <button class="nav-tab" data-view="timeline">Sprint Timeline</button>
+      <button class="nav-tab" data-view="integrations">Integrations</button>
+    </nav>
+
+    <!-- Architecture View -->
+    <div id="architecture" class="view-container active">
+      <div class="architecture-diagram">
+        <!-- External Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan);">EXTERNAL</div>
+          <div class="arch-layer-content">
+            <div class="arch-box border-cyan">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-cyan">&#128100;</span>
+                Users
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">QA Engineers</span>
+                <span class="arch-item">Developers</span>
+                <span class="arch-item">Tech Leads</span>
+                <span class="arch-item">Admins</span>
+              </div>
+            </div>
+            <div class="arch-box border-cyan">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-cyan">&#128279;</span>
+                External Systems
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Jenkins CI/CD</span>
+                <span class="arch-item">Jira (via Requirements)</span>
+                <span class="arch-item">Postman Collections</span>
+                <span class="arch-item">Git Repositories</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector"><div class="connector-line"></div></div>
+
+        <!-- Frontend Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label" style="background: rgba(59, 130, 246, 0.2); color: var(--accent-blue);">FRONTEND</div>
+          <div class="arch-layer-content">
+            <div class="arch-box border-blue">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-blue">&#9881;</span>
+                React Dashboard
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Vite</span>
+                <span class="arch-item">TypeScript</span>
+                <span class="arch-item">Zustand</span>
+                <span class="arch-item">Tailwind CSS</span>
+              </div>
+            </div>
+            <div class="arch-box border-blue">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-blue">&#128196;</span>
+                25 Pages
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Dashboard</span>
+                <span class="arch-item">Test Cases</span>
+                <span class="arch-item">Executions</span>
+                <span class="arch-item">AI Agents</span>
+                <span class="arch-item">Reports</span>
+                <span class="arch-item">Coverage</span>
+                <span class="arch-item">+19 more</span>
+              </div>
+            </div>
+            <div class="arch-box border-blue">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-blue">&#128230;</span>
+                UI Components
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Button</span>
+                <span class="arch-item">Input</span>
+                <span class="arch-item">Card</span>
+                <span class="arch-item">Badge</span>
+                <span class="arch-item">Modal</span>
+                <span class="arch-item">Table</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector"><div class="connector-line"></div></div>
+
+        <!-- API Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label" style="background: rgba(34, 197, 94, 0.2); color: var(--accent-green);">API</div>
+          <div class="arch-layer-content">
+            <div class="arch-box border-green">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-green">&#128274;</span>
+                Auth & Security
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">JWT Auth</span>
+                <span class="arch-item">RBAC</span>
+                <span class="arch-item">Permissions</span>
+                <span class="arch-item">Audit Logs</span>
+              </div>
+            </div>
+            <div class="arch-box border-green">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-green">&#128421;</span>
+                35 Route Modules
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">/testcase</span>
+                <span class="arch-item">/execution</span>
+                <span class="arch-item">/ai</span>
+                <span class="arch-item">/approval</span>
+                <span class="arch-item">/report</span>
+                <span class="arch-item">/jenkins</span>
+                <span class="arch-item">+29 more</span>
+              </div>
+            </div>
+            <div class="arch-box border-green">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-green">&#9889;</span>
+                Real-time
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">WebSocket</span>
+                <span class="arch-item">Subscriptions</span>
+                <span class="arch-item">Live Updates</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector"><div class="connector-line"></div></div>
+
+        <!-- Services Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label" style="background: rgba(168, 85, 247, 0.2); color: var(--accent-purple);">SERVICES</div>
+          <div class="arch-layer-content">
+            <div class="arch-box border-purple">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-purple">&#128202;</span>
+                Test Management
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">TestCase</span>
+                <span class="arch-item">TestSuite</span>
+                <span class="arch-item">Requirement</span>
+                <span class="arch-item">Script</span>
+                <span class="arch-item">Environment</span>
+              </div>
+            </div>
+            <div class="arch-box border-purple">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-purple">&#9654;</span>
+                Execution
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Execution</span>
+                <span class="arch-item">Traceability</span>
+                <span class="arch-item">Bug</span>
+                <span class="arch-item">Coverage</span>
+              </div>
+            </div>
+            <div class="arch-box border-purple">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-purple">&#128161;</span>
+                Quality
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">QualityGate</span>
+                <span class="arch-item">Flaky</span>
+                <span class="arch-item">Duplicate</span>
+                <span class="arch-item">SelfHealing</span>
+              </div>
+            </div>
+            <div class="arch-box border-purple">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-purple">&#128101;</span>
+                Governance
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Approval</span>
+                <span class="arch-item">Team</span>
+                <span class="arch-item">Permission</span>
+                <span class="arch-item">Audit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector"><div class="connector-line"></div></div>
+
+        <!-- AI Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label" style="background: rgba(236, 72, 153, 0.2); color: var(--accent-pink);">AI</div>
+          <div class="arch-layer-content">
+            <div class="arch-box border-pink">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-pink">&#129302;</span>
+                13 AI Agents
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">TestWeaver</span>
+                <span class="arch-item">ScriptSmith</span>
+                <span class="arch-item">FlowPilot</span>
+                <span class="arch-item">CodeGuardian</span>
+                <span class="arch-item">SelfHealing</span>
+                <span class="arch-item">VisualAnalysis</span>
+                <span class="arch-item">Recorder</span>
+                <span class="arch-item">+6 more</span>
+              </div>
+            </div>
+            <div class="arch-box border-pink">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-pink">&#128200;</span>
+                AI Infrastructure
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Anthropic Claude</span>
+                <span class="arch-item">Cost Tracking</span>
+                <span class="arch-item">Retry Logic</span>
+                <span class="arch-item">Rate Limiting</span>
+              </div>
+            </div>
+            <div class="arch-box border-pink">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-pink">&#128270;</span>
+                Duplicate Detection
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Hash Check</span>
+                <span class="arch-item">Levenshtein</span>
+                <span class="arch-item">AI Semantic</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector"><div class="connector-line"></div></div>
+
+        <!-- Data Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label" style="background: rgba(249, 115, 22, 0.2); color: var(--accent-orange);">DATA</div>
+          <div class="arch-layer-content">
+            <div class="arch-box border-orange">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-orange">&#128451;</span>
+                PostgreSQL
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Users</span>
+                <span class="arch-item">Projects</span>
+                <span class="arch-item">TestCases</span>
+                <span class="arch-item">Executions</span>
+                <span class="arch-item">+30 tables</span>
+              </div>
+            </div>
+            <div class="arch-box border-orange">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-orange">&#128736;</span>
+                Prisma ORM
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Schema</span>
+                <span class="arch-item">Migrations</span>
+                <span class="arch-item">Seeding</span>
+                <span class="arch-item">Client</span>
+              </div>
+            </div>
+            <div class="arch-box border-orange">
+              <div class="arch-box-title">
+                <span class="arch-box-icon bg-orange">&#128190;</span>
+                File Storage
+              </div>
+              <div class="arch-box-items">
+                <span class="arch-item">Screenshots</span>
+                <span class="arch-item">Videos</span>
+                <span class="arch-item">Reports</span>
+                <span class="arch-item">Attachments</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features View -->
+    <div id="features" class="view-container">
+      <div class="features-grid" id="featuresGrid">
+        <!-- Features will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Data Flow View -->
+    <div id="dataflow" class="view-container">
+      <div class="data-flow">
+        <div class="flow-section">
+          <div class="flow-section-title">Test Creation Flow</div>
+          <div class="flow-row">
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128221;</div>
+              <div class="flow-node-label">Requirements</div>
+              <div class="flow-node-sublabel">From Jira/Manual</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+              <div class="flow-node-icon">&#129302;</div>
+              <div class="flow-node-label">AI Generation</div>
+              <div class="flow-node-sublabel">TestWeaver</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-yellow" style="border-color: var(--accent-yellow);">
+              <div class="flow-node-icon">&#128270;</div>
+              <div class="flow-node-label">Duplicate Check</div>
+              <div class="flow-node-sublabel">3-Tier Cascade</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-orange" style="border-color: var(--accent-orange);">
+              <div class="flow-node-icon">&#9989;</div>
+              <div class="flow-node-label">HITL Review</div>
+              <div class="flow-node-sublabel">Approval Workflow</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#128196;</div>
+              <div class="flow-node-label">Test Cases</div>
+              <div class="flow-node-sublabel">Ready to Execute</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-section">
+          <div class="flow-section-title">Script Generation Flow</div>
+          <div class="flow-row">
+            <div class="flow-node border-blue" style="border-color: var(--accent-blue);">
+              <div class="flow-node-icon">&#127909;</div>
+              <div class="flow-node-label">Recording</div>
+              <div class="flow-node-sublabel">Browser Actions</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+              <div class="flow-node-icon">&#129302;</div>
+              <div class="flow-node-label">ScriptSmith</div>
+              <div class="flow-node-sublabel">Code Generation</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-pink" style="border-color: var(--accent-pink);">
+              <div class="flow-node-icon">&#128269;</div>
+              <div class="flow-node-label">Code Analysis</div>
+              <div class="flow-node-sublabel">Quality Check</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#128221;</div>
+              <div class="flow-node-label">Script</div>
+              <div class="flow-node-sublabel">Playwright/Cypress</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-section">
+          <div class="flow-section-title">Execution & Feedback Loop</div>
+          <div class="flow-row">
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#9654;</div>
+              <div class="flow-node-label">Execute</div>
+              <div class="flow-node-sublabel">Run Tests</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-blue" style="border-color: var(--accent-blue);">
+              <div class="flow-node-icon">&#128200;</div>
+              <div class="flow-node-label">Results</div>
+              <div class="flow-node-sublabel">Pass/Fail/Skip</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-red" style="border-color: var(--accent-red);">
+              <div class="flow-node-icon">&#128027;</div>
+              <div class="flow-node-label">Failures</div>
+              <div class="flow-node-sublabel">Error Analysis</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+              <div class="flow-node-icon">&#128657;</div>
+              <div class="flow-node-label">Self-Healing</div>
+              <div class="flow-node-sublabel">Auto-Fix</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128279;</div>
+              <div class="flow-node-label">Traceability</div>
+              <div class="flow-node-sublabel">Req → Bug</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-section">
+          <div class="flow-section-title">Quality Assurance Pipeline</div>
+          <div class="flow-row">
+            <div class="flow-node border-orange" style="border-color: var(--accent-orange);">
+              <div class="flow-node-icon">&#128202;</div>
+              <div class="flow-node-label">Coverage</div>
+              <div class="flow-node-sublabel">Gap Analysis</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-yellow" style="border-color: var(--accent-yellow);">
+              <div class="flow-node-icon">&#128203;</div>
+              <div class="flow-node-label">Quality Gates</div>
+              <div class="flow-node-sublabel">Thresholds</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-pink" style="border-color: var(--accent-pink);">
+              <div class="flow-node-icon">&#128200;</div>
+              <div class="flow-node-label">Flaky Detection</div>
+              <div class="flow-node-sublabel">Quarantine</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#128196;</div>
+              <div class="flow-node-label">Reports</div>
+              <div class="flow-node-sublabel">PDF/Excel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Services View -->
+    <div id="services" class="view-container">
+      <div class="category-filter" id="serviceFilter">
+        <button class="filter-btn active" data-category="all">All (33)</button>
+        <button class="filter-btn" data-category="core">Core (8)</button>
+        <button class="filter-btn" data-category="execution">Execution (4)</button>
+        <button class="filter-btn" data-category="ai">AI (5)</button>
+        <button class="filter-btn" data-category="quality">Quality (5)</button>
+        <button class="filter-btn" data-category="governance">Governance (5)</button>
+        <button class="filter-btn" data-category="integration">Integration (4)</button>
+        <button class="filter-btn" data-category="realtime">Real-time (2)</button>
+      </div>
+      <div class="services-container" id="servicesGrid">
+        <!-- Services will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Database View -->
+    <div id="database" class="view-container">
+      <div class="category-filter" id="dbFilter">
+        <button class="filter-btn active" data-category="all">All Entities</button>
+        <button class="filter-btn" data-category="users">Users & Access</button>
+        <button class="filter-btn" data-category="tests">Test Management</button>
+        <button class="filter-btn" data-category="execution">Execution</button>
+        <button class="filter-btn" data-category="quality">Quality</button>
+        <button class="filter-btn" data-category="ai">AI & Approval</button>
+      </div>
+      <div class="schema-container" id="schemaGrid">
+        <!-- Schema will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Tech Stack View -->
+    <div id="techstack" class="view-container">
+      <div class="tech-grid" id="techGrid">
+        <!-- Tech stack will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Timeline View -->
+    <div id="timeline" class="view-container">
+      <div class="timeline-container" id="timelineContainer">
+        <!-- Timeline will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Integrations View -->
+    <div id="integrations" class="view-container">
+      <div class="integrations-grid" id="integrationsGrid">
+        <!-- Integrations will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Prompt Output -->
+    <div class="prompt-section">
+      <div class="prompt-header">
+        <span class="prompt-title">Context Prompt for Claude</span>
+        <button class="copy-btn" id="copyBtn">Copy</button>
+      </div>
+      <div class="prompt-output" id="promptOutput">
+        <!-- Prompt will be populated by JavaScript -->
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Data
+    const features = [
+      {
+        icon: '&#129302;',
+        color: 'purple',
+        title: 'AI Test Generation',
+        subtitle: '13 Specialized Agents',
+        description: 'Generate test cases, scripts, and API tests from natural language, recordings, or screenshots using Claude AI.',
+        capabilities: ['TestWeaver', 'ScriptSmith', 'FlowPilot', 'CodeGuardian', 'Recorder', 'Visual Analysis']
+      },
+      {
+        icon: '&#128657;',
+        color: 'green',
+        title: 'Self-Healing Tests',
+        subtitle: 'Automatic Repair',
+        description: 'AI automatically detects and fixes broken selectors, adapts to UI changes, and maintains test stability.',
+        capabilities: ['Selector Repair', 'Pattern Learning', 'Auto-Fix', 'Element Detection']
+      },
+      {
+        icon: '&#128270;',
+        color: 'yellow',
+        title: 'Duplicate Detection',
+        subtitle: '3-Tier Cascade',
+        description: 'Prevent redundant tests with Hash matching, Levenshtein distance, and AI semantic analysis.',
+        capabilities: ['Hash Check', 'Levenshtein', 'AI Semantic', 'Cost Optimized']
+      },
+      {
+        icon: '&#9989;',
+        color: 'orange',
+        title: 'HITL Approval',
+        subtitle: 'Human-in-the-Loop',
+        description: 'Risk-based approval workflows for AI-generated artifacts with SLA tracking and escalation.',
+        capabilities: ['Risk Assessment', 'Role-based Review', 'Auto-approve', 'SLA Tracking']
+      },
+      {
+        icon: '&#128200;',
+        color: 'pink',
+        title: 'Flaky Test Detection',
+        subtitle: 'Pattern Analysis',
+        description: 'Identify unstable tests with flakiness scoring, pattern detection, and quarantine management.',
+        capabilities: ['Flakiness Score', 'Pattern Detection', 'Quarantine', 'Root Cause']
+      },
+      {
+        icon: '&#128279;',
+        color: 'cyan',
+        title: 'Traceability',
+        subtitle: 'End-to-End Coverage',
+        description: 'Complete traceability from requirements to test cases to executions to bugs.',
+        capabilities: ['Req → Test', 'Coverage Matrix', 'Gap Analysis', 'Impact Analysis']
+      },
+      {
+        icon: '&#128196;',
+        color: 'blue',
+        title: 'Report Generation',
+        subtitle: 'Multi-Format',
+        description: 'Generate comprehensive reports in PDF, Excel, or JSON with scheduling and templates.',
+        capabilities: ['PDF', 'Excel', 'Scheduling', 'Templates', 'Trends']
+      },
+      {
+        icon: '&#128203;',
+        color: 'green',
+        title: 'Quality Gates',
+        subtitle: 'Metrics Enforcement',
+        description: 'Define and enforce quality thresholds for pass rate, coverage, flakiness, and more.',
+        capabilities: ['Pass Rate', 'Coverage', 'Flakiness', 'Duration', 'Custom']
+      },
+      {
+        icon: '&#128101;',
+        color: 'purple',
+        title: 'Team Management',
+        subtitle: 'Fine-grained RBAC',
+        description: 'Team-based access control with roles, permissions, and project scoping.',
+        capabilities: ['Teams', 'Roles', 'Permissions', 'Project Access']
+      },
+      {
+        icon: '&#9889;',
+        color: 'orange',
+        title: 'Real-time Updates',
+        subtitle: 'WebSocket',
+        description: 'Live updates for execution progress, notifications, and collaborative features.',
+        capabilities: ['Live Execution', 'Subscriptions', 'Notifications']
+      },
+      {
+        icon: '&#128736;',
+        color: 'blue',
+        title: 'CI/CD Integration',
+        subtitle: 'Jenkins Pipeline',
+        description: 'Integrate with Jenkins for automated test execution in your CI/CD pipeline.',
+        capabilities: ['Jenkins', 'Build Triggers', 'Result Mapping', 'Credentials']
+      },
+      {
+        icon: '&#128230;',
+        color: 'pink',
+        title: 'Import & Templates',
+        subtitle: 'Quick Start',
+        description: 'Import from Postman collections and use built-in templates for common test patterns.',
+        capabilities: ['Postman', 'Templates', 'Auth Tests', 'CRUD Tests', 'E2E']
+      }
+    ];
+
+    const services = [
+      { name: 'User', category: 'core', description: 'Authentication, user management, and role assignments', color: 'blue' },
+      { name: 'Project', category: 'core', description: 'Project CRUD, configuration, and settings', color: 'blue' },
+      { name: 'TestCase', category: 'core', description: 'Test case management with bulk operations', color: 'blue' },
+      { name: 'TestSuite', category: 'core', description: 'Test suite grouping and organization', color: 'blue' },
+      { name: 'Requirement', category: 'core', description: 'Requirements tracking with Jira integration', color: 'blue' },
+      { name: 'Environment', category: 'core', description: 'Environment configuration and variables', color: 'blue' },
+      { name: 'Device', category: 'core', description: 'Device profiles for browsers and mobile', color: 'blue' },
+      { name: 'Script', category: 'core', description: 'Script management with versioning', color: 'blue' },
+      { name: 'Execution', category: 'execution', description: 'Test run lifecycle and result collection', color: 'green' },
+      { name: 'Traceability', category: 'execution', description: 'Requirement-to-bug traceability chains', color: 'green' },
+      { name: 'TraceabilityMatrix', category: 'execution', description: 'Coverage analysis and gap identification', color: 'green' },
+      { name: 'Bug', category: 'execution', description: 'Bug tracking linked to tests/executions', color: 'green' },
+      { name: 'ScriptSmith Session', category: 'ai', description: 'AI code generation sessions', color: 'purple' },
+      { name: 'AI Usage', category: 'ai', description: 'Cost tracking for all AI operations', color: 'purple' },
+      { name: 'TestPilot Orchestrator', category: 'ai', description: 'Agent orchestration and workflow', color: 'purple' },
+      { name: 'Framework Analysis', category: 'ai', description: 'Framework detection and compatibility', color: 'purple' },
+      { name: 'Chat', category: 'ai', description: 'Conversational help and suggestions', color: 'purple' },
+      { name: 'Flaky', category: 'quality', description: 'Flaky test detection and quarantine', color: 'pink' },
+      { name: 'Duplicate', category: 'quality', description: '3-tier duplicate test detection', color: 'pink' },
+      { name: 'SelfHealing', category: 'quality', description: 'Automatic selector repair', color: 'pink' },
+      { name: 'BugPattern', category: 'quality', description: 'Pattern-based bug detection', color: 'pink' },
+      { name: 'QualityGate', category: 'quality', description: 'Quality metrics enforcement', color: 'pink' },
+      { name: 'Approval', category: 'governance', description: 'HITL approval workflows', color: 'orange' },
+      { name: 'RiskAssessment', category: 'governance', description: 'Risk scoring and analysis', color: 'orange' },
+      { name: 'Team', category: 'governance', description: 'Team management and access', color: 'orange' },
+      { name: 'Permission', category: 'governance', description: 'Fine-grained RBAC', color: 'orange' },
+      { name: 'AuditEnhanced', category: 'governance', description: 'Enhanced audit logging', color: 'orange' },
+      { name: 'Jenkins', category: 'integration', description: 'CI/CD integration', color: 'cyan' },
+      { name: 'PostmanParser', category: 'integration', description: 'Parse Postman collections', color: 'cyan' },
+      { name: 'PostmanImport', category: 'integration', description: 'Import Postman to tests', color: 'cyan' },
+      { name: 'Template', category: 'integration', description: 'Test templates library', color: 'cyan' },
+      { name: 'WebSocket', category: 'realtime', description: 'Real-time connections', color: 'yellow' },
+      { name: 'Dashboard', category: 'realtime', description: 'Executive metrics', color: 'yellow' }
+    ];
+
+    const dbEntities = [
+      {
+        name: 'User',
+        category: 'users',
+        color: 'blue',
+        fields: [
+          { name: 'id', type: 'string', key: 'PK' },
+          { name: 'email', type: 'string' },
+          { name: 'role', type: 'enum' },
+          { name: 'createdAt', type: 'datetime' }
+        ],
+        relations: ['RefreshToken', 'UserRoleAssignment', 'Team']
+      },
+      {
+        name: 'Project',
+        category: 'tests',
+        color: 'green',
+        fields: [
+          { name: 'id', type: 'string', key: 'PK' },
+          { name: 'name', type: 'string' },
+          { name: 'framework', type: 'enum' },
+          { name: 'language', type: 'enum' }
+        ],
+        relations: ['TestCase', 'TestSuite', 'Requirement', 'Script']
+      },
+      {
+        name: 'TestCase',
+        category: 'tests',
+        color: 'green',
+        fields: [
+          { name: 'id', type: 'string', key: 'PK' },
+          { name: 'title', type: 'string' },
+          { name: 'type', type: 'enum' },
+          { name: 'priority', type: 'enum' },
+          { name: 'status', type: 'enum' }
+        ],
+        relations: ['Project', 'Requirement', 'Execution']
+      },
+      {
+        name: 'Execution',
+        category: 'execution',
+        color: 'purple',
+        fields: [
+          { name: 'id', type: 'string', key: 'PK' },
+          { name: 'status', type: 'enum' },
+          { name: 'startedAt', type: 'datetime' },
+          { name: 'duration', type: 'int' }
+        ],
+        relations: ['TestCase', 'ExecutionResult', 'Bug']
+      },
+      {
+        name: 'Artifact',
+        category: 'ai',
+        color: 'pink',
+        fields: [
+          { name: 'id', type: 'string', key: 'PK' },
+          { name: 'type', type: 'enum' },
+          { name: 'state', type: 'enum' },
+          { name: 'riskLevel', type: 'enum' }
+        ],
+        relations: ['ApprovalWorkflow', 'ArtifactHistory', 'SLATracking']
+      },
+      {
+        name: 'FlakyTest',
+        category: 'quality',
+        color: 'orange',
+        fields: [
+          { name: 'id', type: 'string', key: 'PK' },
+          { name: 'flakinessScore', type: 'int' },
+          { name: 'isQuarantined', type: 'boolean' },
+          { name: 'pattern', type: 'enum' }
+        ],
+        relations: ['TestCase', 'Execution']
+      }
+    ];
+
+    const techStack = [
+      {
+        category: 'Backend',
+        icon: '&#128421;',
+        color: 'blue',
+        items: [
+          { name: 'Express.js', purpose: 'HTTP server', logo: 'Ex', logoColor: 'green' },
+          { name: 'TypeScript', purpose: 'Type safety', logo: 'TS', logoColor: 'blue' },
+          { name: 'Prisma', purpose: 'ORM', logo: 'Pr', logoColor: 'purple' },
+          { name: 'PostgreSQL', purpose: 'Database', logo: 'PG', logoColor: 'blue' },
+          { name: 'Pino', purpose: 'Logging', logo: 'Pi', logoColor: 'green' }
+        ]
+      },
+      {
+        category: 'Frontend',
+        icon: '&#127912;',
+        color: 'pink',
+        items: [
+          { name: 'React', purpose: 'UI framework', logo: 'Re', logoColor: 'cyan' },
+          { name: 'Vite', purpose: 'Build tool', logo: 'Vi', logoColor: 'purple' },
+          { name: 'Zustand', purpose: 'State management', logo: 'Zu', logoColor: 'orange' },
+          { name: 'Tailwind CSS', purpose: 'Styling', logo: 'TW', logoColor: 'cyan' }
+        ]
+      },
+      {
+        category: 'AI & ML',
+        icon: '&#129302;',
+        color: 'purple',
+        items: [
+          { name: 'Anthropic Claude', purpose: 'AI models', logo: 'An', logoColor: 'orange' },
+          { name: 'Levenshtein', purpose: 'String similarity', logo: 'Lv', logoColor: 'green' }
+        ]
+      },
+      {
+        category: 'Testing',
+        icon: '&#128203;',
+        color: 'green',
+        items: [
+          { name: 'Vitest', purpose: 'Unit testing', logo: 'Vi', logoColor: 'yellow' },
+          { name: 'Supertest', purpose: 'API testing', logo: 'St', logoColor: 'blue' },
+          { name: 'Playwright', purpose: 'E2E (generated)', logo: 'Pw', logoColor: 'green' }
+        ]
+      },
+      {
+        category: 'Security',
+        icon: '&#128274;',
+        color: 'orange',
+        items: [
+          { name: 'JWT', purpose: 'Auth tokens', logo: 'JW', logoColor: 'pink' },
+          { name: 'bcrypt', purpose: 'Password hashing', logo: 'Bc', logoColor: 'purple' },
+          { name: 'Zod', purpose: 'Validation', logo: 'Zd', logoColor: 'blue' }
+        ]
+      },
+      {
+        category: 'Reports',
+        icon: '&#128196;',
+        color: 'cyan',
+        items: [
+          { name: 'PDFKit', purpose: 'PDF generation', logo: 'PK', logoColor: 'red' },
+          { name: 'ExcelJS', purpose: 'Excel generation', logo: 'XL', logoColor: 'green' }
+        ]
+      }
+    ];
+
+    const timeline = [
+      { sprint: 1, title: 'Foundation', status: 'complete', features: ['Monorepo Setup', 'Auth System', 'User CRUD', 'Database'] },
+      { sprint: 2, title: 'Core CRUD', status: 'complete', features: ['Projects', 'TestCases', 'TestSuites', 'Requirements', 'Scripts'] },
+      { sprint: '3-4', title: 'AI Agents', status: 'complete', features: ['BaseAgent', 'TestWeaver', 'ScriptSmith', 'FlowPilot', 'CodeGuardian'] },
+      { sprint: 5, title: 'Execution', status: 'complete', features: ['Execution Engine', 'Traceability', 'Bug Service', 'Coverage'] },
+      { sprint: 6, title: 'Dashboard', status: 'complete', features: ['React Dashboard', 'UI Components', '12 Pages', 'State Management'] },
+      { sprint: '7-8', title: 'TestWeaver Depth', status: 'complete', features: ['Screenshot Input', 'Multi-turn', 'Batch Generation', 'AI Mapping'] },
+      { sprint: '9-10', title: 'Visual & Recording', status: 'complete', features: ['VisualAnalysis', 'Recorder Agent', 'Screenshot Compare'] },
+      { sprint: '11-12', title: 'Quality Patterns', status: 'complete', features: ['Bug Patterns', 'Test Evolution', 'TestPilot Orchestration'] },
+      { sprint: '13-14', title: 'ScriptSmith Pro', status: 'complete', features: ['Session Workflow', 'Flaky Detection', 'Duplicate Check'] },
+      { sprint: '15-16', title: 'Integrations', status: 'complete', features: ['Jenkins CI/CD', 'Chat System', 'Help Center'] },
+      { sprint: '17-18', title: 'Reports & HITL', status: 'complete', features: ['Report Generation', 'Quality Gates', 'Approval Workflows'] },
+      { sprint: '19-20', title: 'Teams & Import', status: 'complete', features: ['Team RBAC', 'WebSocket', 'Postman Import', 'Templates'] }
+    ];
+
+    const integrations = [
+      {
+        name: 'Jenkins',
+        type: 'CI/CD Pipeline',
+        icon: '&#128295;',
+        color: 'blue',
+        features: ['Trigger builds', 'Result mapping', 'Encrypted credentials', 'Build parameters']
+      },
+      {
+        name: 'Postman',
+        type: 'API Collections',
+        icon: '&#128230;',
+        color: 'orange',
+        features: ['Import collections', 'Preview before import', 'Test case generation', 'Variable mapping']
+      },
+      {
+        name: 'Jira',
+        type: 'Requirements (via external_id)',
+        icon: '&#128203;',
+        color: 'blue',
+        features: ['Requirement linking', 'Traceability', 'Status sync', 'Coverage mapping']
+      },
+      {
+        name: 'Anthropic Claude',
+        type: 'AI Models',
+        icon: '&#129302;',
+        color: 'purple',
+        features: ['Test generation', 'Code analysis', 'Semantic search', 'Cost tracking']
+      }
+    ];
+
+    // State
+    let currentView = 'architecture';
+    let currentServiceFilter = 'all';
+    let currentDbFilter = 'all';
+
+    // Render Functions
+    function renderFeatures() {
+      const grid = document.getElementById('featuresGrid');
+      grid.innerHTML = features.map(f => `
+        <div class="feature-card">
+          <div class="feature-header">
+            <div class="feature-icon bg-${f.color}">${f.icon}</div>
+            <div>
+              <div class="feature-title">${f.title}</div>
+              <div class="feature-subtitle">${f.subtitle}</div>
+            </div>
+          </div>
+          <div class="feature-description">${f.description}</div>
+          <div class="feature-capabilities">
+            ${f.capabilities.map(c => `<span class="capability-tag">${c}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderServices() {
+      const grid = document.getElementById('servicesGrid');
+      const filtered = currentServiceFilter === 'all'
+        ? services
+        : services.filter(s => s.category === currentServiceFilter);
+
+      grid.innerHTML = filtered.map(s => `
+        <div class="service-card">
+          <div class="service-header">
+            <div class="service-icon bg-${s.color}">&#128230;</div>
+            <div class="service-name">${s.name}</div>
+            <span class="service-category">${s.category}</span>
+          </div>
+          <div class="service-description">${s.description}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderDatabase() {
+      const grid = document.getElementById('schemaGrid');
+      const filtered = currentDbFilter === 'all'
+        ? dbEntities
+        : dbEntities.filter(e => e.category === currentDbFilter);
+
+      grid.innerHTML = filtered.map(e => `
+        <div class="schema-entity">
+          <div class="schema-header">
+            <div class="schema-icon bg-${e.color}">&#128451;</div>
+            <div class="schema-name">${e.name}</div>
+            <span class="schema-count">${e.fields.length} fields</span>
+          </div>
+          <div class="schema-fields">
+            ${e.fields.map(f => `
+              <div class="schema-field">
+                ${f.key ? `<span class="field-key">${f.key}</span>` : ''}
+                <span class="field-name">${f.name}</span>
+                <span class="field-type">${f.type}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="schema-relations">
+            <div class="relation-label">Relations</div>
+            <div class="relation-tags">
+              ${e.relations.map(r => `<span class="relation-tag">${r}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderTechStack() {
+      const grid = document.getElementById('techGrid');
+      grid.innerHTML = techStack.map(cat => `
+        <div class="tech-category">
+          <div class="tech-category-header">
+            <div class="tech-category-icon bg-${cat.color}">${cat.icon}</div>
+            <div class="tech-category-title">${cat.category}</div>
+          </div>
+          <div class="tech-list">
+            ${cat.items.map(item => `
+              <div class="tech-item">
+                <div class="tech-logo bg-${item.logoColor}">${item.logo}</div>
+                <div class="tech-info">
+                  <div class="tech-name">${item.name}</div>
+                  <div class="tech-purpose">${item.purpose}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderTimeline() {
+      const container = document.getElementById('timelineContainer');
+      const colors = ['blue', 'green', 'purple', 'pink', 'orange', 'cyan'];
+
+      container.innerHTML = timeline.map((item, i) => {
+        const color = colors[i % colors.length];
+        return `
+          <div class="timeline-item">
+            <div class="timeline-dot bg-${color}"></div>
+            <div class="timeline-header">
+              <span class="timeline-sprint bg-${color}" style="color: white;">Sprint ${item.sprint}</span>
+              <div class="timeline-title">${item.title}</div>
+              <span class="timeline-status bg-green" style="color: white;">${item.status.toUpperCase()}</span>
+            </div>
+            <div class="timeline-features">
+              ${item.features.map(f => `<span class="timeline-feature">${f}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderIntegrations() {
+      const grid = document.getElementById('integrationsGrid');
+      grid.innerHTML = integrations.map(i => `
+        <div class="integration-card">
+          <div class="integration-logo bg-${i.color}">${i.icon}</div>
+          <div class="integration-name">${i.name}</div>
+          <div class="integration-type">${i.type}</div>
+          <div class="integration-features">
+            ${i.features.map(f => `<span class="integration-feature">${f}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updatePrompt() {
+      const viewDescriptions = {
+        architecture: 'system architecture with layers (Frontend → API → Services → AI → Data)',
+        features: '12 major features including AI generation, self-healing, duplicate detection, HITL approval',
+        dataflow: 'data flows: Test Creation, Script Generation, Execution & Feedback, Quality Assurance',
+        services: `33 backend services across categories (Core, Execution, AI, Quality, Governance, Integration)`,
+        database: 'database schema with key entities (User, Project, TestCase, Execution, Artifact, FlakyTest)',
+        techstack: 'tech stack (Express, React, PostgreSQL, Prisma, Claude AI, Vitest)',
+        timeline: '20 sprints of development from Foundation to Teams & Import',
+        integrations: '4 external integrations (Jenkins, Postman, Jira, Anthropic Claude)'
+      };
+
+      const prompt = `TestForge Architecture Overview
+
+Platform: AI-Powered Test Management System
+
+Currently viewing: ${currentView.charAt(0).toUpperCase() + currentView.slice(1)} - ${viewDescriptions[currentView]}
+
+Key Statistics:
+- 33 Backend Services
+- 13 AI Agents
+- 35 API Routes
+- 25 Dashboard Pages
+- 20 Completed Sprints
+
+Core Capabilities:
+1. AI Test Generation (TestWeaver, ScriptSmith, FlowPilot)
+2. Self-Healing Tests with automatic selector repair
+3. 3-Tier Duplicate Detection (Hash → Levenshtein → AI)
+4. HITL Approval Workflows with risk-based review
+5. Flaky Test Detection with quarantine management
+6. End-to-end Traceability (Requirement → Test → Bug)
+7. Quality Gates with configurable thresholds
+8. Multi-format Report Generation (PDF, Excel)
+9. Team-based RBAC with fine-grained permissions
+10. Real-time WebSocket updates
+
+Integrations: Jenkins CI/CD, Postman Import, Jira (via Requirements), Anthropic Claude
+
+Tech Stack: Express.js + TypeScript + PostgreSQL + Prisma + React + Vite`;
+
+      document.getElementById('promptOutput').textContent = prompt;
+    }
+
+    // Event Handlers
+    function switchView(view) {
+      currentView = view;
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-view="${view}"]`).classList.add('active');
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.getElementById(view).classList.add('active');
+      updatePrompt();
+    }
+
+    function setupEventListeners() {
+      // Nav tabs
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchView(tab.dataset.view));
+      });
+
+      // Service filter
+      document.querySelectorAll('#serviceFilter .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#serviceFilter .filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentServiceFilter = btn.dataset.category;
+          renderServices();
+        });
+      });
+
+      // DB filter
+      document.querySelectorAll('#dbFilter .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#dbFilter .filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentDbFilter = btn.dataset.category;
+          renderDatabase();
+        });
+      });
+
+      // Copy button
+      document.getElementById('copyBtn').addEventListener('click', () => {
+        const text = document.getElementById('promptOutput').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById('copyBtn');
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      });
+    }
+
+    // Initialize
+    function init() {
+      renderFeatures();
+      renderServices();
+      renderDatabase();
+      renderTechStack();
+      renderTimeline();
+      renderIntegrations();
+      updatePrompt();
+      setupEventListeners();
+    }
+
+    init();
+  </script>
+</body>
+</html>
