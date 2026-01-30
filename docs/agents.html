@@ -607,7 +607,7 @@
         <div class="agent-item theme-green" data-agent="scriptsmith" id="scriptsmith">
           <div class="agent-icon">⚒️</div>
           <div class="agent-info">
-            <h3>ScriptSmith<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
+            <h3>ScriptSmith Pro<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
             <p>Script generation</p>
           </div>
         </div>
@@ -749,7 +749,7 @@
       },
 
       scriptsmith: {
-        name: 'ScriptSmith',
+        name: 'ScriptSmith Pro',
         icon: '⚒️',
         theme: 'theme-green',
         description: 'Generates and edits Playwright automation scripts from test cases or descriptions',
@@ -1337,6 +1337,17 @@
       `;
     }
 
+    // Select agent by name
+    function selectAgent(agentName) {
+      const item = document.querySelector(`.agent-item[data-agent="${agentName}"]`);
+      if (item) {
+        document.querySelectorAll('.agent-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        renderAgent(agentName);
+        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
     // Event listeners
     document.querySelectorAll('.agent-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -1346,8 +1357,24 @@
       });
     });
 
-    // Initial render
-    renderAgent('testweaver');
+    // Handle URL hash for deep linking
+    function handleHash() {
+      const hash = window.location.hash.slice(1); // Remove #
+      if (hash && agents[hash]) {
+        selectAgent(hash);
+      }
+    }
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHash);
+
+    // Initial render - check hash first, default to testweaver
+    const initialHash = window.location.hash.slice(1);
+    if (initialHash && agents[initialHash]) {
+      selectAgent(initialHash);
+    } else {
+      renderAgent('testweaver');
+    }
   </script>
 </body>
 </html>
