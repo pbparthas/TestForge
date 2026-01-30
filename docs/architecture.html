@@ -907,6 +907,359 @@
     .text-pink { color: var(--accent-pink); }
     .text-cyan { color: var(--accent-cyan); }
     .text-yellow { color: var(--accent-yellow); }
+
+    /* AI & Costs Styles */
+    .aicosts-container {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .cost-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .cost-section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .cost-icon {
+      font-size: 24px;
+    }
+
+    .cost-philosophy {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .philosophy-card {
+      display: flex;
+      gap: 16px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .philosophy-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      color: white;
+    }
+
+    .philosophy-text strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+
+    .philosophy-text p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .agents-cost-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .agent-cost-card {
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .agent-cost-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .agent-cost-icon {
+      font-size: 20px;
+    }
+
+    .agent-cost-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .agent-cost-body {
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+    }
+
+    .agent-cost-purpose {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .agent-cost-model {
+      font-size: 11px;
+      color: var(--accent-purple);
+      background: rgba(168, 85, 247, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .cascade-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .cascade-intro {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      background: var(--bg-tertiary);
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent-blue);
+    }
+
+    .cascade-flow {
+      display: flex;
+      align-items: stretch;
+      gap: 16px;
+      overflow-x: auto;
+      padding: 8px 0;
+    }
+
+    .cascade-tier {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .cascade-tier-header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+    }
+
+    .cascade-tier-number {
+      width: 28px;
+      height: 28px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .cascade-tier-name {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .cascade-tier-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cascade-tier-cost {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cost-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .cost-value {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .cost-value.free {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--accent-green);
+    }
+
+    .cost-value.cheap {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--accent-blue);
+    }
+
+    .cost-value.expensive {
+      background: rgba(168, 85, 247, 0.2);
+      color: var(--accent-purple);
+    }
+
+    .cascade-tier-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .cascade-tier-catches {
+      font-size: 11px;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+
+    .cascade-tier-stat {
+      font-size: 11px;
+      color: var(--accent-green);
+      font-weight: 500;
+    }
+
+    .cascade-arrow {
+      display: flex;
+      align-items: center;
+      font-size: 24px;
+      color: var(--text-secondary);
+    }
+
+    .cascade-result {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.15));
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .cascade-result-icon {
+      font-size: 32px;
+    }
+
+    .cascade-result-text {
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .cascade-result-text strong {
+      color: var(--accent-green);
+    }
+
+    .tracking-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .tracking-card {
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .tracking-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .tracking-icon {
+      font-size: 18px;
+    }
+
+    .tracking-body {
+      padding: 16px;
+    }
+
+    .tracking-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tracking-list li {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .tracking-list strong {
+      color: var(--text-primary);
+    }
+
+    .cost-examples {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .cost-example {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .cost-example-action {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .cost-example-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-green);
+      background: rgba(34, 197, 94, 0.1);
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .cost-note {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 16px;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -960,6 +1313,7 @@
       <button class="nav-tab active" data-view="architecture">Architecture</button>
       <button class="nav-tab" data-view="features">Features</button>
       <button class="nav-tab" data-view="dataflow">Data Flow</button>
+      <button class="nav-tab" data-view="aicosts">AI & Costs</button>
       <button class="nav-tab" data-view="services">Services</button>
       <button class="nav-tab" data-view="database">Database</button>
       <button class="nav-tab" data-view="techstack">Tech Stack</button>
@@ -1022,7 +1376,7 @@
             <div class="arch-box border-blue">
               <div class="arch-box-title">
                 <span class="arch-box-icon bg-blue">&#128196;</span>
-                25 Pages
+                24 Pages
               </div>
               <div class="arch-box-items">
                 <span class="arch-item">Dashboard</span>
@@ -1031,7 +1385,7 @@
                 <span class="arch-item">AI Agents</span>
                 <span class="arch-item">Reports</span>
                 <span class="arch-item">Coverage</span>
-                <span class="arch-item">+19 more</span>
+                <span class="arch-item">+18 more</span>
               </div>
             </div>
             <div class="arch-box border-blue">
@@ -1525,6 +1879,337 @@
               <div class="flow-node-label">Recommendations</div>
               <div class="flow-node-sublabel">What to Add</div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI & Costs View -->
+    <div id="aicosts" class="view-container">
+      <div class="aicosts-container">
+        <!-- Cost Philosophy -->
+        <div class="cost-section">
+          <div class="cost-section-title">
+            <span class="cost-icon">&#128176;</span>
+            Cost Philosophy
+          </div>
+          <div class="cost-philosophy">
+            <div class="philosophy-card">
+              <div class="philosophy-icon" style="background: var(--accent-green);">&#10003;</div>
+              <div class="philosophy-text">
+                <strong>AI is Expensive</strong>
+                <p>Every Claude API call costs real money. TestForge is designed to minimize unnecessary AI calls while maximizing value when AI is actually needed.</p>
+              </div>
+            </div>
+            <div class="philosophy-card">
+              <div class="philosophy-icon" style="background: var(--accent-blue);">&#128200;</div>
+              <div class="philosophy-text">
+                <strong>Track Everything</strong>
+                <p>Every AI call is logged with token counts, costs (USD/INR), agent type, and model used. Full visibility into where money goes.</p>
+              </div>
+            </div>
+            <div class="philosophy-card">
+              <div class="philosophy-icon" style="background: var(--accent-purple);">&#127919;</div>
+              <div class="philosophy-text">
+                <strong>Use AI Only When Necessary</strong>
+                <p>Pre-checks using free/cheap methods filter out cases where AI isn't needed. AI is reserved for tasks that truly require intelligence.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Agents -->
+        <div class="cost-section">
+          <div class="cost-section-title">
+            <span class="cost-icon">&#129302;</span>
+            Where AI is Used (12 Agents)
+          </div>
+          <div class="agents-cost-grid">
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3));">
+                <span class="agent-cost-icon">&#129302;</span>
+                <span class="agent-cost-name">TestWeaver</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Generate/evolve test cases from natural language, requirements, or Postman collections</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(6, 182, 212, 0.3));">
+                <span class="agent-cost-icon">&#128221;</span>
+                <span class="agent-cost-name">ScriptSmith Pro</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Generate Playwright automation scripts from test cases</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(6, 182, 212, 0.3));">
+                <span class="agent-cost-icon">&#128640;</span>
+                <span class="agent-cost-name">FlowPilot</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Generate API tests from Postman collections or OpenAPI specs</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(249, 115, 22, 0.3));">
+                <span class="agent-cost-icon">&#128737;</span>
+                <span class="agent-cost-name">CodeGuardian</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Generate unit tests for code files with coverage analysis</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(234, 179, 8, 0.3));">
+                <span class="agent-cost-icon">&#128657;</span>
+                <span class="agent-cost-name">Self-Healing</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Diagnose failures and auto-fix broken selectors</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.3));">
+                <span class="agent-cost-icon">&#128270;</span>
+                <span class="agent-cost-name">Framework Agent</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Analyze code structure and review implementations</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3));">
+                <span class="agent-cost-icon">&#127912;</span>
+                <span class="agent-cost-name">Visual Analysis</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Visual regression testing with screenshot comparison</div>
+                <div class="agent-cost-model">Claude Sonnet (Vision)</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3));">
+                <span class="agent-cost-icon">&#128250;</span>
+                <span class="agent-cost-name">Recorder Agent</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Convert browser recordings into automation scripts</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(168, 85, 247, 0.3));">
+                <span class="agent-cost-icon">&#128027;</span>
+                <span class="agent-cost-name">Bug Analyzer</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Analyze failure patterns and cluster related bugs</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(59, 130, 246, 0.3));">
+                <span class="agent-cost-icon">&#127775;</span>
+                <span class="agent-cost-name">Flaky Detector</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Identify and quarantine flaky tests with root cause analysis</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));">
+                <span class="agent-cost-icon">&#128270;</span>
+                <span class="agent-cost-name">Duplicate Detector</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Semantic similarity check for test case deduplication (only called after hash + Levenshtein)</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+            <div class="agent-cost-card">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(234, 179, 8, 0.3));">
+                <span class="agent-cost-icon">&#128172;</span>
+                <span class="agent-cost-name">QP Assistant</span>
+              </div>
+              <div class="agent-cost-body">
+                <div class="agent-cost-purpose">Natural language interface for platform queries</div>
+                <div class="agent-cost-model">Claude Sonnet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost Optimization -->
+        <div class="cost-section">
+          <div class="cost-section-title">
+            <span class="cost-icon">&#128184;</span>
+            Cost Optimization: 3-Tier Duplicate Detection
+          </div>
+          <div class="cascade-diagram">
+            <div class="cascade-intro">
+              When checking if a test case already exists, TestForge uses a 3-tier cascade that progressively filters candidates using cheap methods before resorting to expensive AI.
+            </div>
+            <div class="cascade-flow">
+              <div class="cascade-tier">
+                <div class="cascade-tier-header" style="background: linear-gradient(135deg, var(--accent-green), #059669);">
+                  <span class="cascade-tier-number">1</span>
+                  <span class="cascade-tier-name">Hash Check</span>
+                </div>
+                <div class="cascade-tier-body">
+                  <div class="cascade-tier-cost">
+                    <span class="cost-label">Cost:</span>
+                    <span class="cost-value free">FREE</span>
+                  </div>
+                  <div class="cascade-tier-desc">Exact string match using MD5 hash of normalized title + description</div>
+                  <div class="cascade-tier-catches">Catches: Exact duplicates, copy-paste</div>
+                  <div class="cascade-tier-stat">~60% of duplicates caught here</div>
+                </div>
+              </div>
+              <div class="cascade-arrow">&#8594;</div>
+              <div class="cascade-tier">
+                <div class="cascade-tier-header" style="background: linear-gradient(135deg, var(--accent-blue), #2563eb);">
+                  <span class="cascade-tier-number">2</span>
+                  <span class="cascade-tier-name">Levenshtein</span>
+                </div>
+                <div class="cascade-tier-body">
+                  <div class="cascade-tier-cost">
+                    <span class="cost-label">Cost:</span>
+                    <span class="cost-value cheap">~$0.0001</span>
+                  </div>
+                  <div class="cascade-tier-desc">Edit distance algorithm for fuzzy matching (threshold: 85%)</div>
+                  <div class="cascade-tier-catches">Catches: Typos, minor rewording, whitespace</div>
+                  <div class="cascade-tier-stat">~30% of remaining duplicates</div>
+                </div>
+              </div>
+              <div class="cascade-arrow">&#8594;</div>
+              <div class="cascade-tier">
+                <div class="cascade-tier-header" style="background: linear-gradient(135deg, var(--accent-purple), #7c3aed);">
+                  <span class="cascade-tier-number">3</span>
+                  <span class="cascade-tier-name">AI Semantic</span>
+                </div>
+                <div class="cascade-tier-body">
+                  <div class="cascade-tier-cost">
+                    <span class="cost-label">Cost:</span>
+                    <span class="cost-value expensive">~$0.01-0.05</span>
+                  </div>
+                  <div class="cascade-tier-desc">Claude Sonnet analyzes semantic meaning for deep understanding</div>
+                  <div class="cascade-tier-catches">Catches: Rephrased tests, different wording same intent</div>
+                  <div class="cascade-tier-stat">Only ~10% of cases reach AI</div>
+                </div>
+              </div>
+            </div>
+            <div class="cascade-result">
+              <div class="cascade-result-icon">&#128200;</div>
+              <div class="cascade-result-text">
+                <strong>Result: ~90% cost reduction</strong> compared to sending every test case to AI for deduplication
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Usage Tracking -->
+        <div class="cost-section">
+          <div class="cost-section-title">
+            <span class="cost-icon">&#128202;</span>
+            AI Usage Tracking
+          </div>
+          <div class="tracking-features">
+            <div class="tracking-card">
+              <div class="tracking-header">
+                <span class="tracking-icon">&#128203;</span>
+                What We Track
+              </div>
+              <div class="tracking-body">
+                <ul class="tracking-list">
+                  <li><strong>Input Tokens:</strong> Tokens sent to AI</li>
+                  <li><strong>Output Tokens:</strong> Tokens received from AI</li>
+                  <li><strong>Cached Tokens:</strong> Prompt caching savings</li>
+                  <li><strong>Cost USD:</strong> Calculated from Anthropic pricing</li>
+                  <li><strong>Cost INR:</strong> Local currency conversion</li>
+                  <li><strong>Agent Type:</strong> Which agent made the call</li>
+                  <li><strong>Model:</strong> Sonnet, Haiku, etc.</li>
+                  <li><strong>Project:</strong> Usage per project</li>
+                  <li><strong>User:</strong> Usage per user</li>
+                </ul>
+              </div>
+            </div>
+            <div class="tracking-card">
+              <div class="tracking-header">
+                <span class="tracking-icon">&#128200;</span>
+                Available Reports
+              </div>
+              <div class="tracking-body">
+                <ul class="tracking-list">
+                  <li><strong>By Agent:</strong> Which agents cost most</li>
+                  <li><strong>By Model:</strong> Sonnet vs Haiku breakdown</li>
+                  <li><strong>By Project:</strong> Project-level budgets</li>
+                  <li><strong>By Date Range:</strong> Daily/weekly/monthly trends</li>
+                  <li><strong>Top Users:</strong> Who's using AI most</li>
+                  <li><strong>Cost Projections:</strong> Estimated monthly spend</li>
+                </ul>
+              </div>
+            </div>
+            <div class="tracking-card">
+              <div class="tracking-header">
+                <span class="tracking-icon">&#128176;</span>
+                Budget Controls
+              </div>
+              <div class="tracking-body">
+                <ul class="tracking-list">
+                  <li><strong>Project Limits:</strong> Max spend per project</li>
+                  <li><strong>User Limits:</strong> Max spend per user</li>
+                  <li><strong>Alerts:</strong> Warnings at 80% of budget</li>
+                  <li><strong>Auto-disable:</strong> Stop AI at 100%</li>
+                  <li><strong>Admin Override:</strong> Bypass for critical tasks</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost Examples -->
+        <div class="cost-section">
+          <div class="cost-section-title">
+            <span class="cost-icon">&#128178;</span>
+            Typical Costs (Approximate)
+          </div>
+          <div class="cost-examples">
+            <div class="cost-example">
+              <div class="cost-example-action">Generate 10 test cases</div>
+              <div class="cost-example-value">~$0.05-0.15</div>
+            </div>
+            <div class="cost-example">
+              <div class="cost-example-action">Generate 1 Playwright script</div>
+              <div class="cost-example-value">~$0.02-0.08</div>
+            </div>
+            <div class="cost-example">
+              <div class="cost-example-action">Self-heal a broken test</div>
+              <div class="cost-example-value">~$0.01-0.03</div>
+            </div>
+            <div class="cost-example">
+              <div class="cost-example-action">Analyze 100 test cases for duplicates (with cascade)</div>
+              <div class="cost-example-value">~$0.10-0.50</div>
+            </div>
+            <div class="cost-example">
+              <div class="cost-example-action">Same without cascade (pure AI)</div>
+              <div class="cost-example-value">~$1.00-5.00</div>
+            </div>
+            <div class="cost-example">
+              <div class="cost-example-action">Visual regression on 1 screenshot</div>
+              <div class="cost-example-value">~$0.05-0.10</div>
+            </div>
+          </div>
+          <div class="cost-note">
+            * Costs vary based on input size, complexity, and model used. Haiku is ~10x cheaper than Sonnet.
           </div>
         </div>
       </div>
