@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestForge AI Agents - Architecture & Lifecycle</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    .top-nav {
+      background: #0f172a;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .top-nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #e2e8f0;
+    }
+
+    .top-nav-brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .top-nav-brand span {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .top-nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .top-nav-link {
+      padding: 8px 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .top-nav-link:hover {
+      border-color: #3b82f6;
+      color: #e2e8f0;
+    }
+
+    .top-nav-link.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 24px 32px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .logo-text h1 {
+      font-size: 24px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-text p {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 16px;
+    }
+
+    .stat-box {
+      background: #1e293b;
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      text-align: center;
+    }
+
+    .stat-box span {
+      font-size: 28px;
+      font-weight: bold;
+      color: #3b82f6;
+    }
+
+    .stat-box.duplicate span {
+      color: #10b981;
+    }
+
+    .stat-box p {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .container {
+      display: flex;
+      min-height: calc(100vh - 100px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #111827;
+      border-right: 1px solid #1f2937;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6b7280;
+      margin-bottom: 16px;
+      padding-left: 8px;
+    }
+
+    .agent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .agent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .agent-item:hover {
+      background: #1f2937;
+    }
+
+    .agent-item.active {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .agent-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .agent-info h3 {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .agent-info p {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .agent-info .has-duplicate {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .agent-header-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+
+    .agent-header-info h2 {
+      font-size: 28px;
+      margin-bottom: 4px;
+    }
+
+    .agent-header-info p {
+      font-size: 16px;
+      color: #9ca3af;
+    }
+
+    .agent-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    .badge-orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+    .badge-emerald { background: rgba(16, 185, 129, 0.25); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    /* Lifecycle Diagram */
+    .lifecycle-section {
+      background: #111827;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lifecycle-diagram {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 20px 0;
+      overflow-x: auto;
+    }
+
+    .lifecycle-step {
+      flex: 1;
+      min-width: 160px;
+      max-width: 200px;
+    }
+
+    .step-box {
+      background: #1f2937;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid #374151;
+      transition: all 0.3s;
+      height: 100%;
+    }
+
+    .step-box:hover {
+      border-color: #3b82f6;
+      transform: translateY(-2px);
+    }
+
+    .step-box.duplicate-step {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .step-box.duplicate-step:hover {
+      border-color: #10b981;
+    }
+
+    .step-icon {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 10px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .step-items {
+      font-size: 11px;
+      color: #9ca3af;
+      text-align: left;
+      line-height: 1.5;
+    }
+
+    .step-items li {
+      margin-bottom: 3px;
+      list-style: none;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .step-items li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: #4b5563;
+    }
+
+    .step-items li.highlight {
+      color: #34d399;
+    }
+
+    .step-items li.highlight::before {
+      color: #34d399;
+    }
+
+    .arrow {
+      color: #4b5563;
+      font-size: 20px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Duplicate Detection Info Box */
+    .duplicate-info-box {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .duplicate-info-box h3 {
+      color: #34d399;
+      font-size: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .duplicate-tiers {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tier-card {
+      background: #1f2937;
+      border-radius: 8px;
+      padding: 12px 16px;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .tier-card h4 {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .tier-card p {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .tier-card .tier-threshold {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    /* Methods Section */
+    .methods-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .method-card {
+      background: #1f2937;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #374151;
+      transition: all 0.3s;
+    }
+
+    .method-card:hover {
+      border-color: #3b82f6;
+    }
+
+    .method-card.has-duplicate {
+      border-left: 3px solid #10b981;
+    }
+
+    .method-name {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 14px;
+      color: #60a5fa;
+      margin-bottom: 8px;
+    }
+
+    .method-desc {
+      font-size: 13px;
+      color: #9ca3af;
+      line-height: 1.5;
+    }
+
+    .method-io {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #374151;
+      font-size: 11px;
+    }
+
+    .io-label {
+      color: #6b7280;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .io-value {
+      color: #d1d5db;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .method-duplicate-badge {
+      display: inline-block;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+    }
+
+    /* Features List */
+    .features-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .feature-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #1f2937;
+      border-radius: 8px;
+      font-size: 13px;
+      border: 1px solid #374151;
+    }
+
+    .feature-tag.duplicate-feature {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .feature-tag-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Color themes for agents */
+    .theme-blue { --accent: #3b82f6; --accent-light: rgba(59, 130, 246, 0.15); }
+    .theme-green { --accent: #10b981; --accent-light: rgba(16, 185, 129, 0.15); }
+    .theme-purple { --accent: #8b5cf6; --accent-light: rgba(139, 92, 246, 0.15); }
+    .theme-orange { --accent: #f59e0b; --accent-light: rgba(245, 158, 11, 0.15); }
+    .theme-pink { --accent: #ec4899; --accent-light: rgba(236, 72, 153, 0.15); }
+    .theme-cyan { --accent: #06b6d4; --accent-light: rgba(6, 182, 212, 0.15); }
+    .theme-red { --accent: #ef4444; --accent-light: rgba(239, 68, 68, 0.15); }
+    .theme-indigo { --accent: #6366f1; --accent-light: rgba(99, 102, 241, 0.15); }
+    .theme-teal { --accent: #14b8a6; --accent-light: rgba(20, 184, 166, 0.15); }
+    .theme-amber { --accent: #f97316; --accent-light: rgba(249, 115, 22, 0.15); }
+    .theme-lime { --accent: #84cc16; --accent-light: rgba(132, 204, 22, 0.15); }
+    .theme-rose { --accent: #f43f5e; --accent-light: rgba(244, 63, 94, 0.15); }
+
+    .agent-header-icon, .agent-icon, .step-icon {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .step-box.duplicate-step .step-icon {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .method-card:hover { border-color: var(--accent); }
+    .step-box:hover { border-color: var(--accent); }
+    .feature-tag-icon { background: var(--accent); }
+    .feature-tag.duplicate-feature .feature-tag-icon { background: #10b981; }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html" class="top-nav-brand">
+      <div class="top-nav-brand-icon">TF</div>
+      <span>TestForge</span>
+    </a>
+    <div class="top-nav-links">
+      <a href="index.html" class="top-nav-link">Home</a>
+      <a href="architecture.html" class="top-nav-link">Architecture</a>
+      <a href="agents.html" class="top-nav-link active">AI Agents</a>
+    </div>
+  </nav>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">TF</div>
+      <div class="logo-text">
+        <h1>TestForge AI Agents</h1>
+        <p>Complete Architecture & Lifecycle Reference</p>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-box duplicate">
+        <span>6</span>
+        <p>With Duplicate Check</p>
+      </div>
+      <div class="stat-box">
+        <span>12</span>
+        <p>Total AI Agents</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="sidebar">
+      <div class="sidebar-title">Test Generation</div>
+      <div class="agent-list">
+        <div class="agent-item active theme-blue" data-agent="testweaver">
+          <div class="agent-icon">🧵</div>
+          <div class="agent-info">
+            <h3>TestWeaver<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
+            <p>Test case generation</p>
+          </div>
+        </div>
+        <div class="agent-item theme-green" data-agent="scriptsmith">
+          <div class="agent-icon">⚒️</div>
+          <div class="agent-info">
+            <h3>ScriptSmith<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
+            <p>Script generation</p>
+          </div>
+        </div>
+        <div class="agent-item theme-purple" data-agent="flowpilot">
+          <div class="agent-icon">🔄</div>
+          <div class="agent-info">
+            <h3>FlowPilot<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
+            <p>API test generation</p>
+          </div>
+        </div>
+        <div class="agent-item theme-orange" data-agent="codeguardian">
+          <div class="agent-icon">🛡️</div>
+          <div class="agent-info">
+            <h3>CodeGuardian<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
+            <p>Unit test generation</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-title" style="margin-top: 24px;">Analysis & Healing</div>
+      <div class="agent-list">
+        <div class="agent-item theme-pink" data-agent="selfhealing">
+          <div class="agent-icon">🔧</div>
+          <div class="agent-info">
+            <h3>Self-Healing</h3>
+            <p>Failure diagnosis & fix</p>
+          </div>
+        </div>
+        <div class="agent-item theme-cyan" data-agent="framework">
+          <div class="agent-icon">🏗️</div>
+          <div class="agent-info">
+            <h3>Framework Agent</h3>
+            <p>Code analysis & review</p>
+          </div>
+        </div>
+        <div class="agent-item theme-red" data-agent="visualanalysis">
+          <div class="agent-icon">👁️</div>
+          <div class="agent-info">
+            <h3>Visual Analysis<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
+            <p>Visual regression testing</p>
+          </div>
+        </div>
+        <div class="agent-item theme-indigo" data-agent="recorder">
+          <div class="agent-icon">🎬</div>
+          <div class="agent-info">
+            <h3>Recorder<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
+            <p>Recording → Script</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-title" style="margin-top: 24px;">Intelligence & Insights</div>
+      <div class="agent-list">
+        <div class="agent-item theme-teal" data-agent="bugpattern">
+          <div class="agent-icon">🐛</div>
+          <div class="agent-info">
+            <h3>Bug Pattern</h3>
+            <p>Pattern analysis</p>
+          </div>
+        </div>
+        <div class="agent-item theme-amber" data-agent="codeanalysis">
+          <div class="agent-icon">📊</div>
+          <div class="agent-info">
+            <h3>Code Analysis</h3>
+            <p>Complexity & debt</p>
+          </div>
+        </div>
+        <div class="agent-item theme-lime" data-agent="testevolution">
+          <div class="agent-icon">📈</div>
+          <div class="agent-info">
+            <h3>Test Evolution</h3>
+            <p>Health & coverage</p>
+          </div>
+        </div>
+        <div class="agent-item theme-rose" data-agent="flakyanalysis">
+          <div class="agent-icon">🎯</div>
+          <div class="agent-info">
+            <h3>Flaky Analysis</h3>
+            <p>Root cause analysis</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+      <!-- Content will be injected by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    const agents = {
+      testweaver: {
+        name: 'TestWeaver',
+        icon: '🧵',
+        theme: 'theme-blue',
+        description: 'Generates and evolves comprehensive test cases from specifications using AI',
+        hasDuplicateCheck: true,
+        duplicateCheckType: 'testCase',
+        badges: [
+          { text: 'Duplicate Check', class: 'badge-emerald' },
+          { text: 'Claude Vision', class: 'badge-blue' },
+          { text: 'Multi-turn', class: 'badge-green' },
+          { text: 'Batch Processing', class: 'badge-purple' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Specification text', 'Screenshots', 'File uploads (CSV/JSON)', 'Conversation history', 'projectId (for dedup)', 'skipDuplicateCheck option']
+          },
+          duplicate: {
+            title: 'Duplicate Check',
+            icon: '🔍',
+            isDuplicateStep: true,
+            items: ['Hash check (exact)', 'Levenshtein (85%)', 'AI semantic (80%)', 'Return warning if found', 'Continue or skip']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Parse requirements', 'Identify scenarios', 'Generate steps', 'Assign priorities', 'Map to products/modules']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['GeneratedTestCase[]', 'duplicateWarning?', 'AI Mapping', 'Summary stats', 'Tags & categories']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Input/output tokens', 'Cost (USD/INR)', 'Cache utilization', 'Duration metrics']
+          }
+        },
+        methods: [
+          { name: 'generate()', desc: 'Generate test cases from spec, screenshot, file, or conversation. Checks for duplicates first.', input: 'GenerateInput + projectId', output: 'GenerateOutput + duplicateWarning?', hasDuplicate: true },
+          { name: 'evolve()', desc: 'Update existing test cases when specifications change. Checks for duplicates.', input: 'EvolveInput + projectId', output: 'EvolveOutput + duplicateWarning?', hasDuplicate: true },
+          { name: 'batchGenerate()', desc: 'Generate tests from multiple specifications in batch', input: 'BatchGenerateInput', output: 'BatchGenerateOutput' }
+        ],
+        features: ['Duplicate detection', '6 input methods', 'Screenshot analysis', 'File upload (CSV/JSON/MD)', 'Multi-turn conversations', 'AI-powered mapping', 'Batch processing']
+      },
+
+      scriptsmith: {
+        name: 'ScriptSmith',
+        icon: '⚒️',
+        theme: 'theme-green',
+        description: 'Generates and edits Playwright/Cypress automation scripts from test cases or descriptions',
+        hasDuplicateCheck: true,
+        duplicateCheckType: 'script',
+        badges: [
+          { text: 'Duplicate Check', class: 'badge-emerald' },
+          { text: 'Playwright', class: 'badge-blue' },
+          { text: 'Cypress', class: 'badge-green' },
+          { text: 'Vision', class: 'badge-purple' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Test case with steps', 'Browser recording', 'Natural language desc', 'UI screenshot', 'projectId (for dedup)']
+          },
+          duplicate: {
+            title: 'Duplicate Check',
+            icon: '🔍',
+            isDuplicateStep: true,
+            items: ['Check script content', 'Hash → Levenshtein → AI', '3-tier cascade', 'Warn if similar exists', 'Continue generation']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Analyze test flow', 'Generate selectors', 'Add waits/assertions', 'Apply code style', 'Device targeting']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Generated script', 'duplicateWarning?', 'Page Objects', 'Utility functions', 'Dependencies list']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token consumption', 'Cost tracking', 'Model selection', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'generate()', desc: 'Generate script from test case, recording, or screenshot. Checks for duplicates.', input: 'GenerateScriptInput + projectId', output: 'GeneratedScript + duplicateWarning?', hasDuplicate: true },
+          { name: 'edit()', desc: 'Modify existing script based on instructions. Checks edited code for duplicates.', input: 'EditScriptInput + projectId', output: 'EditedScript + duplicateWarning?', hasDuplicate: true }
+        ],
+        features: ['Duplicate detection', '4 input methods', 'Screenshot-to-code', 'Page Object generation', 'Wait strategies', 'Selector preferences', 'Device targeting']
+      },
+
+      flowpilot: {
+        name: 'FlowPilot',
+        icon: '🔄',
+        theme: 'theme-purple',
+        description: 'Generates comprehensive API tests from OpenAPI specs and chains API calls',
+        hasDuplicateCheck: true,
+        duplicateCheckType: 'testCase',
+        badges: [
+          { text: 'Duplicate Check', class: 'badge-emerald' },
+          { text: 'OpenAPI', class: 'badge-blue' },
+          { text: 'REST', class: 'badge-green' },
+          { text: 'Chaining', class: 'badge-orange' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['OpenAPI spec (JSON/YAML)', 'Endpoint definition', 'Request/response schemas', 'projectId (for dedup)']
+          },
+          duplicate: {
+            title: 'Duplicate Check',
+            icon: '🔍',
+            isDuplicateStep: true,
+            items: ['Extract API content', 'Check existing tests', '3-tier detection', 'Warn if duplicate', 'Proceed with caution']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Parse API spec', 'Generate test scenarios', 'Create data flow', 'Add auth tests', 'Chain dependencies']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['API test suite', 'duplicateWarning?', 'Setup code', 'Helper functions', 'Flow diagram']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token usage', 'Cost metrics', 'Processing time']
+          }
+        },
+        methods: [
+          { name: 'generateApiTests()', desc: 'Generate API tests from spec or endpoint. Checks for duplicates first.', input: 'GenerateApiTestsInput + projectId', output: 'GenerateApiTestsOutput + duplicateWarning?', hasDuplicate: true },
+          { name: 'chain()', desc: 'Create chained API test flows with data passing', input: 'ChainInput', output: 'ChainOutput' }
+        ],
+        features: ['Duplicate detection', 'OpenAPI parsing', 'Auth tests', 'Validation tests', 'Error cases', 'API chaining', 'Data flow']
+      },
+
+      codeguardian: {
+        name: 'CodeGuardian',
+        icon: '🛡️',
+        theme: 'theme-orange',
+        description: 'Generates unit tests and analyzes code coverage gaps',
+        hasDuplicateCheck: true,
+        duplicateCheckType: 'script',
+        badges: [
+          { text: 'Duplicate Check', class: 'badge-emerald' },
+          { text: 'Vitest', class: 'badge-blue' },
+          { text: 'Jest', class: 'badge-green' },
+          { text: 'Coverage', class: 'badge-purple' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Source code', 'Language (TS/JS)', 'Framework preference', 'Coverage report', 'projectId (for dedup)']
+          },
+          duplicate: {
+            title: 'Duplicate Check',
+            icon: '🔍',
+            isDuplicateStep: true,
+            items: ['Check source code hash', 'Compare with scripts', 'Detect similar tests', 'Warn if found', 'Allow override']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Analyze code paths', 'Identify testable units', 'Generate test cases', 'Create mocks', 'Find coverage gaps']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Generated tests', 'duplicateWarning?', 'Mock definitions', 'Setup code', 'Coverage estimate']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token consumption', 'Cost tracking', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'generateUnitTests()', desc: 'Generate unit tests for source code. Checks for duplicates first.', input: 'GenerateUnitTestsInput + projectId', output: 'GenerateUnitTestsOutput + duplicateWarning?', hasDuplicate: true },
+          { name: 'analyzeCoverage()', desc: 'Analyze coverage gaps and suggest tests', input: 'AnalyzeCoverageInput', output: 'AnalyzeCoverageOutput' }
+        ],
+        features: ['Duplicate detection', 'Unit test generation', 'Mock creation', 'Edge case coverage', 'Coverage analysis', 'Gap suggestions', 'Multi-framework']
+      },
+
+      selfhealing: {
+        name: 'Self-Healing Agent',
+        icon: '🔧',
+        theme: 'theme-pink',
+        description: 'Diagnoses test failures and suggests/applies fixes automatically',
+        hasDuplicateCheck: false,
+        badges: [
+          { text: 'Auto-Fix', class: 'badge-blue' },
+          { text: 'Diagnosis', class: 'badge-green' },
+          { text: 'Prevention', class: 'badge-orange' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Error message', 'Stack trace', 'Failed code', 'Failed selector', 'Page HTML', 'Screenshot']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Classify failure type', 'Identify root cause', 'Generate fix options', 'Score confidence', 'Check auto-applicability']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Diagnosis (type, confidence)', 'Root cause', 'Suggested fixes[]', 'Prevention tips']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token usage', 'Fix success rate', 'Cost metrics']
+          }
+        },
+        methods: [
+          { name: 'diagnose()', desc: 'Diagnose failure type and root cause', input: 'DiagnoseInput', output: 'DiagnoseOutput' },
+          { name: 'fix()', desc: 'Apply selected fix to broken test code', input: 'FixInput', output: 'FixOutput' }
+        ],
+        features: ['6 failure types', 'Confidence scoring', 'Auto-applicable fixes', 'Prevention tips', 'Line-by-line changes']
+      },
+
+      framework: {
+        name: 'Framework Agent',
+        icon: '🏗️',
+        theme: 'theme-cyan',
+        description: 'Analyzes code patterns, suggests Page Objects, and reviews automation scripts',
+        hasDuplicateCheck: false,
+        badges: [
+          { text: 'Page Objects', class: 'badge-blue' },
+          { text: 'Code Smells', class: 'badge-orange' },
+          { text: 'Best Practices', class: 'badge-green' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Automation code', 'Framework (Playwright/Cypress)', 'Test case (optional)', 'Analysis options']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Identify patterns', 'Detect code smells', 'Check best practices', 'Suggest refactors', 'Score quality']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Page Object suggestions', 'Code smells list', 'Best practice violations', 'Overall score (0-100)']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token consumption', 'Cost tracking', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'analyze()', desc: 'Analyze code for patterns, smells, and best practices', input: 'AnalyzeInput', output: 'AnalyzeOutput' },
+          { name: 'review()', desc: 'Review script for quality and test case alignment', input: 'ReviewInput', output: 'ReviewOutput' }
+        ],
+        features: ['Page Object extraction', 'Code smell detection', 'Best practice checks', 'Quality scoring', 'Flakiness detection']
+      },
+
+      visualanalysis: {
+        name: 'Visual Analysis Agent',
+        icon: '👁️',
+        theme: 'theme-red',
+        description: 'Uses Claude Vision for visual regression testing and UI element detection',
+        hasDuplicateCheck: true,
+        duplicateCheckType: 'testCase',
+        badges: [
+          { text: 'Duplicate Check', class: 'badge-emerald' },
+          { text: 'Claude Vision', class: 'badge-purple' },
+          { text: 'Regression', class: 'badge-blue' },
+          { text: 'Accessibility', class: 'badge-green' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Baseline screenshot', 'Current screenshot', 'Ignore regions', 'Feature name', 'projectId (for dedup)']
+          },
+          duplicate: {
+            title: 'Duplicate Check',
+            icon: '🔍',
+            isDuplicateStep: true,
+            items: ['Check feature + focus', 'Compare existing tests', '3-tier detection', 'Warn on visual tests', 'Allow generation']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Visual comparison', 'Detect differences', 'Classify severity', 'Analyze regression type', 'Detect UI elements']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Differences list', 'duplicateWarning?', 'Similarity score', 'Detected elements', 'Visual test cases']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Vision API tokens', 'Cost tracking', 'Processing time']
+          }
+        },
+        methods: [
+          { name: 'compare()', desc: 'Compare baseline vs current screenshots', input: 'CompareInput', output: 'CompareOutput' },
+          { name: 'analyzeRegression()', desc: 'Determine if difference is regression or intentional', input: 'RegressionAnalysisInput', output: 'RegressionAnalysisOutput' },
+          { name: 'detectElements()', desc: 'Detect and classify UI elements from screenshot', input: 'DetectElementsInput', output: 'DetectElementsOutput' },
+          { name: 'generateVisualTestCase()', desc: 'Generate visual test cases from screenshot. Checks duplicates.', input: 'GenerateVisualTestCaseInput + projectId', output: 'GenerateVisualTestCaseOutput + duplicateWarning?', hasDuplicate: true }
+        ],
+        features: ['Duplicate detection', 'Screenshot comparison', 'Difference detection', 'Regression classification', 'Element detection', 'Accessibility analysis', 'Visual test generation']
+      },
+
+      recorder: {
+        name: 'Recorder Agent',
+        icon: '🎬',
+        theme: 'theme-indigo',
+        description: 'Converts browser recordings to automation scripts with optimization and assertions',
+        hasDuplicateCheck: true,
+        duplicateCheckType: 'script',
+        badges: [
+          { text: 'Duplicate Check', class: 'badge-emerald' },
+          { text: 'Playwright', class: 'badge-blue' },
+          { text: 'Cypress', class: 'badge-green' },
+          { text: 'Selenium', class: 'badge-orange' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Recording (actions[])', 'Starting URL', 'Viewport/browser', 'Conversion options', 'projectId (for dedup)']
+          },
+          duplicate: {
+            title: 'Duplicate Check',
+            icon: '🔍',
+            isDuplicateStep: true,
+            items: ['Hash URL + actions', 'Check existing scripts', '3-tier detection', 'Warn if similar', 'Proceed with warning']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Parse recording', 'Optimize actions', 'Improve selectors', 'Add smart waits', 'Generate assertions']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Generated script', 'duplicateWarning?', 'Page Objects', 'Optimization report', 'Assertion list']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token usage', 'Cost tracking', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'convertToScript()', desc: 'Convert recording to automation script. Checks duplicates first.', input: 'Recording + ConversionOptions + projectId', output: 'GeneratedScript + duplicateWarning?', hasDuplicate: true },
+          { name: 'optimizeRecording()', desc: 'Remove redundant actions, improve selectors', input: 'Recording + OptimizationOptions', output: 'OptimizedRecording' },
+          { name: 'addAssertions()', desc: 'Add verification points to recording', input: 'Recording + AssertionHint[]', output: 'AssertionResult' },
+          { name: 'suggestSelectors()', desc: 'Suggest robust selectors for elements', input: 'ElementInfo', output: 'SelectorSuggestionResult' },
+          { name: 'processRecording()', desc: 'Full pipeline: optimize → assert → convert', input: 'ProcessOptions', output: 'ProcessedResult' }
+        ],
+        features: ['Duplicate detection', '3 frameworks', '5 languages', 'Action optimization', 'Selector improvement', 'Smart waits', 'Assertion generation']
+      },
+
+      bugpattern: {
+        name: 'Bug Pattern Agent',
+        icon: '🐛',
+        theme: 'theme-teal',
+        description: 'Analyzes patterns in bugs and test failures for QA insights',
+        hasDuplicateCheck: false,
+        badges: [
+          { text: 'Pattern Analysis', class: 'badge-blue' },
+          { text: 'Root Cause', class: 'badge-orange' },
+          { text: 'Prediction', class: 'badge-purple' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Bug data[]', 'Test failures', 'Code changes', 'Time range', 'Component filter']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Identify patterns', 'Correlate factors', 'Find root causes', 'Predict bug-prone areas', 'Cluster similar bugs']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Pattern list', 'Root cause analysis', 'Risk predictions', 'Bug clusters', 'Reports']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token consumption', 'Cost tracking', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'analyzePatterns()', desc: 'Identify recurring patterns in bugs', input: 'BugData[]', output: 'PatternAnalysisOutput' },
+          { name: 'findRootCause()', desc: 'Find root cause of test failure', input: 'TestFailure + CodeChange[]', output: 'RootCauseOutput' },
+          { name: 'predictBugProne()', desc: 'Predict bug-prone areas from code changes', input: 'CodeChange[] + BugData[]', output: 'BugPredictionOutput' },
+          { name: 'generateReport()', desc: 'Generate comprehensive bug analysis report', input: 'BugData[]', output: 'BugReportOutput' },
+          { name: 'clusterBugs()', desc: 'Cluster similar bugs for efficient triage', input: 'BugData[]', output: 'BugClusterOutput' }
+        ],
+        features: ['Pattern recognition', 'Root cause analysis', 'Bug prediction', 'Clustering', 'Trend analysis', 'Report generation']
+      },
+
+      codeanalysis: {
+        name: 'Code Analysis Agent',
+        icon: '📊',
+        theme: 'theme-amber',
+        description: 'Analyzes code complexity, architecture, best practices, and technical debt',
+        hasDuplicateCheck: false,
+        badges: [
+          { text: 'Complexity', class: 'badge-blue' },
+          { text: 'Architecture', class: 'badge-green' },
+          { text: 'Tech Debt', class: 'badge-orange' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Source files', 'Project root', 'Thresholds', 'Layer definitions', 'Historical data']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Calculate complexity', 'Map dependencies', 'Check SOLID/DRY', 'Score tech debt', 'Identify hotspots']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Complexity metrics', 'Architecture graph', 'Violations list', 'Debt score & plan']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token usage', 'Cost tracking', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'analyzeComplexity()', desc: 'Calculate cyclomatic, cognitive complexity', input: 'CodeInput', output: 'ComplexityAnalysisOutput' },
+          { name: 'analyzeArchitecture()', desc: 'Analyze dependencies, circular refs, layers', input: 'CodeInput', output: 'ArchitectureAnalysisOutput' },
+          { name: 'checkBestPractices()', desc: 'Check SOLID, DRY, code smells, security', input: 'CodeInput', output: 'BestPracticesOutput' },
+          { name: 'scoreTechnicalDebt()', desc: 'Quantify and prioritize technical debt', input: 'CodeInput', output: 'TechnicalDebtOutput' }
+        ],
+        features: ['Cyclomatic complexity', 'Cognitive complexity', 'Maintainability index', 'Circular dependencies', 'Layer violations', 'Tech debt scoring']
+      },
+
+      testevolution: {
+        name: 'Test Evolution Agent',
+        icon: '📈',
+        theme: 'theme-lime',
+        description: 'Analyzes test health, coverage evolution, stale tests, and risk scoring',
+        hasDuplicateCheck: false,
+        badges: [
+          { text: 'Health Score', class: 'badge-blue' },
+          { text: 'Coverage', class: 'badge-green' },
+          { text: 'Risk', class: 'badge-orange' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Test suite info', 'Execution history', 'Coverage data', 'Code changes', 'Thresholds']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Calculate health score', 'Track coverage trends', 'Identify stale tests', 'Score risks', 'Create maintenance plan']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Health report', 'Coverage evolution', 'Stale test list', 'Risk scores', 'Maintenance plan']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token consumption', 'Cost tracking', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'analyzeTestHealth()', desc: 'Evaluate test suite health and flakiness', input: 'TestSuiteInput + ExecutionHistory', output: 'TestHealthOutput' },
+          { name: 'trackCoverageEvolution()', desc: 'Track coverage trends over time', input: 'CoverageData', output: 'CoverageEvolutionOutput' },
+          { name: 'detectStaleTests()', desc: 'Find tests that need update or removal', input: 'TestSuiteInput + CodeChange[]', output: 'StaleTestsOutput' },
+          { name: 'scoreTestRisk()', desc: 'Score test risk and prioritize maintenance', input: 'TestSuiteInput + History + Coverage', output: 'TestRiskOutput' }
+        ],
+        features: ['Health scoring', 'Flakiness detection', 'Coverage tracking', 'Staleness detection', 'Risk scoring', 'Maintenance planning']
+      },
+
+      flakyanalysis: {
+        name: 'Flaky Analysis Agent',
+        icon: '🎯',
+        theme: 'theme-rose',
+        description: 'AI-powered root cause analysis for flaky tests with pattern detection',
+        hasDuplicateCheck: false,
+        badges: [
+          { text: 'Root Cause', class: 'badge-blue' },
+          { text: 'Patterns', class: 'badge-purple' },
+          { text: 'Fix Suggestions', class: 'badge-green' }
+        ],
+        lifecycle: {
+          input: {
+            title: 'Input',
+            icon: '📥',
+            items: ['Test name & code', 'Execution history', 'Flakiness score', 'Error messages', 'Pattern type']
+          },
+          process: {
+            title: 'AI Processing',
+            icon: '🤖',
+            items: ['Analyze patterns', 'Identify root cause', 'Score confidence', 'Generate fixes', 'Create report']
+          },
+          output: {
+            title: 'Output',
+            icon: '📤',
+            items: ['Root cause analysis', 'Pattern classification', 'Fix suggestions', 'Flaky report']
+          },
+          usage: {
+            title: 'Track Usage',
+            icon: '💰',
+            items: ['Token consumption', 'Cost tracking', 'Duration']
+          }
+        },
+        methods: [
+          { name: 'analyzeRootCause()', desc: 'Deep analysis of flaky test root cause', input: 'AnalyzeRootCauseInput', output: 'RootCauseAnalysis' },
+          { name: 'detectPatterns()', desc: 'Detect patterns across multiple flaky tests', input: 'DetectPatternsInput', output: 'PatternDetectionResult' },
+          { name: 'generateReport()', desc: 'Generate flaky test report for stakeholders', input: 'GenerateReportInput', output: 'FlakyReport' },
+          { name: 'suggestFix()', desc: 'Suggest specific code fixes', input: 'SuggestFixInput', output: 'FixSuggestion' },
+          { name: 'classifyPattern()', desc: 'Classify flakiness pattern from errors', input: 'testName + errorMessages', output: 'PatternClassification' }
+        ],
+        features: ['8 pattern types', 'Root cause analysis', 'Pattern detection', 'Fix suggestions', 'Report generation', 'Quarantine support']
+      }
+    };
+
+    function renderAgent(agentKey) {
+      const agent = agents[agentKey];
+      const mainContent = document.getElementById('mainContent');
+
+      const duplicateInfoHtml = agent.hasDuplicateCheck ? `
+        <div class="duplicate-info-box">
+          <h3>🔍 Duplicate Detection Enabled</h3>
+          <div class="duplicate-tiers">
+            <div class="tier-card">
+              <h4>Tier 1: Hash Check</h4>
+              <p>Exact match detection</p>
+              <div class="tier-threshold">Threshold: 100% (free)</div>
+            </div>
+            <div class="tier-card">
+              <h4>Tier 2: Levenshtein</h4>
+              <p>Near-match similarity</p>
+              <div class="tier-threshold">Threshold: 85% (cheap)</div>
+            </div>
+            <div class="tier-card">
+              <h4>Tier 3: AI Semantic</h4>
+              <p>Claude-powered analysis</p>
+              <div class="tier-threshold">Threshold: 80% (expensive)</div>
+            </div>
+            <div class="tier-card">
+              <h4>Check Type</h4>
+              <p>${agent.duplicateCheckType === 'testCase' ? 'Test Case' : 'Script'}</p>
+              <div class="tier-threshold">Uses: ${agent.duplicateCheckType === 'testCase' ? 'checkTestCaseDuplicates()' : 'checkScriptDuplicates()'}</div>
+            </div>
+          </div>
+        </div>
+      ` : '';
+
+      mainContent.innerHTML = `
+        <div class="${agent.theme}">
+          <div class="agent-header">
+            <div class="agent-header-icon">${agent.icon}</div>
+            <div class="agent-header-info">
+              <h2>${agent.name}</h2>
+              <p>${agent.description}</p>
+              <div class="agent-badges">
+                ${agent.badges.map(b => `<span class="badge ${b.class}">${b.text}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          ${duplicateInfoHtml}
+
+          <div class="lifecycle-section">
+            <div class="section-title">📊 Agent Lifecycle${agent.hasDuplicateCheck ? ' <span style="color: #34d399; font-size: 14px;">(with Duplicate Check)</span>' : ''}</div>
+            <div class="lifecycle-diagram">
+              ${Object.values(agent.lifecycle).map((step, i, arr) => `
+                <div class="lifecycle-step">
+                  <div class="step-box ${step.isDuplicateStep ? 'duplicate-step' : ''}">
+                    <div class="step-icon">${step.icon}</div>
+                    <div class="step-title">${step.title}</div>
+                    <ul class="step-items">
+                      ${step.items.map(item => `<li${item.includes('duplicate') || item.includes('projectId') ? ' class="highlight"' : ''}>${item}</li>`).join('')}
+                    </ul>
+                  </div>
+                </div>
+                ${i < arr.length - 1 ? '<div class="arrow">→</div>' : ''}
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="lifecycle-section">
+            <div class="section-title">🔧 Methods</div>
+            <div class="methods-grid">
+              ${agent.methods.map(m => `
+                <div class="method-card ${m.hasDuplicate ? 'has-duplicate' : ''}">
+                  <div class="method-name">${m.name}${m.hasDuplicate ? '<span class="method-duplicate-badge">Duplicate Check</span>' : ''}</div>
+                  <div class="method-desc">${m.desc}</div>
+                  <div class="method-io">
+                    <div><span class="io-label">Input: </span><span class="io-value">${m.input}</span></div>
+                    <div><span class="io-label">Output: </span><span class="io-value">${m.output}</span></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="lifecycle-section">
+            <div class="section-title">✨ Key Features</div>
+            <div class="features-list">
+              ${agent.features.map(f => `
+                <div class="feature-tag ${f.toLowerCase().includes('duplicate') ? 'duplicate-feature' : ''}">
+                  <div class="feature-tag-icon"></div>
+                  ${f}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Event listeners
+    document.querySelectorAll('.agent-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.agent-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        renderAgent(item.dataset.agent);
+      });
+    });
+
+    // Initial render
+    renderAgent('testweaver');
+  </script>
+</body>
+</html>
