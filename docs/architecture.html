@@ -1033,7 +1033,7 @@
               </div>
               <div class="arch-box-items">
                 <span class="arch-item">Jenkins CI/CD</span>
-                <span class="arch-item">Jira (via Requirements)</span>
+                <span class="arch-item">External IDs</span>
                 <span class="arch-item">Postman Collections</span>
                 <span class="arch-item">Git Repositories</span>
               </div>
@@ -1308,7 +1308,7 @@
             <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
               <div class="flow-node-icon">&#128221;</div>
               <div class="flow-node-label">Requirements</div>
-              <div class="flow-node-sublabel">From Jira/Manual</div>
+              <div class="flow-node-sublabel">Manual/Import</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
@@ -1603,7 +1603,7 @@
       { name: 'Project', category: 'core', description: 'Project CRUD, configuration, and settings', color: 'blue' },
       { name: 'TestCase', category: 'core', description: 'Test case management with bulk operations', color: 'blue' },
       { name: 'TestSuite', category: 'core', description: 'Test suite grouping and organization', color: 'blue' },
-      { name: 'Requirement', category: 'core', description: 'Requirements tracking with Jira integration', color: 'blue' },
+      { name: 'Requirement', category: 'core', description: 'Requirements tracking with external ID linking', color: 'blue' },
       { name: 'Environment', category: 'core', description: 'Environment configuration and variables', color: 'blue' },
       { name: 'Device', category: 'core', description: 'Device profiles for browsers and mobile', color: 'blue' },
       { name: 'Script', category: 'core', description: 'Script management with versioning', color: 'blue' },
@@ -1805,13 +1805,6 @@
         features: ['Import collections', 'Preview before import', 'Test case generation', 'Variable mapping']
       },
       {
-        name: 'Jira',
-        type: 'Requirements (via external_id)',
-        icon: '&#128203;',
-        color: 'blue',
-        features: ['Requirement linking', 'Traceability', 'Status sync', 'Coverage mapping']
-      },
-      {
         name: 'Anthropic Claude',
         type: 'AI Models',
         icon: '&#129302;',
@@ -1963,7 +1956,7 @@
         database: 'database schema with key entities (User, Project, TestCase, Execution, Artifact, FlakyTest)',
         techstack: 'tech stack (Express, React, PostgreSQL, Prisma, Claude AI, Vitest)',
         timeline: '20 sprints of development from Foundation to Teams & Import',
-        integrations: '4 external integrations (Jenkins, Postman, Jira, Anthropic Claude)'
+        integrations: '3 external integrations (Jenkins, Postman, Anthropic Claude)'
       };
 
       const prompt = `TestForge Architecture Overview
@@ -1991,7 +1984,7 @@ Core Capabilities:
 9. Team-based RBAC with fine-grained permissions
 10. Real-time WebSocket updates
 
-Integrations: Jenkins CI/CD, Postman Import, Jira (via Requirements), Anthropic Claude
+Integrations: Jenkins CI/CD, Postman Import, Anthropic Claude
 
 Tech Stack: Express.js + TypeScript + PostgreSQL + Prisma + React + Vite`;
 

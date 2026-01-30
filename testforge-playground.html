@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestForge Architecture Explorer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      grid-template-rows: 1fr auto;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: #1e293b;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #334155;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    /* Presets */
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .preset-btn {
+      padding: 8px 12px;
+      background: #334155;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: #475569;
+    }
+
+    .preset-btn.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    /* Checkboxes */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: #334155;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .checkbox-item:hover {
+      background: #3d4a5c;
+    }
+
+    .checkbox-item input {
+      display: none;
+    }
+
+    .checkbox-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #64748b;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .checkbox-item input:checked + .checkbox-box {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .checkbox-box::after {
+      content: '✓';
+      color: white;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .checkbox-item input:checked + .checkbox-box::after {
+      opacity: 1;
+    }
+
+    .color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .checkbox-label {
+      font-size: 13px;
+      flex: 1;
+    }
+
+    /* Comments */
+    .comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .comment-item {
+      background: #334155;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .comment-target {
+      font-weight: 600;
+      color: #3b82f6;
+    }
+
+    .comment-delete {
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .comment-delete:hover {
+      color: #ef4444;
+    }
+
+    .comment-text {
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .no-comments {
+      color: #64748b;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    /* Canvas */
+    .canvas-container {
+      position: relative;
+      background: #0f172a;
+      overflow: hidden;
+    }
+
+    .canvas-controls {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .canvas-btn {
+      width: 36px;
+      height: 36px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .canvas-btn:hover {
+      background: #334155;
+    }
+
+    #diagram {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Legend */
+    .legend {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 11px;
+    }
+
+    .legend-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #94a3b8;
+    }
+
+    .legend-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-line {
+      width: 24px;
+      height: 3px;
+    }
+
+    /* Prompt Output */
+    .prompt-container {
+      grid-column: 1 / -1;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+      padding: 16px 20px;
+    }
+
+    .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .prompt-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .copy-btn {
+      padding: 8px 16px;
+      background: #3b82f6;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #2563eb;
+    }
+
+    .copy-btn.copied {
+      background: #10b981;
+    }
+
+    .prompt-output {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      background: #0f172a;
+      border-radius: 6px;
+      padding: 16px;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      width: 400px;
+      max-width: 90%;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .modal-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .modal textarea {
+      width: 100%;
+      height: 100px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 12px;
+      color: #e2e8f0;
+      font-size: 14px;
+      resize: none;
+      margin-bottom: 16px;
+    }
+
+    .modal textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-btn.cancel {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #e2e8f0;
+    }
+
+    .modal-btn.save {
+      background: #3b82f6;
+      border: none;
+      color: white;
+    }
+
+    .modal-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    /* SVG Styles */
+    .node {
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+
+    .node:hover {
+      filter: brightness(1.15);
+    }
+
+    .node-rect {
+      rx: 8;
+      ry: 8;
+      stroke-width: 2;
+    }
+
+    .node-rect.has-comment {
+      stroke: #f59e0b !important;
+      stroke-width: 3;
+    }
+
+    .node-title {
+      font-size: 13px;
+      font-weight: 600;
+      fill: #1e293b;
+    }
+
+    .node-subtitle {
+      font-size: 10px;
+      fill: #475569;
+    }
+
+    .connection {
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .connection-label {
+      font-size: 10px;
+      fill: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">TF</div>
+        <div class="logo-text">TestForge</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">View Presets</div>
+        <div class="presets">
+          <button class="preset-btn active" data-preset="full">Full System</button>
+          <button class="preset-btn" data-preset="lifecycle">Test Lifecycle</button>
+          <button class="preset-btn" data-preset="agents">AI Agents</button>
+          <button class="preset-btn" data-preset="data">Data Flow</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Layers</div>
+        <div class="checkbox-group" id="layerToggles">
+          <label class="checkbox-item">
+            <input type="checkbox" data-layer="ui" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #dbeafe;"></span>
+            <span class="checkbox-label">Dashboard (UI)</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-layer="api" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #fef3c7;"></span>
+            <span class="checkbox-label">API Routes</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-layer="agent" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #dcfce7;"></span>
+            <span class="checkbox-label">AI Agents</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-layer="service" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #f3e8ff;"></span>
+            <span class="checkbox-label">Services</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-layer="data" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #fce7f3;"></span>
+            <span class="checkbox-label">Data Layer</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-layer="external" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #fee2e2;"></span>
+            <span class="checkbox-label">External Services</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Connection Types</div>
+        <div class="checkbox-group" id="connectionToggles">
+          <label class="checkbox-item">
+            <input type="checkbox" data-conn="data-flow" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #3b82f6;"></span>
+            <span class="checkbox-label">Data Flow</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-conn="api-call" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #10b981;"></span>
+            <span class="checkbox-label">API Calls</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-conn="ai-call" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #8b5cf6;"></span>
+            <span class="checkbox-label">AI Processing</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" data-conn="event" checked>
+            <span class="checkbox-box"></span>
+            <span class="color-dot" style="background: #f59e0b;"></span>
+            <span class="checkbox-label">Events/Triggers</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Comments (<span id="commentCount">0</span>)</div>
+        <div class="comments-list" id="commentsList">
+          <div class="no-comments">Click any component to add feedback</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-controls">
+        <button class="canvas-btn" id="zoomIn">+</button>
+        <button class="canvas-btn" id="zoomOut">−</button>
+        <button class="canvas-btn" id="zoomReset">⟲</button>
+      </div>
+
+      <svg id="diagram" viewBox="0 0 1200 700">
+        <defs>
+          <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+          </marker>
+          <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#10b981"/>
+          </marker>
+          <marker id="arrow-purple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#8b5cf6"/>
+          </marker>
+          <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#f59e0b"/>
+          </marker>
+        </defs>
+        <g id="connections"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div class="legend">
+        <div class="legend-title">Connection Types</div>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="legend-line" style="background: #3b82f6;"></div>
+            <span>Data Flow</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: #10b981; background-image: repeating-linear-gradient(90deg, #10b981 0, #10b981 6px, transparent 6px, transparent 9px);"></div>
+            <span>API Call</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: #8b5cf6;"></div>
+            <span>AI Processing</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: #f59e0b; background-image: repeating-linear-gradient(90deg, #f59e0b 0, #f59e0b 4px, transparent 4px, transparent 8px);"></div>
+            <span>Event</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="prompt-container">
+      <div class="prompt-header">
+        <div class="prompt-title">Generated Prompt</div>
+        <button class="copy-btn" id="copyBtn">Copy to Clipboard</button>
+      </div>
+      <div class="prompt-output" id="promptOutput">
+Exploring the TestForge architecture. Click any component to add feedback or questions.
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">Component Name</div>
+      <div class="modal-subtitle" id="modalSubtitle">path/to/file.ts</div>
+      <textarea id="modalInput" placeholder="Add your feedback, questions, or suggestions..."></textarea>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="modalCancel">Cancel</button>
+        <button class="modal-btn save" id="modalSave">Add Comment</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    const state = {
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      layers: {
+        ui: true,
+        api: true,
+        agent: true,
+        service: true,
+        data: true,
+        external: true
+      },
+      connections: {
+        'data-flow': true,
+        'api-call': true,
+        'ai-call': true,
+        'event': true
+      },
+      comments: [],
+      activeNode: null
+    };
+
+    // TestForge Architecture Data
+    const nodes = [
+      // UI Layer (y: 30-80)
+      { id: 'dashboard', label: 'Dashboard', subtitle: 'apps/dashboard', x: 100, y: 50, w: 120, h: 50, layer: 'ui', color: '#dbeafe', stroke: '#3b82f6' },
+      { id: 'test-cases-ui', label: 'Test Cases', subtitle: 'pages/TestCases.tsx', x: 250, y: 50, w: 120, h: 50, layer: 'ui', color: '#dbeafe', stroke: '#3b82f6' },
+      { id: 'ai-generator-ui', label: 'AI Generator', subtitle: 'pages/AIGenerator.tsx', x: 400, y: 50, w: 120, h: 50, layer: 'ui', color: '#dbeafe', stroke: '#3b82f6' },
+      { id: 'scriptsmith-ui', label: 'ScriptSmith Pro', subtitle: 'pages/ScriptSmith.tsx', x: 550, y: 50, w: 130, h: 50, layer: 'ui', color: '#dbeafe', stroke: '#3b82f6' },
+      { id: 'executions-ui', label: 'Executions', subtitle: 'pages/Executions.tsx', x: 710, y: 50, w: 120, h: 50, layer: 'ui', color: '#dbeafe', stroke: '#3b82f6' },
+      { id: 'coverage-ui', label: 'Coverage', subtitle: 'pages/Coverage.tsx', x: 860, y: 50, w: 110, h: 50, layer: 'ui', color: '#dbeafe', stroke: '#3b82f6' },
+
+      // API Layer (y: 140-190)
+      { id: 'auth-api', label: 'Auth API', subtitle: 'routes/auth.routes.ts', x: 80, y: 150, w: 110, h: 50, layer: 'api', color: '#fef3c7', stroke: '#f59e0b' },
+      { id: 'testcases-api', label: 'Test Cases API', subtitle: 'routes/testcase.routes.ts', x: 220, y: 150, w: 130, h: 50, layer: 'api', color: '#fef3c7', stroke: '#f59e0b' },
+      { id: 'agents-api', label: 'Agents API', subtitle: 'routes/agent.routes.ts', x: 380, y: 150, w: 120, h: 50, layer: 'api', color: '#fef3c7', stroke: '#f59e0b' },
+      { id: 'execution-api', label: 'Execution API', subtitle: 'routes/execution.routes.ts', x: 530, y: 150, w: 130, h: 50, layer: 'api', color: '#fef3c7', stroke: '#f59e0b' },
+      { id: 'traceability-api', label: 'Traceability API', subtitle: 'routes/trace.routes.ts', x: 690, y: 150, w: 140, h: 50, layer: 'api', color: '#fef3c7', stroke: '#f59e0b' },
+      { id: 'bugs-api', label: 'Bugs API', subtitle: 'routes/bug.routes.ts', x: 860, y: 150, w: 110, h: 50, layer: 'api', color: '#fef3c7', stroke: '#f59e0b' },
+
+      // AI Agents Layer (y: 260-340)
+      { id: 'testweaver', label: 'TestWeaver', subtitle: 'agents/testweaver.agent.ts', x: 80, y: 280, w: 130, h: 60, layer: 'agent', color: '#dcfce7', stroke: '#10b981',
+        desc: 'Generates & evolves test cases from requirements using AI' },
+      { id: 'scriptsmith', label: 'ScriptSmith', subtitle: 'agents/scriptsmith.agent.ts', x: 240, y: 280, w: 130, h: 60, layer: 'agent', color: '#dcfce7', stroke: '#10b981',
+        desc: 'Generates automation scripts (Playwright, Cypress, etc.)' },
+      { id: 'flowpilot', label: 'FlowPilot', subtitle: 'agents/flowpilot.agent.ts', x: 400, y: 280, w: 120, h: 60, layer: 'agent', color: '#dcfce7', stroke: '#10b981',
+        desc: 'Generates API test suites from OpenAPI specs' },
+      { id: 'codeguardian', label: 'CodeGuardian', subtitle: 'agents/codeguardian.agent.ts', x: 550, y: 280, w: 130, h: 60, layer: 'agent', color: '#dcfce7', stroke: '#10b981',
+        desc: 'Generates unit tests and analyzes code quality' },
+      { id: 'selfhealing', label: 'Self-Healing', subtitle: 'agents/selfhealing.agent.ts', x: 710, y: 280, w: 130, h: 60, layer: 'agent', color: '#dcfce7', stroke: '#10b981',
+        desc: 'Diagnoses and fixes test failures automatically' },
+      { id: 'framework', label: 'Framework Agent', subtitle: 'agents/framework.agent.ts', x: 870, y: 280, w: 140, h: 60, layer: 'agent', color: '#dcfce7', stroke: '#10b981',
+        desc: 'Analyzes codebase structure and reviews code' },
+
+      // Services Layer (y: 400-450)
+      { id: 'testcase-svc', label: 'TestCase Service', subtitle: 'services/testcase.service.ts', x: 100, y: 420, w: 140, h: 50, layer: 'service', color: '#f3e8ff', stroke: '#8b5cf6' },
+      { id: 'execution-svc', label: 'Execution Service', subtitle: 'services/execution.service.ts', x: 280, y: 420, w: 150, h: 50, layer: 'service', color: '#f3e8ff', stroke: '#8b5cf6' },
+      { id: 'traceability-svc', label: 'Traceability Svc', subtitle: 'services/traceability.service.ts', x: 470, y: 420, w: 140, h: 50, layer: 'service', color: '#f3e8ff', stroke: '#8b5cf6' },
+      { id: 'bug-svc', label: 'Bug Service', subtitle: 'services/bug.service.ts', x: 650, y: 420, w: 120, h: 50, layer: 'service', color: '#f3e8ff', stroke: '#8b5cf6' },
+      { id: 'ai-usage-svc', label: 'AI Usage Tracker', subtitle: 'services/ai-usage.service.ts', x: 810, y: 420, w: 140, h: 50, layer: 'service', color: '#f3e8ff', stroke: '#8b5cf6' },
+
+      // Data Layer (y: 520-570)
+      { id: 'prisma', label: 'Prisma ORM', subtitle: 'prisma/schema.prisma', x: 300, y: 540, w: 120, h: 50, layer: 'data', color: '#fce7f3', stroke: '#ec4899' },
+      { id: 'postgres', label: 'PostgreSQL', subtitle: 'Database', x: 480, y: 540, w: 120, h: 50, layer: 'data', color: '#fce7f3', stroke: '#ec4899' },
+      { id: 'redis', label: 'Redis Cache', subtitle: 'Cache Layer', x: 660, y: 540, w: 120, h: 50, layer: 'data', color: '#fce7f3', stroke: '#ec4899' },
+
+      // External Services (y: 620-670)
+      { id: 'anthropic', label: 'Anthropic API', subtitle: 'Claude AI', x: 200, y: 640, w: 130, h: 50, layer: 'external', color: '#fee2e2', stroke: '#ef4444' },
+      { id: 'github', label: 'GitHub', subtitle: 'Code Repository', x: 380, y: 640, w: 110, h: 50, layer: 'external', color: '#fee2e2', stroke: '#ef4444' },
+      { id: 'jira', label: 'Jira', subtitle: 'Bug Tracker', x: 540, y: 640, w: 100, h: 50, layer: 'external', color: '#fee2e2', stroke: '#ef4444' },
+      { id: 'playwright', label: 'Playwright', subtitle: 'Test Runner', x: 690, y: 640, w: 120, h: 50, layer: 'external', color: '#fee2e2', stroke: '#ef4444' },
+    ];
+
+    const connections = [
+      // UI → API
+      { from: 'test-cases-ui', to: 'testcases-api', type: 'api-call', label: 'REST' },
+      { from: 'ai-generator-ui', to: 'agents-api', type: 'api-call', label: 'REST' },
+      { from: 'scriptsmith-ui', to: 'agents-api', type: 'api-call', label: 'REST' },
+      { from: 'executions-ui', to: 'execution-api', type: 'api-call', label: 'REST' },
+      { from: 'coverage-ui', to: 'traceability-api', type: 'api-call', label: 'REST' },
+
+      // API → Agents
+      { from: 'agents-api', to: 'testweaver', type: 'ai-call', label: 'generate' },
+      { from: 'agents-api', to: 'scriptsmith', type: 'ai-call', label: 'generate' },
+      { from: 'agents-api', to: 'flowpilot', type: 'ai-call', label: 'analyze' },
+      { from: 'agents-api', to: 'codeguardian', type: 'ai-call', label: 'generate' },
+      { from: 'execution-api', to: 'selfhealing', type: 'event', label: 'on failure' },
+      { from: 'agents-api', to: 'framework', type: 'ai-call', label: 'review' },
+
+      // API → Services
+      { from: 'testcases-api', to: 'testcase-svc', type: 'data-flow' },
+      { from: 'execution-api', to: 'execution-svc', type: 'data-flow' },
+      { from: 'traceability-api', to: 'traceability-svc', type: 'data-flow' },
+      { from: 'bugs-api', to: 'bug-svc', type: 'data-flow' },
+
+      // Agents → Services
+      { from: 'testweaver', to: 'testcase-svc', type: 'data-flow', label: 'save' },
+      { from: 'selfhealing', to: 'execution-svc', type: 'data-flow', label: 'update' },
+      { from: 'selfhealing', to: 'bug-svc', type: 'event', label: 'file bug' },
+
+      // Agents → AI Usage
+      { from: 'testweaver', to: 'ai-usage-svc', type: 'event', label: 'track' },
+      { from: 'scriptsmith', to: 'ai-usage-svc', type: 'event', label: 'track' },
+      { from: 'flowpilot', to: 'ai-usage-svc', type: 'event', label: 'track' },
+      { from: 'codeguardian', to: 'ai-usage-svc', type: 'event', label: 'track' },
+
+      // Services → Data
+      { from: 'testcase-svc', to: 'prisma', type: 'data-flow' },
+      { from: 'execution-svc', to: 'prisma', type: 'data-flow' },
+      { from: 'traceability-svc', to: 'prisma', type: 'data-flow' },
+      { from: 'bug-svc', to: 'prisma', type: 'data-flow' },
+      { from: 'ai-usage-svc', to: 'prisma', type: 'data-flow' },
+      { from: 'prisma', to: 'postgres', type: 'data-flow' },
+      { from: 'execution-svc', to: 'redis', type: 'data-flow', label: 'cache' },
+
+      // Agents → External
+      { from: 'testweaver', to: 'anthropic', type: 'ai-call', label: 'Claude' },
+      { from: 'scriptsmith', to: 'anthropic', type: 'ai-call', label: 'Claude' },
+      { from: 'flowpilot', to: 'anthropic', type: 'ai-call', label: 'Claude' },
+      { from: 'codeguardian', to: 'anthropic', type: 'ai-call', label: 'Claude' },
+      { from: 'selfhealing', to: 'anthropic', type: 'ai-call', label: 'Claude' },
+      { from: 'framework', to: 'anthropic', type: 'ai-call', label: 'Claude' },
+      { from: 'framework', to: 'github', type: 'api-call', label: 'fetch' },
+      { from: 'bug-svc', to: 'jira', type: 'api-call', label: 'sync' },
+      { from: 'execution-svc', to: 'playwright', type: 'event', label: 'run' },
+    ];
+
+    // Connection styles
+    const connStyles = {
+      'data-flow': { color: '#3b82f6', dash: '', marker: 'arrow-blue' },
+      'api-call': { color: '#10b981', dash: '6,3', marker: 'arrow-green' },
+      'ai-call': { color: '#8b5cf6', dash: '', marker: 'arrow-purple' },
+      'event': { color: '#f59e0b', dash: '4,4', marker: 'arrow-orange' }
+    };
+
+    // Presets
+    const presets = {
+      full: { layers: { ui: true, api: true, agent: true, service: true, data: true, external: true }, connections: { 'data-flow': true, 'api-call': true, 'ai-call': true, 'event': true } },
+      lifecycle: { layers: { ui: true, api: true, agent: false, service: true, data: true, external: false }, connections: { 'data-flow': true, 'api-call': true, 'ai-call': false, 'event': false } },
+      agents: { layers: { ui: false, api: true, agent: true, service: true, data: false, external: true }, connections: { 'data-flow': true, 'api-call': false, 'ai-call': true, 'event': true } },
+      data: { layers: { ui: false, api: false, agent: false, service: true, data: true, external: false }, connections: { 'data-flow': true, 'api-call': false, 'ai-call': false, 'event': false } }
+    };
+
+    // DOM elements
+    const svg = document.getElementById('diagram');
+    const nodesGroup = document.getElementById('nodes');
+    const connectionsGroup = document.getElementById('connections');
+    const promptOutput = document.getElementById('promptOutput');
+    const copyBtn = document.getElementById('copyBtn');
+    const commentsList = document.getElementById('commentsList');
+    const commentCount = document.getElementById('commentCount');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalSubtitle');
+    const modalInput = document.getElementById('modalInput');
+
+    // Render functions
+    function renderDiagram() {
+      nodesGroup.innerHTML = '';
+      connectionsGroup.innerHTML = '';
+
+      const visibleNodes = nodes.filter(n => state.layers[n.layer]);
+      const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+
+      // Draw connections first
+      connections.forEach(conn => {
+        if (!state.connections[conn.type]) return;
+        if (!visibleNodeIds.has(conn.from) || !visibleNodeIds.has(conn.to)) return;
+
+        const fromNode = nodes.find(n => n.id === conn.from);
+        const toNode = nodes.find(n => n.id === conn.to);
+        const style = connStyles[conn.type];
+
+        const x1 = fromNode.x + fromNode.w / 2;
+        const y1 = fromNode.y + fromNode.h;
+        const x2 = toNode.x + toNode.w / 2;
+        const y2 = toNode.y;
+
+        // Bezier curve
+        const midY = (y1 + y2) / 2;
+        const path = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', path);
+        pathEl.setAttribute('class', 'connection');
+        pathEl.setAttribute('stroke', style.color);
+        pathEl.setAttribute('stroke-dasharray', style.dash);
+        pathEl.setAttribute('marker-end', `url(#${style.marker})`);
+        connectionsGroup.appendChild(pathEl);
+
+        // Label
+        if (conn.label) {
+          const labelX = (x1 + x2) / 2;
+          const labelY = midY - 5;
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', labelX);
+          text.setAttribute('y', labelY);
+          text.setAttribute('class', 'connection-label');
+          text.setAttribute('text-anchor', 'middle');
+          text.textContent = conn.label;
+          connectionsGroup.appendChild(text);
+        }
+      });
+
+      // Draw nodes
+      visibleNodes.forEach(node => {
+        const hasComment = state.comments.some(c => c.target === node.id);
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'node');
+        g.setAttribute('data-id', node.id);
+        g.onclick = () => openModal(node);
+
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', node.x);
+        rect.setAttribute('y', node.y);
+        rect.setAttribute('width', node.w);
+        rect.setAttribute('height', node.h);
+        rect.setAttribute('fill', node.color);
+        rect.setAttribute('stroke', node.stroke);
+        rect.setAttribute('class', 'node-rect' + (hasComment ? ' has-comment' : ''));
+        g.appendChild(rect);
+
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title.setAttribute('x', node.x + node.w / 2);
+        title.setAttribute('y', node.y + (node.h > 50 ? 24 : 20));
+        title.setAttribute('class', 'node-title');
+        title.setAttribute('text-anchor', 'middle');
+        title.textContent = node.label;
+        g.appendChild(title);
+
+        const subtitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        subtitle.setAttribute('x', node.x + node.w / 2);
+        subtitle.setAttribute('y', node.y + (node.h > 50 ? 40 : 34));
+        subtitle.setAttribute('class', 'node-subtitle');
+        subtitle.setAttribute('text-anchor', 'middle');
+        subtitle.textContent = node.subtitle;
+        g.appendChild(subtitle);
+
+        nodesGroup.appendChild(g);
+      });
+    }
+
+    function renderComments() {
+      if (state.comments.length === 0) {
+        commentsList.innerHTML = '<div class="no-comments">Click any component to add feedback</div>';
+      } else {
+        commentsList.innerHTML = state.comments.map((c, i) => `
+          <div class="comment-item">
+            <div class="comment-header">
+              <span class="comment-target">${c.targetLabel}</span>
+              <button class="comment-delete" onclick="deleteComment(${i})">×</button>
+            </div>
+            <div class="comment-text">${c.text}</div>
+          </div>
+        `).join('');
+      }
+      commentCount.textContent = state.comments.length;
+    }
+
+    function updatePrompt() {
+      const visibleLayers = Object.entries(state.layers)
+        .filter(([_, v]) => v)
+        .map(([k]) => k);
+
+      let prompt = `This is the TestForge architecture`;
+
+      if (visibleLayers.length < 6) {
+        const layerNames = {
+          ui: 'Dashboard UI',
+          api: 'API Routes',
+          agent: 'AI Agents',
+          service: 'Services',
+          data: 'Data Layer',
+          external: 'External Services'
+        };
+        prompt += `, focusing on: ${visibleLayers.map(l => layerNames[l]).join(', ')}`;
+      }
+      prompt += '.\n';
+
+      if (state.comments.length > 0) {
+        prompt += '\nFeedback on specific components:\n';
+        state.comments.forEach(c => {
+          prompt += `\n**${c.targetLabel}** (${c.targetFile}):\n${c.text}\n`;
+        });
+      } else {
+        prompt += '\nExploring the system. Click components to add feedback.';
+      }
+
+      promptOutput.textContent = prompt;
+    }
+
+    function updateAll() {
+      renderDiagram();
+      renderComments();
+      updatePrompt();
+    }
+
+    // Modal functions
+    function openModal(node) {
+      state.activeNode = node;
+      modalTitle.textContent = node.label;
+      modalSubtitle.textContent = node.subtitle + (node.desc ? ' — ' + node.desc : '');
+
+      const existing = state.comments.find(c => c.target === node.id);
+      modalInput.value = existing ? existing.text : '';
+
+      modalOverlay.classList.add('active');
+      modalInput.focus();
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+      state.activeNode = null;
+      modalInput.value = '';
+    }
+
+    function saveComment() {
+      const text = modalInput.value.trim();
+      if (!text || !state.activeNode) return;
+
+      const existing = state.comments.findIndex(c => c.target === state.activeNode.id);
+      const comment = {
+        target: state.activeNode.id,
+        targetLabel: state.activeNode.label,
+        targetFile: state.activeNode.subtitle,
+        text: text
+      };
+
+      if (existing >= 0) {
+        state.comments[existing] = comment;
+      } else {
+        state.comments.push(comment);
+      }
+
+      closeModal();
+      updateAll();
+    }
+
+    function deleteComment(index) {
+      state.comments.splice(index, 1);
+      updateAll();
+    }
+
+    // Event listeners
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const preset = presets[btn.dataset.preset];
+        Object.assign(state.layers, preset.layers);
+        Object.assign(state.connections, preset.connections);
+
+        // Update checkboxes
+        document.querySelectorAll('[data-layer]').forEach(cb => {
+          cb.checked = state.layers[cb.dataset.layer];
+        });
+        document.querySelectorAll('[data-conn]').forEach(cb => {
+          cb.checked = state.connections[cb.dataset.conn];
+        });
+
+        updateAll();
+      };
+    });
+
+    document.querySelectorAll('[data-layer]').forEach(cb => {
+      cb.onchange = () => {
+        state.layers[cb.dataset.layer] = cb.checked;
+        updateAll();
+      };
+    });
+
+    document.querySelectorAll('[data-conn]').forEach(cb => {
+      cb.onchange = () => {
+        state.connections[cb.dataset.conn] = cb.checked;
+        updateAll();
+      };
+    });
+
+    // Zoom
+    document.getElementById('zoomIn').onclick = () => {
+      state.zoom = Math.min(state.zoom * 1.2, 3);
+      svg.style.transform = `scale(${state.zoom})`;
+    };
+    document.getElementById('zoomOut').onclick = () => {
+      state.zoom = Math.max(state.zoom / 1.2, 0.5);
+      svg.style.transform = `scale(${state.zoom})`;
+    };
+    document.getElementById('zoomReset').onclick = () => {
+      state.zoom = 1;
+      svg.style.transform = 'scale(1)';
+    };
+
+    // Modal
+    document.getElementById('modalCancel').onclick = closeModal;
+    document.getElementById('modalSave').onclick = saveComment;
+    modalOverlay.onclick = (e) => {
+      if (e.target === modalOverlay) closeModal();
+    };
+
+    // Copy
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(promptOutput.textContent);
+      copyBtn.textContent = 'Copied!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy to Clipboard';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+    };
+
+    // Init
+    updateAll();
+  </script>
+</body>
+</html>
