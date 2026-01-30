@@ -883,59 +883,6 @@
       color: var(--text-secondary);
     }
 
-    /* Prompt Output */
-    .prompt-section {
-      margin-top: 40px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-    }
-
-    .prompt-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .prompt-title {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .copy-btn {
-      padding: 8px 20px;
-      background: var(--accent-blue);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .copy-btn:hover {
-      background: #2563eb;
-    }
-
-    .copy-btn.copied {
-      background: var(--accent-green);
-    }
-
-    .prompt-output {
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      font-family: monospace;
-      font-size: 13px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
     /* Color Classes */
     .bg-blue { background: rgba(59, 130, 246, 0.2); }
     .bg-green { background: rgba(34, 197, 94, 0.2); }
@@ -1635,17 +1582,6 @@
         <!-- Integrations will be populated by JavaScript -->
       </div>
     </div>
-
-    <!-- Prompt Output -->
-    <div class="prompt-section">
-      <div class="prompt-header">
-        <span class="prompt-title">Context Prompt for Claude</span>
-        <button class="copy-btn" id="copyBtn">Copy</button>
-      </div>
-      <div class="prompt-output" id="promptOutput">
-        <!-- Prompt will be populated by JavaScript -->
-      </div>
-    </div>
   </main>
 
   <script>
@@ -2098,50 +2034,6 @@
       `).join('');
     }
 
-    function updatePrompt() {
-      const viewDescriptions = {
-        architecture: 'system architecture with layers (Frontend → API → Services → AI → Data)',
-        features: '12 major features including AI generation, self-healing, duplicate detection, HITL approval',
-        dataflow: 'data flows: Test Creation, Script Generation, Execution & Feedback, Quality Assurance',
-        services: `33 backend services across categories (Core, Execution, AI, Quality, Governance, Integration)`,
-        database: 'database schema with key entities (User, Project, TestCase, Execution, Artifact, FlakyTest)',
-        techstack: 'tech stack (Express, React, PostgreSQL, Prisma, Claude AI, Vitest)',
-        timeline: '20 sprints of development from Foundation to Teams & Import',
-        integrations: '3 external integrations (Jenkins, Postman, Anthropic Claude)'
-      };
-
-      const prompt = `TestForge Architecture Overview
-
-Platform: AI-Powered Test Management System
-
-Currently viewing: ${currentView.charAt(0).toUpperCase() + currentView.slice(1)} - ${viewDescriptions[currentView]}
-
-Key Statistics:
-- 34 Backend Services
-- 12 AI Agents
-- 35 API Routes
-- 24 Dashboard Pages
-- 20 Completed Sprints
-
-Core Capabilities:
-1. AI Test Generation (TestWeaver, ScriptSmith, FlowPilot)
-2. Self-Healing Tests with automatic selector repair
-3. 3-Tier Duplicate Detection (Hash → Levenshtein → AI)
-4. HITL Approval Workflows with risk-based review
-5. Flaky Test Detection with quarantine management
-6. End-to-end Traceability (Requirement → Test → Bug)
-7. Quality Gates with configurable thresholds
-8. Multi-format Report Generation (PDF, Excel)
-9. Team-based RBAC with fine-grained permissions
-10. Real-time WebSocket updates
-
-Integrations: Jenkins CI/CD, Postman Import, Anthropic Claude
-
-Tech Stack: Express.js + TypeScript + PostgreSQL + Prisma + React + Vite`;
-
-      document.getElementById('promptOutput').textContent = prompt;
-    }
-
     // Event Handlers
     function switchView(view) {
       currentView = view;
@@ -2149,7 +2041,6 @@ Tech Stack: Express.js + TypeScript + PostgreSQL + Prisma + React + Vite`;
       document.querySelector(`[data-view="${view}"]`).classList.add('active');
       document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
       document.getElementById(view).classList.add('active');
-      updatePrompt();
     }
 
     function setupEventListeners() {
@@ -2177,20 +2068,6 @@ Tech Stack: Express.js + TypeScript + PostgreSQL + Prisma + React + Vite`;
           renderDatabase();
         });
       });
-
-      // Copy button
-      document.getElementById('copyBtn').addEventListener('click', () => {
-        const text = document.getElementById('promptOutput').textContent;
-        navigator.clipboard.writeText(text).then(() => {
-          const btn = document.getElementById('copyBtn');
-          btn.textContent = 'Copied!';
-          btn.classList.add('copied');
-          setTimeout(() => {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-          }, 2000);
-        });
-      });
     }
 
     // Initialize
@@ -2201,7 +2078,6 @@ Tech Stack: Express.js + TypeScript + PostgreSQL + Prisma + React + Vite`;
       renderTechStack();
       renderTimeline();
       renderIntegrations();
-      updatePrompt();
       setupEventListeners();
     }
 
