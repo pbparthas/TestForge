@@ -1644,6 +1644,7 @@
       <a href="index.html" class="top-nav-link">Home</a>
       <a href="architecture.html" class="top-nav-link active">Architecture</a>
       <a href="agents.html" class="top-nav-link">AI Agents</a>
+      <a href="security.html" class="top-nav-link">Security</a>
     </div>
   </nav>
   <header class="header">
@@ -2561,129 +2562,20 @@
             Security Architecture
           </div>
           <div class="cost-note" style="margin-top: 0; margin-bottom: 16px; font-style: normal; background: rgba(239, 68, 68, 0.1); padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-red);">
-            TestForge implements defense-in-depth security across 7 layers: authentication, authorization, data protection, API security, AI safety, human oversight, and audit trails.
+            TestForge implements defense-in-depth security across <strong>7 layers</strong>: Authentication (JWT/bcrypt), Authorization (RBAC), Data Protection (AES-256), API Security (rate limiting, CORS, Zod validation), AI Safety (jailbreak detection, token limits), Human-in-the-Loop (approval workflows), and Audit & Compliance (full logging with attribution).
           </div>
-
-          <div class="security-grid">
-            <!-- Authentication -->
-            <div class="security-layer-card">
-              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(16, 185, 129, 0.3));">
-                <span class="security-layer-num">1</span>
-                <span class="security-layer-name">Authentication</span>
-              </div>
-              <div class="security-layer-body">
-                <div class="security-detail"><span class="security-tech">JWT</span> Access (15m) + Refresh (7d) tokens</div>
-                <div class="security-detail"><span class="security-tech">bcrypt</span> Password hashing, 10 salt rounds</div>
-                <div class="security-detail"><span class="security-tech">Active Check</span> Verify user not disabled</div>
-                <div class="security-detail"><span class="security-tech">Token Rotation</span> Refresh tokens stored in DB</div>
-              </div>
-            </div>
-
-            <!-- Authorization -->
-            <div class="security-layer-card">
-              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3));">
-                <span class="security-layer-num">2</span>
-                <span class="security-layer-name">Authorization (RBAC)</span>
-              </div>
-              <div class="security-layer-body">
-                <div class="security-detail"><span class="security-tech">Roles</span> admin, manager, lead, qae + custom</div>
-                <div class="security-detail"><span class="security-tech">Permissions</span> resource:action (testcase:create)</div>
-                <div class="security-detail"><span class="security-tech">Teams</span> Project-level role assignments</div>
-                <div class="security-detail"><span class="security-tech">System Roles</span> Protected from deletion</div>
-              </div>
-            </div>
-
-            <!-- Data Protection -->
-            <div class="security-layer-card">
-              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(34, 197, 94, 0.3));">
-                <span class="security-layer-num">3</span>
-                <span class="security-layer-name">Data Protection</span>
-              </div>
-              <div class="security-layer-body">
-                <div class="security-detail"><span class="security-tech">AES-256-CBC</span> Encrypt API tokens, credentials</div>
-                <div class="security-detail"><span class="security-tech">Random IV</span> Unique per encryption operation</div>
-                <div class="security-detail"><span class="security-tech">Env Keys</span> Keys from environment only</div>
-                <div class="security-detail"><span class="security-tech">No Plaintext</span> Passwords → hashes only</div>
-              </div>
-            </div>
-
-            <!-- API Security -->
-            <div class="security-layer-card">
-              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(234, 179, 8, 0.3));">
-                <span class="security-layer-num">4</span>
-                <span class="security-layer-name">API Security</span>
-              </div>
-              <div class="security-layer-body">
-                <div class="security-detail"><span class="security-tech">Rate Limit</span> 100 req / 15 min per IP</div>
-                <div class="security-detail"><span class="security-tech">CORS</span> Whitelist frontend origins</div>
-                <div class="security-detail"><span class="security-tech">Body Limit</span> 10MB max JSON payload</div>
-                <div class="security-detail"><span class="security-tech">Zod</span> Schema validation on all inputs</div>
-              </div>
-            </div>
-
-            <!-- AI Safety -->
-            <div class="security-layer-card">
-              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(236, 72, 153, 0.3));">
-                <span class="security-layer-num">5</span>
-                <span class="security-layer-name">AI Safety</span>
-              </div>
-              <div class="security-layer-body">
-                <div class="security-detail"><span class="security-tech">Jailbreak</span> 8 regex patterns block injection</div>
-                <div class="security-detail"><span class="security-tech">Token Cap</span> 4096 max output tokens</div>
-                <div class="security-detail"><span class="security-tech">No Execute</span> Code saved, never auto-run</div>
-                <div class="security-detail"><span class="security-tech">JSON Only</span> Structured output schemas</div>
-              </div>
-            </div>
-
-            <!-- HITL -->
-            <div class="security-layer-card">
-              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(34, 197, 94, 0.3));">
-                <span class="security-layer-num">6</span>
-                <span class="security-layer-name">Human-in-the-Loop</span>
-              </div>
-              <div class="security-layer-body">
-                <div class="security-detail"><span class="security-tech">Risk Score</span> AI artifacts assessed before approval</div>
-                <div class="security-detail"><span class="security-tech">Workflow</span> Draft → Review → Approve/Reject</div>
-                <div class="security-detail"><span class="security-tech">SLA</span> Review deadlines with escalation</div>
-                <div class="security-detail"><span class="security-tech">Feedback</span> Rejections improve AI</div>
-              </div>
-            </div>
-
-            <!-- Audit -->
-            <div class="security-layer-card">
-              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3));">
-                <span class="security-layer-num">7</span>
-                <span class="security-layer-name">Audit & Compliance</span>
-              </div>
-              <div class="security-layer-body">
-                <div class="security-detail"><span class="security-tech">Full Logging</span> Category, severity, metadata</div>
-                <div class="security-detail"><span class="security-tech">Attribution</span> User + IP on every action</div>
-                <div class="security-detail"><span class="security-tech">Change Track</span> Old/new values captured</div>
-                <div class="security-detail"><span class="security-tech">Security</span> Auth failures tracked separately</div>
-              </div>
-            </div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <span style="padding: 6px 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">JWT + Refresh Tokens</span>
+            <span style="padding: 6px 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">bcrypt (10 rounds)</span>
+            <span style="padding: 6px 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">AES-256-CBC</span>
+            <span style="padding: 6px 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">8 Jailbreak Patterns</span>
+            <span style="padding: 6px 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">HITL Approval</span>
+            <span style="padding: 6px 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">Full Audit Trail</span>
           </div>
-
-          <!-- Jailbreak Patterns -->
-          <div class="jailbreak-section">
-            <div class="jailbreak-header">
-              <span class="jailbreak-icon">&#128737;</span>
-              Blocked Prompt Injection Patterns
-            </div>
-            <div class="jailbreak-patterns">
-              <code>"ignore previous instructions"</code>
-              <code>"you are now DAN/jailbroken"</code>
-              <code>"pretend no restrictions"</code>
-              <code>"system: override"</code>
-              <code>"forget your rules"</code>
-              <code>"bypass safety/ethics"</code>
-              <code>"act as if no guidelines"</code>
-              <code>"disable your ethics"</code>
-            </div>
-          </div>
-
-          <div class="cost-note" style="margin-top: 16px;">
-            Defense-in-depth: even if one layer is compromised, others protect the system. All AI-generated code requires human review before production use.
+          <div style="margin-top: 16px;">
+            <a href="security.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, var(--accent-red), #ec4899); border-radius: 8px; color: white; text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.2s;">
+              <span>&#128274;</span> View Full Security Architecture →
+            </a>
           </div>
         </div>
 
