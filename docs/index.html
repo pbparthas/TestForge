@@ -278,16 +278,36 @@
         padding: 48px 20px;
       }
 
+      .logo {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .logo-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+      }
+
       .logo-text h1 {
         font-size: 32px;
       }
 
+      .tagline {
+        font-size: 16px;
+      }
+
       .stats-row {
         gap: 24px;
+        flex-wrap: wrap;
       }
 
       .stat-value {
         font-size: 28px;
+      }
+
+      .main {
+        padding: 32px 20px;
       }
 
       .cards {
@@ -296,6 +316,63 @@
 
       .card {
         padding: 24px;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .footer-links {
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        padding: 32px 16px;
+      }
+
+      .logo-text h1 {
+        font-size: 28px;
+      }
+
+      .tagline {
+        font-size: 14px;
+      }
+
+      .stats-row {
+        gap: 16px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+
+      .stat-label {
+        font-size: 10px;
+        letter-spacing: 1px;
+      }
+
+      .section-title {
+        font-size: 12px;
+      }
+
+      .card-title {
+        font-size: 20px;
+      }
+
+      .card-description {
+        font-size: 14px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-box {
+        padding: 16px;
       }
     }
   </style>

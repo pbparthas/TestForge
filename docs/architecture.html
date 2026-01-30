@@ -1260,6 +1260,378 @@
       margin-top: 16px;
       font-style: italic;
     }
+
+    /* Security Architecture Styles */
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .security-layer-card {
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .security-layer-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .security-layer-num {
+      width: 24px;
+      height: 24px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      color: white;
+    }
+
+    .security-layer-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: white;
+    }
+
+    .security-layer-body {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .security-detail {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .security-tech {
+      background: var(--bg-secondary);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      flex-shrink: 0;
+    }
+
+    .jailbreak-section {
+      background: var(--bg-tertiary);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .jailbreak-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--accent-red);
+      margin-bottom: 12px;
+    }
+
+    .jailbreak-icon {
+      font-size: 18px;
+    }
+
+    .jailbreak-patterns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .jailbreak-patterns code {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--accent-red);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    /* ==================== RESPONSIVE STYLES ==================== */
+
+    @media (max-width: 1024px) {
+      .header-stats {
+        gap: 24px;
+      }
+
+      .stat-value {
+        font-size: 28px;
+      }
+
+      .arch-layer-content {
+        gap: 12px;
+      }
+
+      .arch-box {
+        min-width: 180px;
+        padding: 16px;
+      }
+
+      .security-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .agents-cost-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .cascade-flow {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .cascade-tier {
+        min-width: 180px;
+        flex: 1 1 180px;
+      }
+
+      .cascade-arrow {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      /* Navigation */
+      .top-nav {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .top-nav-links {
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .top-nav-link {
+        font-size: 13px;
+        padding: 6px 10px;
+      }
+
+      /* Header */
+      .header {
+        padding: 32px 16px;
+      }
+
+      .header h1 {
+        font-size: 28px;
+      }
+
+      .header-subtitle {
+        font-size: 14px;
+      }
+
+      .header-stats {
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+
+      .stat-label {
+        font-size: 10px;
+      }
+
+      /* Nav Tabs */
+      .nav-tabs {
+        padding: 12px 16px;
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+
+      .nav-tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .nav-tab {
+        padding: 8px 12px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* Main Content */
+      .main-content {
+        padding: 16px;
+      }
+
+      /* Architecture Diagram */
+      .arch-layer-content {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .arch-box {
+        min-width: auto;
+        width: 100%;
+      }
+
+      .arch-layer-label {
+        font-size: 10px;
+        padding: 6px 10px;
+      }
+
+      /* Data Flow */
+      .flow-section-title {
+        font-size: 14px;
+      }
+
+      .flow-row {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .flow-node {
+        min-width: 100px;
+        padding: 12px;
+      }
+
+      .flow-node-label {
+        font-size: 11px;
+      }
+
+      .flow-arrow {
+        font-size: 16px;
+      }
+
+      /* AI & Costs Section */
+      .cost-section {
+        padding: 16px;
+      }
+
+      .cost-section-title {
+        font-size: 16px;
+      }
+
+      .cost-philosophy {
+        grid-template-columns: 1fr;
+      }
+
+      .agents-cost-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .security-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tracking-features {
+        grid-template-columns: 1fr;
+      }
+
+      .cost-examples {
+        grid-template-columns: 1fr;
+      }
+
+      .cascade-flow {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .cascade-tier {
+        min-width: auto;
+      }
+
+      /* Services Grid */
+      .services-container {
+        grid-template-columns: 1fr;
+      }
+
+      .category-filter {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .filter-btn {
+        font-size: 11px;
+        padding: 6px 10px;
+      }
+
+      /* Database Grid */
+      .db-entities-grid {
+        grid-template-columns: 1fr;
+      }
+
+      /* Timeline */
+      .timeline-grid {
+        grid-template-columns: 1fr;
+      }
+
+      /* Features Grid */
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      /* Jailbreak patterns */
+      .jailbreak-patterns {
+        gap: 6px;
+      }
+
+      .jailbreak-patterns code {
+        font-size: 10px;
+        padding: 3px 8px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .top-nav-brand span {
+        display: none;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+
+      .flow-node {
+        min-width: 80px;
+        padding: 10px;
+      }
+
+      .flow-node-icon {
+        font-size: 20px;
+      }
+
+      .security-layer-body {
+        padding: 10px 12px;
+      }
+
+      .security-detail {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .agent-cost-card {
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1918,15 +2290,18 @@
           </div>
         </div>
 
-        <!-- AI Agents -->
+        <!-- Primary AI Usage -->
         <div class="cost-section">
           <div class="cost-section-title">
             <span class="cost-icon">&#129302;</span>
-            Where AI is Used (12 Agents)
+            Primary AI Usage: 12 Agents (Always Use AI)
+          </div>
+          <div class="cost-note" style="margin-top: 0; margin-bottom: 16px; font-style: normal; background: rgba(139, 92, 246, 0.1); padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-purple);">
+            These agents are called explicitly by users when they need AI-powered features. Every call to these agents results in a Claude API request.
           </div>
           <div class="agents-cost-grid">
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(16, 185, 129, 0.3));">
                 <span class="agent-cost-icon">&#129302;</span>
                 <span class="agent-cost-name">TestWeaver</span>
               </div>
@@ -1936,7 +2311,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(6, 182, 212, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(34, 197, 94, 0.3));">
                 <span class="agent-cost-icon">&#128221;</span>
                 <span class="agent-cost-name">ScriptSmith Pro</span>
               </div>
@@ -1946,7 +2321,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(6, 182, 212, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(234, 179, 8, 0.3));">
                 <span class="agent-cost-icon">&#128640;</span>
                 <span class="agent-cost-name">FlowPilot</span>
               </div>
@@ -1966,7 +2341,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(234, 179, 8, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3));">
                 <span class="agent-cost-icon">&#128657;</span>
                 <span class="agent-cost-name">Self-Healing</span>
               </div>
@@ -1976,7 +2351,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(34, 197, 94, 0.3));">
                 <span class="agent-cost-icon">&#128270;</span>
                 <span class="agent-cost-name">Framework Agent</span>
               </div>
@@ -1986,7 +2361,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(239, 68, 68, 0.3));">
                 <span class="agent-cost-icon">&#127912;</span>
                 <span class="agent-cost-name">Visual Analysis</span>
               </div>
@@ -1996,7 +2371,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(239, 68, 68, 0.3));">
                 <span class="agent-cost-icon">&#128250;</span>
                 <span class="agent-cost-name">Recorder Agent</span>
               </div>
@@ -2006,7 +2381,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(168, 85, 247, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(234, 179, 8, 0.3));">
                 <span class="agent-cost-icon">&#128027;</span>
                 <span class="agent-cost-name">Bug Analyzer</span>
               </div>
@@ -2016,7 +2391,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(59, 130, 246, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.3));">
                 <span class="agent-cost-icon">&#127775;</span>
                 <span class="agent-cost-name">Flaky Detector</span>
               </div>
@@ -2026,7 +2401,7 @@
               </div>
             </div>
             <div class="agent-cost-card">
-              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));">
+              <div class="agent-cost-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(249, 115, 22, 0.3));">
                 <span class="agent-cost-icon">&#128202;</span>
                 <span class="agent-cost-name">Code Analysis</span>
               </div>
@@ -2048,15 +2423,18 @@
           </div>
         </div>
 
-        <!-- Cost Optimization -->
+        <!-- AI as Fallback -->
         <div class="cost-section">
           <div class="cost-section-title">
             <span class="cost-icon">&#128184;</span>
-            Cost Optimization: 3-Tier Duplicate Detection
+            AI as Fallback: Duplicate Detection (AI Only When Needed)
+          </div>
+          <div class="cost-note" style="margin-top: 0; margin-bottom: 16px; font-style: normal; background: rgba(34, 197, 94, 0.1); padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
+            Unlike the 12 agents above, duplicate detection uses a 3-tier cascade where <strong>AI is only called as a last resort</strong> after cheaper methods fail. This is the primary cost optimization strategy in TestForge.
           </div>
           <div class="cascade-diagram">
             <div class="cascade-intro">
-              When checking if a test case already exists, TestForge uses a 3-tier cascade that progressively filters candidates using cheap methods before resorting to expensive AI.
+              <strong>How it works:</strong> When checking if a test case already exists, TestForge tries free/cheap methods first. AI is invoked only when simpler methods can't determine similarity (~10% of cases).
             </div>
             <div class="cascade-flow">
               <div class="cascade-tier">
@@ -2069,7 +2447,7 @@
                     <span class="cost-label">Cost:</span>
                     <span class="cost-value free">FREE</span>
                   </div>
-                  <div class="cascade-tier-desc">Exact string match using MD5 hash of normalized title + description</div>
+                  <div class="cascade-tier-desc">SHA-256 hash of normalized content (whitespace collapsed, case-insensitive)</div>
                   <div class="cascade-tier-catches">Catches: Exact duplicates, copy-paste</div>
                   <div class="cascade-tier-stat">~60% of duplicates caught here</div>
                 </div>
@@ -2085,9 +2463,9 @@
                     <span class="cost-label">Cost:</span>
                     <span class="cost-value cheap">~$0.0001</span>
                   </div>
-                  <div class="cascade-tier-desc">Edit distance algorithm for fuzzy matching (threshold: 85%)</div>
-                  <div class="cascade-tier-catches">Catches: Typos, minor rewording, whitespace</div>
-                  <div class="cascade-tier-stat">~30% of remaining duplicates</div>
+                  <div class="cascade-tier-desc">Edit distance algorithm for fuzzy matching (≥85% = duplicate, 60-85% = check with AI)</div>
+                  <div class="cascade-tier-catches">Catches: Typos, minor rewording, formatting differences</div>
+                  <div class="cascade-tier-stat">Flags duplicates OR passes candidates to AI tier</div>
                 </div>
               </div>
               <div class="cascade-arrow">&#8594;</div>
@@ -2101,9 +2479,9 @@
                     <span class="cost-label">Cost:</span>
                     <span class="cost-value expensive">~$0.01-0.05</span>
                   </div>
-                  <div class="cascade-tier-desc">Claude Sonnet analyzes semantic meaning for deep understanding</div>
-                  <div class="cascade-tier-catches">Catches: Rephrased tests, different wording same intent</div>
-                  <div class="cascade-tier-stat">Only ~10% of cases reach AI</div>
+                  <div class="cascade-tier-desc">Claude Sonnet analyzes semantic meaning (only if Levenshtein found 60-85% candidates)</div>
+                  <div class="cascade-tier-catches">Catches: Semantically equivalent tests with completely different wording</div>
+                  <div class="cascade-tier-stat">Only called when Levenshtein is uncertain (max 5 comparisons)</div>
                 </div>
               </div>
             </div>
@@ -2176,6 +2554,139 @@
           </div>
         </div>
 
+        <!-- Security Architecture -->
+        <div class="cost-section">
+          <div class="cost-section-title">
+            <span class="cost-icon">&#128274;</span>
+            Security Architecture
+          </div>
+          <div class="cost-note" style="margin-top: 0; margin-bottom: 16px; font-style: normal; background: rgba(239, 68, 68, 0.1); padding: 12px 16px; border-radius: 8px; border-left: 4px solid var(--accent-red);">
+            TestForge implements defense-in-depth security across 7 layers: authentication, authorization, data protection, API security, AI safety, human oversight, and audit trails.
+          </div>
+
+          <div class="security-grid">
+            <!-- Authentication -->
+            <div class="security-layer-card">
+              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(16, 185, 129, 0.3));">
+                <span class="security-layer-num">1</span>
+                <span class="security-layer-name">Authentication</span>
+              </div>
+              <div class="security-layer-body">
+                <div class="security-detail"><span class="security-tech">JWT</span> Access (15m) + Refresh (7d) tokens</div>
+                <div class="security-detail"><span class="security-tech">bcrypt</span> Password hashing, 10 salt rounds</div>
+                <div class="security-detail"><span class="security-tech">Active Check</span> Verify user not disabled</div>
+                <div class="security-detail"><span class="security-tech">Token Rotation</span> Refresh tokens stored in DB</div>
+              </div>
+            </div>
+
+            <!-- Authorization -->
+            <div class="security-layer-card">
+              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3));">
+                <span class="security-layer-num">2</span>
+                <span class="security-layer-name">Authorization (RBAC)</span>
+              </div>
+              <div class="security-layer-body">
+                <div class="security-detail"><span class="security-tech">Roles</span> admin, manager, lead, qae + custom</div>
+                <div class="security-detail"><span class="security-tech">Permissions</span> resource:action (testcase:create)</div>
+                <div class="security-detail"><span class="security-tech">Teams</span> Project-level role assignments</div>
+                <div class="security-detail"><span class="security-tech">System Roles</span> Protected from deletion</div>
+              </div>
+            </div>
+
+            <!-- Data Protection -->
+            <div class="security-layer-card">
+              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(34, 197, 94, 0.3));">
+                <span class="security-layer-num">3</span>
+                <span class="security-layer-name">Data Protection</span>
+              </div>
+              <div class="security-layer-body">
+                <div class="security-detail"><span class="security-tech">AES-256-CBC</span> Encrypt API tokens, credentials</div>
+                <div class="security-detail"><span class="security-tech">Random IV</span> Unique per encryption operation</div>
+                <div class="security-detail"><span class="security-tech">Env Keys</span> Keys from environment only</div>
+                <div class="security-detail"><span class="security-tech">No Plaintext</span> Passwords → hashes only</div>
+              </div>
+            </div>
+
+            <!-- API Security -->
+            <div class="security-layer-card">
+              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(234, 179, 8, 0.3));">
+                <span class="security-layer-num">4</span>
+                <span class="security-layer-name">API Security</span>
+              </div>
+              <div class="security-layer-body">
+                <div class="security-detail"><span class="security-tech">Rate Limit</span> 100 req / 15 min per IP</div>
+                <div class="security-detail"><span class="security-tech">CORS</span> Whitelist frontend origins</div>
+                <div class="security-detail"><span class="security-tech">Body Limit</span> 10MB max JSON payload</div>
+                <div class="security-detail"><span class="security-tech">Zod</span> Schema validation on all inputs</div>
+              </div>
+            </div>
+
+            <!-- AI Safety -->
+            <div class="security-layer-card">
+              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(236, 72, 153, 0.3));">
+                <span class="security-layer-num">5</span>
+                <span class="security-layer-name">AI Safety</span>
+              </div>
+              <div class="security-layer-body">
+                <div class="security-detail"><span class="security-tech">Jailbreak</span> 8 regex patterns block injection</div>
+                <div class="security-detail"><span class="security-tech">Token Cap</span> 4096 max output tokens</div>
+                <div class="security-detail"><span class="security-tech">No Execute</span> Code saved, never auto-run</div>
+                <div class="security-detail"><span class="security-tech">JSON Only</span> Structured output schemas</div>
+              </div>
+            </div>
+
+            <!-- HITL -->
+            <div class="security-layer-card">
+              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(34, 197, 94, 0.3));">
+                <span class="security-layer-num">6</span>
+                <span class="security-layer-name">Human-in-the-Loop</span>
+              </div>
+              <div class="security-layer-body">
+                <div class="security-detail"><span class="security-tech">Risk Score</span> AI artifacts assessed before approval</div>
+                <div class="security-detail"><span class="security-tech">Workflow</span> Draft → Review → Approve/Reject</div>
+                <div class="security-detail"><span class="security-tech">SLA</span> Review deadlines with escalation</div>
+                <div class="security-detail"><span class="security-tech">Feedback</span> Rejections improve AI</div>
+              </div>
+            </div>
+
+            <!-- Audit -->
+            <div class="security-layer-card">
+              <div class="security-layer-header" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3));">
+                <span class="security-layer-num">7</span>
+                <span class="security-layer-name">Audit & Compliance</span>
+              </div>
+              <div class="security-layer-body">
+                <div class="security-detail"><span class="security-tech">Full Logging</span> Category, severity, metadata</div>
+                <div class="security-detail"><span class="security-tech">Attribution</span> User + IP on every action</div>
+                <div class="security-detail"><span class="security-tech">Change Track</span> Old/new values captured</div>
+                <div class="security-detail"><span class="security-tech">Security</span> Auth failures tracked separately</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jailbreak Patterns -->
+          <div class="jailbreak-section">
+            <div class="jailbreak-header">
+              <span class="jailbreak-icon">&#128737;</span>
+              Blocked Prompt Injection Patterns
+            </div>
+            <div class="jailbreak-patterns">
+              <code>"ignore previous instructions"</code>
+              <code>"you are now DAN/jailbroken"</code>
+              <code>"pretend no restrictions"</code>
+              <code>"system: override"</code>
+              <code>"forget your rules"</code>
+              <code>"bypass safety/ethics"</code>
+              <code>"act as if no guidelines"</code>
+              <code>"disable your ethics"</code>
+            </div>
+          </div>
+
+          <div class="cost-note" style="margin-top: 16px;">
+            Defense-in-depth: even if one layer is compromised, others protect the system. All AI-generated code requires human review before production use.
+          </div>
+        </div>
+
         <!-- Cost Examples -->
         <div class="cost-section">
           <div class="cost-section-title">
@@ -2209,7 +2720,7 @@
             </div>
           </div>
           <div class="cost-note">
-            * Costs vary based on input size, complexity, and model used. Haiku is ~10x cheaper than Sonnet.
+            * Costs vary based on input size and complexity. All agents currently use Claude Sonnet ($3/1M input, $15/1M output tokens).
           </div>
         </div>
       </div>
