@@ -14,6 +14,67 @@
       min-height: 100vh;
     }
 
+    .top-nav {
+      background: #0f172a;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .top-nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #e2e8f0;
+    }
+
+    .top-nav-brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .top-nav-brand span {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .top-nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .top-nav-link {
+      padding: 8px 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .top-nav-link:hover {
+      border-color: #3b82f6;
+      color: #e2e8f0;
+    }
+
+    .top-nav-link.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+
     .header {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       padding: 24px 32px;
@@ -501,6 +562,17 @@
   </style>
 </head>
 <body>
+  <nav class="top-nav">
+    <a href="index.html" class="top-nav-brand">
+      <div class="top-nav-brand-icon">TF</div>
+      <span>TestForge</span>
+    </a>
+    <div class="top-nav-links">
+      <a href="index.html" class="top-nav-link">Home</a>
+      <a href="architecture.html" class="top-nav-link">Architecture</a>
+      <a href="agents.html" class="top-nav-link active">AI Agents</a>
+    </div>
+  </nav>
   <div class="header">
     <div class="logo">
       <div class="logo-icon">TF</div>
@@ -525,28 +597,28 @@
     <div class="sidebar">
       <div class="sidebar-title">Test Generation</div>
       <div class="agent-list">
-        <div class="agent-item active theme-blue" data-agent="testweaver">
+        <div class="agent-item active theme-blue" data-agent="testweaver" id="testweaver">
           <div class="agent-icon">🧵</div>
           <div class="agent-info">
             <h3>TestWeaver<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
             <p>Test case generation</p>
           </div>
         </div>
-        <div class="agent-item theme-green" data-agent="scriptsmith">
+        <div class="agent-item theme-green" data-agent="scriptsmith" id="scriptsmith">
           <div class="agent-icon">⚒️</div>
           <div class="agent-info">
             <h3>ScriptSmith<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
             <p>Script generation</p>
           </div>
         </div>
-        <div class="agent-item theme-purple" data-agent="flowpilot">
+        <div class="agent-item theme-purple" data-agent="flowpilot" id="flowpilot">
           <div class="agent-icon">🔄</div>
           <div class="agent-info">
             <h3>FlowPilot<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
             <p>API test generation</p>
           </div>
         </div>
-        <div class="agent-item theme-orange" data-agent="codeguardian">
+        <div class="agent-item theme-orange" data-agent="codeguardian" id="codeguardian">
           <div class="agent-icon">🛡️</div>
           <div class="agent-info">
             <h3>CodeGuardian<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
@@ -557,28 +629,28 @@
 
       <div class="sidebar-title" style="margin-top: 24px;">Analysis & Healing</div>
       <div class="agent-list">
-        <div class="agent-item theme-pink" data-agent="selfhealing">
+        <div class="agent-item theme-pink" data-agent="selfhealing" id="selfhealing">
           <div class="agent-icon">🔧</div>
           <div class="agent-info">
             <h3>Self-Healing</h3>
             <p>Failure diagnosis & fix</p>
           </div>
         </div>
-        <div class="agent-item theme-cyan" data-agent="framework">
+        <div class="agent-item theme-cyan" data-agent="framework" id="framework">
           <div class="agent-icon">🏗️</div>
           <div class="agent-info">
             <h3>Framework Agent</h3>
             <p>Code analysis & review</p>
           </div>
         </div>
-        <div class="agent-item theme-red" data-agent="visualanalysis">
+        <div class="agent-item theme-red" data-agent="visualanalysis" id="visualanalysis">
           <div class="agent-icon">👁️</div>
           <div class="agent-info">
             <h3>Visual Analysis<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
             <p>Visual regression testing</p>
           </div>
         </div>
-        <div class="agent-item theme-indigo" data-agent="recorder">
+        <div class="agent-item theme-indigo" data-agent="recorder" id="recorder">
           <div class="agent-icon">🎬</div>
           <div class="agent-info">
             <h3>Recorder<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
@@ -589,21 +661,21 @@
 
       <div class="sidebar-title" style="margin-top: 24px;">Intelligence & Insights</div>
       <div class="agent-list">
-        <div class="agent-item theme-teal" data-agent="bugpattern">
+        <div class="agent-item theme-teal" data-agent="bugpattern" id="bugpattern">
           <div class="agent-icon">🐛</div>
           <div class="agent-info">
             <h3>Bug Pattern</h3>
             <p>Pattern analysis</p>
           </div>
         </div>
-        <div class="agent-item theme-amber" data-agent="codeanalysis">
+        <div class="agent-item theme-amber" data-agent="codeanalysis" id="codeanalysis">
           <div class="agent-icon">📊</div>
           <div class="agent-info">
             <h3>Code Analysis</h3>
             <p>Complexity & debt</p>
           </div>
         </div>
-        <div class="agent-item theme-lime" data-agent="testevolution">
+        <div class="agent-item theme-lime" data-agent="testevolution" id="testevolution">
           <div class="agent-icon">📈</div>
           <div class="agent-info">
             <h3>Test Evolution</h3>
@@ -680,13 +752,12 @@
         name: 'ScriptSmith',
         icon: '⚒️',
         theme: 'theme-green',
-        description: 'Generates and edits Playwright/Cypress automation scripts from test cases or descriptions',
+        description: 'Generates and edits Playwright automation scripts from test cases or descriptions',
         hasDuplicateCheck: true,
         duplicateCheckType: 'script',
         badges: [
           { text: 'Duplicate Check', class: 'badge-emerald' },
           { text: 'Playwright', class: 'badge-blue' },
-          { text: 'Cypress', class: 'badge-green' },
           { text: 'Vision', class: 'badge-purple' }
         ],
         lifecycle: {
@@ -875,7 +946,7 @@
           input: {
             title: 'Input',
             icon: '📥',
-            items: ['Automation code', 'Framework (Playwright/Cypress)', 'Test case (optional)', 'Analysis options']
+            items: ['Automation code', 'Framework (Playwright)', 'Test case (optional)', 'Analysis options']
           },
           process: {
             title: 'AI Processing',
@@ -959,9 +1030,7 @@
         duplicateCheckType: 'script',
         badges: [
           { text: 'Duplicate Check', class: 'badge-emerald' },
-          { text: 'Playwright', class: 'badge-blue' },
-          { text: 'Cypress', class: 'badge-green' },
-          { text: 'Selenium', class: 'badge-orange' }
+          { text: 'Playwright', class: 'badge-blue' }
         ],
         lifecycle: {
           input: {

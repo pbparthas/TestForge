@@ -419,6 +419,19 @@
       transform: scale(1.05);
     }
 
+    a.flow-node-link {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    a.flow-node-link .flow-node {
+      cursor: pointer;
+    }
+
+    a.flow-node-link:hover .flow-node {
+      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+    }
+
     .flow-node-icon {
       font-size: 24px;
       margin-bottom: 8px;
@@ -1326,11 +1339,13 @@
               <div class="flow-node-sublabel">Multi-turn Chat</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
-            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
-              <div class="flow-node-icon">&#129302;</div>
-              <div class="flow-node-label">TestWeaver</div>
-              <div class="flow-node-sublabel">AI Generation</div>
-            </div>
+            <a href="agents.html#testweaver" class="flow-node-link">
+              <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+                <div class="flow-node-icon">&#129302;</div>
+                <div class="flow-node-label">TestWeaver</div>
+                <div class="flow-node-sublabel">AI Generation</div>
+              </div>
+            </a>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-green" style="border-color: var(--accent-green);">
               <div class="flow-node-icon">&#128203;</div>
@@ -1364,16 +1379,18 @@
               <div class="flow-node-sublabel">Annotated UI</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
-            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
-              <div class="flow-node-icon">&#129302;</div>
-              <div class="flow-node-label">ScriptSmith</div>
-              <div class="flow-node-sublabel">Code Generation</div>
-            </div>
+            <a href="agents.html#scriptsmith" class="flow-node-link">
+              <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+                <div class="flow-node-icon">&#129302;</div>
+                <div class="flow-node-label">ScriptSmith</div>
+                <div class="flow-node-sublabel">Code Generation</div>
+              </div>
+            </a>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-green" style="border-color: var(--accent-green);">
               <div class="flow-node-icon">&#128187;</div>
               <div class="flow-node-label">Script</div>
-              <div class="flow-node-sublabel">Playwright/Cypress</div>
+              <div class="flow-node-sublabel">Playwright</div>
             </div>
           </div>
         </div>
@@ -1392,11 +1409,13 @@
               <div class="flow-node-sublabel">Method/Path/Schema</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
-            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
-              <div class="flow-node-icon">&#129302;</div>
-              <div class="flow-node-label">FlowPilot</div>
-              <div class="flow-node-sublabel">API Test Gen</div>
-            </div>
+            <a href="agents.html#flowpilot" class="flow-node-link">
+              <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+                <div class="flow-node-icon">&#129302;</div>
+                <div class="flow-node-label">FlowPilot</div>
+                <div class="flow-node-sublabel">API Test Gen</div>
+              </div>
+            </a>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-green" style="border-color: var(--accent-green);">
               <div class="flow-node-icon">&#128187;</div>
@@ -1415,11 +1434,13 @@
               <div class="flow-node-sublabel">TS/JS Functions</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
-            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
-              <div class="flow-node-icon">&#129302;</div>
-              <div class="flow-node-label">CodeGuardian</div>
-              <div class="flow-node-sublabel">Unit Test Gen</div>
-            </div>
+            <a href="agents.html#codeguardian" class="flow-node-link">
+              <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+                <div class="flow-node-icon">&#129302;</div>
+                <div class="flow-node-label">CodeGuardian</div>
+                <div class="flow-node-sublabel">Unit Test Gen</div>
+              </div>
+            </a>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-green" style="border-color: var(--accent-green);">
               <div class="flow-node-icon">&#128203;</div>
