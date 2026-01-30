@@ -13,6 +13,9 @@ export interface GenerateUnitTestsInput {
     includeEdgeCases?: boolean | undefined;
     includeMocks?: boolean | undefined;
     targetCoverage?: number | undefined;
+    // Sprint 14+: Duplicate detection options
+    projectId?: string | undefined;
+    skipDuplicateCheck?: boolean | undefined;
   } | undefined;
 }
 
@@ -127,12 +130,26 @@ export class CodeGuardianAgent extends BaseAgent {
   }
 
   async generateUnitTests(input: GenerateUnitTestsInput): Promise<AgentResponse<GenerateUnitTestsOutput>> {
+    // Check for duplicates before generation (using source code as check content)
+    const duplicateWarning = await this.checkScriptDuplicates(
+      input.code,
+      input.options?.projectId,
+      input.options?.skipDuplicateCheck
+    );
+
     const userPrompt = this.buildGeneratePrompt(input);
-    return this.call<GenerateUnitTestsOutput>(
+    const result = await this.call<GenerateUnitTestsOutput>(
       GENERATE_SYSTEM_PROMPT,
       userPrompt,
       (text) => this.parseJSON<GenerateUnitTestsOutput>(text)
     );
+
+    // Attach duplicate warning if found
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
   }
 
   async analyzeCoverage(input: AnalyzeCoverageInput): Promise<AgentResponse<AnalyzeCoverageOutput>> {

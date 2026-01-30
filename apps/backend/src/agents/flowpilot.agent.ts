@@ -19,6 +19,9 @@ export interface GenerateApiTestsInput {
     includeValidationTests?: boolean | undefined;
     includeErrorCases?: boolean | undefined;
     framework?: 'playwright' | 'jest' | 'vitest' | undefined;
+    // Sprint 14+: Duplicate detection options
+    projectId?: string | undefined;
+    skipDuplicateCheck?: boolean | undefined;
   } | undefined;
 }
 
@@ -110,12 +113,40 @@ export class FlowPilotAgent extends BaseAgent {
   }
 
   async generateApiTests(input: GenerateApiTestsInput): Promise<AgentResponse<GenerateApiTestsOutput>> {
+    // Check for duplicates before generation
+    const contentToCheck = this.extractContentForDuplicateCheck(input);
+    const duplicateWarning = await this.checkTestCaseDuplicates(
+      contentToCheck,
+      input.options?.projectId,
+      input.options?.skipDuplicateCheck
+    );
+
     const userPrompt = this.buildGeneratePrompt(input);
-    return this.call<GenerateApiTestsOutput>(
+    const result = await this.call<GenerateApiTestsOutput>(
       GENERATE_SYSTEM_PROMPT,
       userPrompt,
       (text) => this.parseJSON<GenerateApiTestsOutput>(text)
     );
+
+    // Attach duplicate warning if found
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
+  }
+
+  /**
+   * Extract content from input for duplicate checking
+   */
+  private extractContentForDuplicateCheck(input: GenerateApiTestsInput): string {
+    if (input.openApiSpec) {
+      return input.openApiSpec.substring(0, 1000); // First 1000 chars of spec
+    }
+    if (input.endpoint) {
+      return `${input.endpoint.method} ${input.endpoint.path} ${input.endpoint.description || ''}`;
+    }
+    return '';
   }
 
   async chain(input: ChainInput): Promise<AgentResponse<ChainOutput>> {

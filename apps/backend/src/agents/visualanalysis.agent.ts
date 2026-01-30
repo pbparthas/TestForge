@@ -330,6 +330,10 @@ export interface GenerateVisualTestCaseInput {
   maxTestCases?: number;
   /** Test types to generate */
   testTypes?: ('visual' | 'visual-regression' | 'layout' | 'responsive')[];
+  /** Sprint 14+: Project ID for duplicate detection */
+  projectId?: string;
+  /** Sprint 14+: Skip duplicate check */
+  skipDuplicateCheck?: boolean;
 }
 
 export interface GenerateVisualTestCaseOutput {
@@ -655,6 +659,14 @@ export class VisualAnalysisAgent extends BaseAgent {
    * Generate visual test cases from a baseline screenshot
    */
   async generateVisualTestCase(input: GenerateVisualTestCaseInput): Promise<AgentResponse<GenerateVisualTestCaseOutput>> {
+    // Check for duplicates before generation
+    const contentToCheck = `visual-test ${input.feature || 'generic'} ${input.focusAreas?.join(' ') || ''}`;
+    const duplicateWarning = await this.checkTestCaseDuplicates(
+      contentToCheck,
+      input.projectId,
+      input.skipDuplicateCheck
+    );
+
     // If elements not provided, detect them first
     let elements = input.elements;
     if (!elements) {
@@ -668,13 +680,20 @@ export class VisualAnalysisAgent extends BaseAgent {
 
     const textPrompt = this.buildGenerateTestCasePrompt(input, elements);
 
-    return this.callWithVision<GenerateVisualTestCaseOutput>(
+    const result = await this.callWithVision<GenerateVisualTestCaseOutput>(
       GENERATE_VISUAL_TEST_SYSTEM_PROMPT,
       textPrompt,
       input.screenshot.base64,
       input.screenshot.mediaType,
       (text) => this.parseJSON<GenerateVisualTestCaseOutput>(text)
     );
+
+    // Attach duplicate warning if found
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
   }
 
   // ============================================================================

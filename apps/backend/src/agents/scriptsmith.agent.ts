@@ -32,6 +32,9 @@ export interface TransformationOptions {
   selectorPreference?: 'role' | 'testid' | 'text' | 'css';
   codeStyle?: 'match-project' | 'playwright-best-practices';
   deviceTarget?: DeviceTarget;
+  // Sprint 14+: Duplicate detection options
+  projectId?: string;
+  skipDuplicateCheck?: boolean;
 }
 
 export interface GenerateScriptInput {
@@ -81,6 +84,9 @@ export interface EditScriptInput {
     errorMessage?: string;
     failedSelector?: string;
   };
+  // Sprint 14+: Duplicate detection options
+  projectId?: string;
+  skipDuplicateCheck?: boolean;
 }
 
 export interface EditedScript {
@@ -185,17 +191,51 @@ export class ScriptSmithAgent extends BaseAgent {
   }
 
   async generate(input: GenerateScriptInput): Promise<AgentResponse<GeneratedScript>> {
+    // Check for duplicates before generation
+    const contentToCheck = this.extractContentForDuplicateCheck(input);
+    const duplicateWarning = await this.checkScriptDuplicates(
+      contentToCheck,
+      input.options?.projectId,
+      input.options?.skipDuplicateCheck
+    );
+
+    let result: AgentResponse<GeneratedScript>;
+
     // Handle screenshot input separately (uses vision)
     if (input.inputMethod === 'screenshot' && input.screenshot) {
-      return this.generateFromScreenshot(input);
+      result = await this.generateFromScreenshot(input);
+    } else {
+      const userPrompt = this.buildGeneratePrompt(input);
+      result = await this.call<GeneratedScript>(
+        GENERATE_SYSTEM_PROMPT,
+        userPrompt,
+        (text) => this.parseJSON<GeneratedScript>(text)
+      );
     }
 
-    const userPrompt = this.buildGeneratePrompt(input);
-    return this.call<GeneratedScript>(
-      GENERATE_SYSTEM_PROMPT,
-      userPrompt,
-      (text) => this.parseJSON<GeneratedScript>(text)
-    );
+    // Attach duplicate warning if found
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
+  }
+
+  /**
+   * Extract content from input for duplicate checking
+   */
+  private extractContentForDuplicateCheck(input: GenerateScriptInput): string {
+    switch (input.inputMethod) {
+      case 'screenshot':
+        return `screenshot-based script`;
+      case 'recording':
+        return JSON.stringify(input.recording?.actions || []);
+      case 'test_case':
+        return `${input.testCase?.title || ''} ${input.testCase?.steps?.map(s => s.action).join(' ') || ''}`;
+      case 'description':
+      default:
+        return input.description || '';
+    }
   }
 
   async generateFromScreenshot(input: GenerateScriptInput): Promise<AgentResponse<GeneratedScript>> {
@@ -216,11 +256,24 @@ export class ScriptSmithAgent extends BaseAgent {
 
   async edit(input: EditScriptInput): Promise<AgentResponse<EditedScript>> {
     const userPrompt = this.buildEditPrompt(input);
-    return this.call<EditedScript>(
+    const result = await this.call<EditedScript>(
       EDIT_SYSTEM_PROMPT,
       userPrompt,
       (text) => this.parseJSON<EditedScript>(text)
     );
+
+    // Check for duplicates with the edited code
+    const duplicateWarning = await this.checkScriptDuplicates(
+      result.data.code,
+      input.projectId,
+      input.skipDuplicateCheck
+    );
+
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
   }
 
   private buildGeneratePrompt(input: GenerateScriptInput): string {

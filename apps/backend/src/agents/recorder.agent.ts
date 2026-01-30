@@ -177,6 +177,10 @@ export interface ConversionOptions {
   extractUtilities?: boolean;
   /** Add console logging */
   addLogging?: boolean;
+  /** Sprint 14+: Project ID for duplicate detection */
+  projectId?: string;
+  /** Sprint 14+: Skip duplicate check */
+  skipDuplicateCheck?: boolean;
 }
 
 /**
@@ -639,12 +643,27 @@ export class RecorderAgent extends BaseAgent {
     recording: Recording,
     options: ConversionOptions
   ): Promise<AgentResponse<GeneratedScript>> {
+    // Check for duplicates before conversion
+    const contentToCheck = `${recording.url} ${recording.actions.map(a => a.type).join(' ')}`;
+    const duplicateWarning = await this.checkScriptDuplicates(
+      contentToCheck,
+      options.projectId,
+      options.skipDuplicateCheck
+    );
+
     const userPrompt = this.buildConvertPrompt(recording, options);
-    return this.call<GeneratedScript>(
+    const result = await this.call<GeneratedScript>(
       CONVERT_SYSTEM_PROMPT,
       userPrompt,
       (text) => this.parseJSON<GeneratedScript>(text)
     );
+
+    // Attach duplicate warning if found
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
   }
 
   /**

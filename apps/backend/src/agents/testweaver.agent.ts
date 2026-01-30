@@ -85,6 +85,9 @@ export interface GenerateOptions {
     partners?: string[] | undefined;
     modules?: string[] | undefined;
   } | undefined;
+  // Sprint 14+: Duplicate detection options
+  projectId?: string | undefined;
+  skipDuplicateCheck?: boolean | undefined;
 }
 
 export interface GenerateInput {
@@ -140,6 +143,9 @@ export interface EvolveInput {
   }>;
   oldSpecification: string;
   newSpecification: string;
+  // Sprint 14+: Duplicate detection options
+  projectId?: string;
+  skipDuplicateCheck?: boolean;
 }
 
 export interface EvolveOutput {
@@ -281,16 +287,51 @@ export class TestWeaverAgent extends BaseAgent {
   }
 
   async generate(input: GenerateInput): Promise<AgentResponse<GenerateOutput>> {
+    // Check for duplicates before generation
+    const contentToCheck = this.extractContentForDuplicateCheck(input);
+    const duplicateWarning = await this.checkTestCaseDuplicates(
+      contentToCheck,
+      input.options?.projectId,
+      input.options?.skipDuplicateCheck
+    );
+
     // Route to appropriate handler based on input method
+    let result: AgentResponse<GenerateOutput>;
     switch (input.inputMethod) {
       case 'screenshot':
-        return this.generateFromScreenshot(input);
+        result = await this.generateFromScreenshot(input);
+        break;
       case 'file_upload':
-        return this.generateFromFile(input);
+        result = await this.generateFromFile(input);
+        break;
       case 'conversation':
-        return this.generateFromConversation(input);
+        result = await this.generateFromConversation(input);
+        break;
       default:
-        return this.generateFromSpec(input);
+        result = await this.generateFromSpec(input);
+    }
+
+    // Attach duplicate warning if found
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
+  }
+
+  /**
+   * Extract content from input for duplicate checking
+   */
+  private extractContentForDuplicateCheck(input: GenerateInput): string {
+    switch (input.inputMethod) {
+      case 'screenshot':
+        return input.screenshot?.context || 'screenshot-based test';
+      case 'file_upload':
+        return input.fileUpload?.content || '';
+      case 'conversation':
+        return input.conversation?.map(m => m.content).join(' ') || '';
+      default:
+        return input.specification || '';
     }
   }
 
@@ -526,12 +567,26 @@ export class TestWeaverAgent extends BaseAgent {
   }
 
   async evolve(input: EvolveInput): Promise<AgentResponse<EvolveOutput>> {
+    // Check for duplicates before evolving (using new specification)
+    const duplicateWarning = await this.checkTestCaseDuplicates(
+      input.newSpecification,
+      input.projectId,
+      input.skipDuplicateCheck
+    );
+
     const userPrompt = this.buildEvolvePrompt(input);
-    return this.call<EvolveOutput>(
+    const result = await this.call<EvolveOutput>(
       EVOLVE_SYSTEM_PROMPT,
       userPrompt,
       (text) => this.parseJSON<EvolveOutput>(text)
     );
+
+    // Attach duplicate warning if found
+    if (duplicateWarning) {
+      result.duplicateWarning = duplicateWarning;
+    }
+
+    return result;
   }
 
   private parseFileContent(fileUpload: FileUploadInput): string {

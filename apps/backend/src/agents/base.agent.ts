@@ -5,6 +5,10 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { logger } from '../utils/logger.js';
+import {
+  duplicateDetectionService,
+  DuplicateResult,
+} from '../services/duplicate.service.js';
 
 // Model pricing (per 1M tokens) - as of Jan 2026
 const MODEL_PRICING = {
@@ -18,6 +22,20 @@ const USD_TO_INR = 84.5; // Update periodically
 
 export type ModelId = keyof typeof MODEL_PRICING;
 
+export interface DuplicateWarning {
+  isDuplicate: boolean;
+  confidence: number;
+  matchType: 'exact' | 'near' | 'semantic' | null;
+  similarItems: Array<{
+    id: string;
+    name: string;
+    similarity: number;
+    path?: string | undefined;
+  }>;
+  recommendation?: string | undefined;
+  checkId?: string | undefined;
+}
+
 export interface AgentResponse<T> {
   data: T;
   usage: {
@@ -30,6 +48,7 @@ export interface AgentResponse<T> {
     model: string;
     durationMs: number;
   };
+  duplicateWarning?: DuplicateWarning;
 }
 
 export interface AgentConfig {
@@ -271,6 +290,110 @@ export abstract class BaseAgent {
       return JSON.parse(jsonStr) as T;
     } catch {
       throw new Error(`Failed to parse JSON response: ${jsonStr.substring(0, 200)}`);
+    }
+  }
+
+  /**
+   * Check for duplicate test cases before generation
+   * @param content - The content to check (test case description, title, etc.)
+   * @param projectId - The project ID to check against
+   * @param skipCheck - Whether to skip the duplicate check
+   * @returns DuplicateWarning if duplicates found, undefined otherwise
+   */
+  protected async checkTestCaseDuplicates(
+    content: string,
+    projectId?: string,
+    skipCheck = false
+  ): Promise<DuplicateWarning | undefined> {
+    if (skipCheck || !projectId) {
+      return undefined;
+    }
+
+    try {
+      const result: DuplicateResult = await duplicateDetectionService.checkTestCase(
+        content,
+        projectId
+      );
+
+      if (result.isDuplicate || result.confidence >= 60) {
+        logger.info({
+          agent: this.agentName,
+          projectId,
+          isDuplicate: result.isDuplicate,
+          confidence: result.confidence,
+          matchType: result.matchType,
+          similarCount: result.similarItems.length,
+        }, 'Duplicate check completed for test case');
+
+        return {
+          isDuplicate: result.isDuplicate,
+          confidence: result.confidence,
+          matchType: result.matchType,
+          similarItems: result.similarItems,
+          recommendation: result.recommendation,
+          checkId: result.checkId,
+        };
+      }
+
+      return undefined;
+    } catch (error) {
+      logger.warn({
+        agent: this.agentName,
+        error: (error as Error).message,
+      }, 'Duplicate check failed, proceeding without check');
+      return undefined;
+    }
+  }
+
+  /**
+   * Check for duplicate scripts before generation
+   * @param code - The code to check
+   * @param projectId - The project ID to check against
+   * @param skipCheck - Whether to skip the duplicate check
+   * @returns DuplicateWarning if duplicates found, undefined otherwise
+   */
+  protected async checkScriptDuplicates(
+    code: string,
+    projectId?: string,
+    skipCheck = false
+  ): Promise<DuplicateWarning | undefined> {
+    if (skipCheck || !projectId) {
+      return undefined;
+    }
+
+    try {
+      const result: DuplicateResult = await duplicateDetectionService.checkScript(
+        code,
+        projectId
+      );
+
+      if (result.isDuplicate || result.confidence >= 60) {
+        logger.info({
+          agent: this.agentName,
+          projectId,
+          isDuplicate: result.isDuplicate,
+          confidence: result.confidence,
+          matchType: result.matchType,
+          similarCount: result.similarItems.length,
+        }, 'Duplicate check completed for script');
+
+        return {
+          isDuplicate: result.isDuplicate,
+          confidence: result.confidence,
+          matchType: result.matchType,
+          similarItems: result.similarItems,
+          recommendation: result.recommendation,
+          checkId: result.checkId,
+        };
+      }
+
+      return undefined;
+    } catch (error) {
+      logger.warn({
+        agent: this.agentName,
+        error: (error as Error).message,
+      }, 'Duplicate check failed, proceeding without check');
+      return undefined;
     }
   }
 }
