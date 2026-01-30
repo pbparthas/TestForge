@@ -32,6 +32,67 @@
       min-height: 100vh;
     }
 
+    .top-nav {
+      background: #0a0a0f;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .top-nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    .top-nav-brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .top-nav-brand span {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .top-nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .top-nav-link {
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .top-nav-link:hover {
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+    }
+
+    .top-nav-link.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: white;
+    }
+
     .header {
       background: linear-gradient(135deg, #1e3a5f 0%, #0f0f0f 100%);
       padding: 24px 32px;
@@ -889,6 +950,17 @@
   </style>
 </head>
 <body>
+  <nav class="top-nav">
+    <a href="index.html" class="top-nav-brand">
+      <div class="top-nav-brand-icon">TF</div>
+      <span>TestForge</span>
+    </a>
+    <div class="top-nav-links">
+      <a href="index.html" class="top-nav-link">Home</a>
+      <a href="architecture.html" class="top-nav-link active">Architecture</a>
+      <a href="agents.html" class="top-nav-link">AI Agents</a>
+    </div>
+  </nav>
   <header class="header">
     <div class="header-content">
       <div class="logo">
@@ -900,11 +972,11 @@
       </div>
       <div class="header-stats">
         <div class="stat">
-          <div class="stat-value">33</div>
+          <div class="stat-value">34</div>
           <div class="stat-label">Services</div>
         </div>
         <div class="stat">
-          <div class="stat-value" style="color: var(--accent-purple);">13</div>
+          <div class="stat-value" style="color: var(--accent-purple);">12</div>
           <div class="stat-label">AI Agents</div>
         </div>
         <div class="stat">
@@ -912,7 +984,7 @@
           <div class="stat-label">API Routes</div>
         </div>
         <div class="stat">
-          <div class="stat-value" style="color: var(--accent-orange);">25</div>
+          <div class="stat-value" style="color: var(--accent-orange);">24</div>
           <div class="stat-label">Pages</div>
         </div>
         <div class="stat">
@@ -1231,47 +1303,65 @@
     <div id="dataflow" class="view-container">
       <div class="data-flow">
         <div class="flow-section">
-          <div class="flow-section-title">Test Creation Flow</div>
+          <div class="flow-section-title">TestWeaver - Test Case Generation (Multiple Input Methods)</div>
           <div class="flow-row">
             <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
               <div class="flow-node-icon">&#128221;</div>
-              <div class="flow-node-label">Requirements</div>
-              <div class="flow-node-sublabel">Manual/Import</div>
+              <div class="flow-node-label">Natural Language</div>
+              <div class="flow-node-sublabel">Spec/Description</div>
+            </div>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128247;</div>
+              <div class="flow-node-label">Screenshot</div>
+              <div class="flow-node-sublabel">Annotated UI</div>
+            </div>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128196;</div>
+              <div class="flow-node-label">File Upload</div>
+              <div class="flow-node-sublabel">CSV/JSON/Excel</div>
+            </div>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128172;</div>
+              <div class="flow-node-label">Conversation</div>
+              <div class="flow-node-sublabel">Multi-turn Chat</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
               <div class="flow-node-icon">&#129302;</div>
-              <div class="flow-node-label">AI Generation</div>
-              <div class="flow-node-sublabel">TestWeaver</div>
-            </div>
-            <span class="flow-arrow">&#8594;</span>
-            <div class="flow-node border-yellow" style="border-color: var(--accent-yellow);">
-              <div class="flow-node-icon">&#128270;</div>
-              <div class="flow-node-label">Duplicate Check</div>
-              <div class="flow-node-sublabel">3-Tier Cascade</div>
-            </div>
-            <span class="flow-arrow">&#8594;</span>
-            <div class="flow-node border-orange" style="border-color: var(--accent-orange);">
-              <div class="flow-node-icon">&#9989;</div>
-              <div class="flow-node-label">HITL Review</div>
-              <div class="flow-node-sublabel">Approval Workflow</div>
+              <div class="flow-node-label">TestWeaver</div>
+              <div class="flow-node-sublabel">AI Generation</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-green" style="border-color: var(--accent-green);">
-              <div class="flow-node-icon">&#128196;</div>
+              <div class="flow-node-icon">&#128203;</div>
               <div class="flow-node-label">Test Cases</div>
-              <div class="flow-node-sublabel">Ready to Execute</div>
+              <div class="flow-node-sublabel">Steps + Expected</div>
             </div>
           </div>
         </div>
 
         <div class="flow-section">
-          <div class="flow-section-title">Script Generation Flow</div>
+          <div class="flow-section-title">ScriptSmith - Script Generation (Multiple Input Methods)</div>
           <div class="flow-row">
-            <div class="flow-node border-blue" style="border-color: var(--accent-blue);">
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128203;</div>
+              <div class="flow-node-label">Test Case</div>
+              <div class="flow-node-sublabel">Steps to Code</div>
+            </div>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
               <div class="flow-node-icon">&#127909;</div>
               <div class="flow-node-label">Recording</div>
               <div class="flow-node-sublabel">Browser Actions</div>
+            </div>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128221;</div>
+              <div class="flow-node-label">Description</div>
+              <div class="flow-node-sublabel">Natural Language</div>
+            </div>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128247;</div>
+              <div class="flow-node-label">Screenshot</div>
+              <div class="flow-node-sublabel">Annotated UI</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
@@ -1280,16 +1370,80 @@
               <div class="flow-node-sublabel">Code Generation</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
-            <div class="flow-node border-pink" style="border-color: var(--accent-pink);">
-              <div class="flow-node-icon">&#128269;</div>
-              <div class="flow-node-label">Code Analysis</div>
-              <div class="flow-node-sublabel">Quality Check</div>
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#128187;</div>
+              <div class="flow-node-label">Script</div>
+              <div class="flow-node-sublabel">Playwright/Cypress</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-section">
+          <div class="flow-section-title">FlowPilot - API Test Generation</div>
+          <div class="flow-row">
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128196;</div>
+              <div class="flow-node-label">OpenAPI Spec</div>
+              <div class="flow-node-sublabel">JSON/YAML</div>
+            </div>
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128279;</div>
+              <div class="flow-node-label">Endpoint</div>
+              <div class="flow-node-sublabel">Method/Path/Schema</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+              <div class="flow-node-icon">&#129302;</div>
+              <div class="flow-node-label">FlowPilot</div>
+              <div class="flow-node-sublabel">API Test Gen</div>
             </div>
             <span class="flow-arrow">&#8594;</span>
             <div class="flow-node border-green" style="border-color: var(--accent-green);">
-              <div class="flow-node-icon">&#128221;</div>
-              <div class="flow-node-label">Script</div>
-              <div class="flow-node-sublabel">Playwright/Cypress</div>
+              <div class="flow-node-icon">&#128187;</div>
+              <div class="flow-node-label">API Tests</div>
+              <div class="flow-node-sublabel">+Auth/Validation</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-section">
+          <div class="flow-section-title">CodeGuardian - Unit Test Generation</div>
+          <div class="flow-row">
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128187;</div>
+              <div class="flow-node-label">Source Code</div>
+              <div class="flow-node-sublabel">TS/JS Functions</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+              <div class="flow-node-icon">&#129302;</div>
+              <div class="flow-node-label">CodeGuardian</div>
+              <div class="flow-node-sublabel">Unit Test Gen</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#128203;</div>
+              <div class="flow-node-label">Unit Tests</div>
+              <div class="flow-node-sublabel">Vitest/Jest/Mocha</div>
+            </div>
+          </div>
+          <div class="flow-row" style="margin-top: 16px;">
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128187;</div>
+              <div class="flow-node-label">Code + Tests</div>
+              <div class="flow-node-sublabel">+ Coverage Report</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+              <div class="flow-node-icon">&#128269;</div>
+              <div class="flow-node-label">Analyze Coverage</div>
+              <div class="flow-node-sublabel">Find Gaps</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#128200;</div>
+              <div class="flow-node-label">Suggestions</div>
+              <div class="flow-node-sublabel">Easy Wins</div>
             </div>
           </div>
         </div>
@@ -1357,13 +1511,61 @@
             </div>
           </div>
         </div>
+
+        <div class="flow-section">
+          <div class="flow-section-title">Traceability Matrix - Coverage Analysis</div>
+          <div class="flow-row">
+            <div class="flow-node border-cyan" style="border-color: var(--accent-cyan);">
+              <div class="flow-node-icon">&#128221;</div>
+              <div class="flow-node-label">Requirements</div>
+              <div class="flow-node-sublabel">What to Test</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-blue" style="border-color: var(--accent-blue);">
+              <div class="flow-node-icon">&#128203;</div>
+              <div class="flow-node-label">Test Cases</div>
+              <div class="flow-node-sublabel">Linked to Reqs</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-green" style="border-color: var(--accent-green);">
+              <div class="flow-node-icon">&#9654;</div>
+              <div class="flow-node-label">Executions</div>
+              <div class="flow-node-sublabel">Pass/Fail History</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-red" style="border-color: var(--accent-red);">
+              <div class="flow-node-icon">&#128027;</div>
+              <div class="flow-node-label">Bugs</div>
+              <div class="flow-node-sublabel">Linked to Failures</div>
+            </div>
+          </div>
+          <div class="flow-row" style="margin-top: 16px;">
+            <div class="flow-node border-purple" style="border-color: var(--accent-purple);">
+              <div class="flow-node-icon">&#128202;</div>
+              <div class="flow-node-label">Coverage Matrix</div>
+              <div class="flow-node-sublabel">Req → Test Mapping</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-orange" style="border-color: var(--accent-orange);">
+              <div class="flow-node-icon">&#128270;</div>
+              <div class="flow-node-label">Gap Analysis</div>
+              <div class="flow-node-sublabel">Untested Reqs</div>
+            </div>
+            <span class="flow-arrow">&#8594;</span>
+            <div class="flow-node border-yellow" style="border-color: var(--accent-yellow);">
+              <div class="flow-node-icon">&#128161;</div>
+              <div class="flow-node-label">Recommendations</div>
+              <div class="flow-node-sublabel">What to Add</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Services View -->
     <div id="services" class="view-container">
       <div class="category-filter" id="serviceFilter">
-        <button class="filter-btn active" data-category="all">All (33)</button>
+        <button class="filter-btn active" data-category="all">All (34)</button>
         <button class="filter-btn" data-category="core">Core (8)</button>
         <button class="filter-btn" data-category="execution">Execution (4)</button>
         <button class="filter-btn" data-category="ai">AI (5)</button>
@@ -1894,10 +2096,10 @@ Platform: AI-Powered Test Management System
 Currently viewing: ${currentView.charAt(0).toUpperCase() + currentView.slice(1)} - ${viewDescriptions[currentView]}
 
 Key Statistics:
-- 33 Backend Services
-- 13 AI Agents
+- 34 Backend Services
+- 12 AI Agents
 - 35 API Routes
-- 25 Dashboard Pages
+- 24 Dashboard Pages
 - 20 Completed Sprints
 
 Core Capabilities:
@@ -1912,7 +2114,7 @@ Core Capabilities:
 9. Team-based RBAC with fine-grained permissions
 10. Real-time WebSocket updates
 
-Integrations: Jenkins CI/CD, Postman Import, External IDs, Anthropic Claude
+Integrations: Jenkins CI/CD, Postman Import, Anthropic Claude
 
 Tech Stack: Express.js + TypeScript + PostgreSQL + Prisma + React + Vite`;
 
