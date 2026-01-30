@@ -34,7 +34,7 @@
     .top-nav-brand-icon {
       width: 28px;
       height: 28px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      background: linear-gradient(135deg, #06b6d4, #10b981);
       border-radius: 6px;
       display: flex;
       align-items: center;
@@ -93,7 +93,7 @@
     .logo-icon {
       width: 48px;
       height: 48px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      background: linear-gradient(135deg, #06b6d4, #10b981);
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -104,7 +104,7 @@
 
     .logo-text h1 {
       font-size: 24px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      background: linear-gradient(135deg, #06b6d4, #10b981);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -273,7 +273,7 @@
 
     .badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
     .badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-    .badge-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    .badge-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
     .badge-orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
     .badge-emerald { background: rgba(16, 185, 129, 0.25); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
 
@@ -534,7 +534,7 @@
     /* Color themes for agents */
     .theme-blue { --accent: #3b82f6; --accent-light: rgba(59, 130, 246, 0.15); }
     .theme-green { --accent: #10b981; --accent-light: rgba(16, 185, 129, 0.15); }
-    .theme-purple { --accent: #8b5cf6; --accent-light: rgba(139, 92, 246, 0.15); }
+    .theme-amber { --accent: #f59e0b; --accent-light: rgba(245, 158, 11, 0.15); }
     .theme-orange { --accent: #f59e0b; --accent-light: rgba(245, 158, 11, 0.15); }
     .theme-pink { --accent: #ec4899; --accent-light: rgba(236, 72, 153, 0.15); }
     .theme-cyan { --accent: #06b6d4; --accent-light: rgba(6, 182, 212, 0.15); }
@@ -794,7 +794,7 @@
             <p>Script generation</p>
           </div>
         </div>
-        <div class="agent-item theme-purple" data-agent="flowpilot" id="flowpilot">
+        <div class="agent-item theme-amber" data-agent="flowpilot" id="flowpilot">
           <div class="agent-icon">🔄</div>
           <div class="agent-info">
             <h3>FlowPilot<span class="has-duplicate" title="Duplicate Detection Enabled"></span></h3>
@@ -893,7 +893,7 @@
           { text: 'Duplicate Check', class: 'badge-emerald' },
           { text: 'Claude Vision', class: 'badge-blue' },
           { text: 'Multi-turn', class: 'badge-green' },
-          { text: 'Batch Processing', class: 'badge-purple' }
+          { text: 'Batch Processing', class: 'badge-amber' }
         ],
         lifecycle: {
           input: {
@@ -941,7 +941,7 @@
         badges: [
           { text: 'Duplicate Check', class: 'badge-emerald' },
           { text: 'Playwright', class: 'badge-blue' },
-          { text: 'Vision', class: 'badge-purple' }
+          { text: 'Vision', class: 'badge-amber' }
         ],
         lifecycle: {
           input: {
@@ -981,7 +981,7 @@
       flowpilot: {
         name: 'FlowPilot',
         icon: '🔄',
-        theme: 'theme-purple',
+        theme: 'theme-amber',
         description: 'Generates comprehensive API tests from OpenAPI specs and chains API calls',
         hasDuplicateCheck: true,
         duplicateCheckType: 'testCase',
@@ -1037,7 +1037,7 @@
           { text: 'Duplicate Check', class: 'badge-emerald' },
           { text: 'Vitest', class: 'badge-blue' },
           { text: 'Jest', class: 'badge-green' },
-          { text: 'Coverage', class: 'badge-purple' }
+          { text: 'Coverage', class: 'badge-amber' }
         ],
         lifecycle: {
           input: {
@@ -1163,7 +1163,7 @@
         duplicateCheckType: 'testCase',
         badges: [
           { text: 'Duplicate Check', class: 'badge-emerald' },
-          { text: 'Claude Vision', class: 'badge-purple' },
+          { text: 'Claude Vision', class: 'badge-amber' },
           { text: 'Regression', class: 'badge-blue' },
           { text: 'Accessibility', class: 'badge-green' }
         ],
@@ -1262,7 +1262,7 @@
         badges: [
           { text: 'Pattern Analysis', class: 'badge-blue' },
           { text: 'Root Cause', class: 'badge-orange' },
-          { text: 'Prediction', class: 'badge-purple' }
+          { text: 'Prediction', class: 'badge-amber' }
         ],
         lifecycle: {
           input: {
@@ -1388,7 +1388,7 @@
         hasDuplicateCheck: false,
         badges: [
           { text: 'Root Cause', class: 'badge-blue' },
-          { text: 'Patterns', class: 'badge-purple' },
+          { text: 'Patterns', class: 'badge-amber' },
           { text: 'Fix Suggestions', class: 'badge-green' }
         ],
         lifecycle: {
