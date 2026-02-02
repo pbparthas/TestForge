@@ -26,3 +26,9 @@ export type { QuickAction } from './QuickActions';
 
 export { RecentTests } from './RecentTests';
 export type { RecentTest, TestResult } from './RecentTests';
+
+// AI & Monitoring Widgets
+export { AIActivityWidget } from './AIActivityWidget';
+export { FlakyTestsWidget } from './FlakyTestsWidget';
+export { SelfHealingWidget } from './SelfHealingWidget';
+export { VisualRegressionWidget } from './VisualRegressionWidget';
