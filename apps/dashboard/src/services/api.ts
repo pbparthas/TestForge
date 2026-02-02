@@ -1202,6 +1202,97 @@ class ApiClient {
     const { data } = await this.client.put(`/approvals/settings/${projectId}`, settings);
     return data;
   }
+
+  // ============================================================================
+  // MAESTRO (MaestroSmith - Flutter Mobile Automation)
+  // ============================================================================
+
+  // Set Maestro config for project
+  async setMaestroConfig(projectId: string, config: {
+    enabled: boolean;
+    gitlab: {
+      host: string;
+      projectId: string;
+      branch: string;
+      jobName: string;
+      artifactPath: string;
+      accessToken: string;
+    };
+    defaultAppId: string;
+  }) {
+    const { data } = await this.client.post('/maestro/config', { projectId, config });
+    return data;
+  }
+
+  // Sync registry from GitLab
+  async syncMaestroRegistry(projectId: string) {
+    const { data } = await this.client.post('/maestro/sync', { projectId });
+    return data;
+  }
+
+  // Get registry status
+  async getMaestroRegistryStatus(projectId: string) {
+    const { data } = await this.client.get('/maestro/registry', { params: { projectId } });
+    return data;
+  }
+
+  // Get registry widgets
+  async getMaestroWidgets(projectId: string, query?: string) {
+    const { data } = await this.client.get('/maestro/registry/widgets', { params: { projectId, query } });
+    return data;
+  }
+
+  // Generate Maestro flow
+  async generateMaestroFlow(input: {
+    inputMethod: 'test_case' | 'description';
+    testCase?: {
+      id?: string;
+      title: string;
+      steps: Array<{ order: number; action: string; expected: string }>;
+      preconditions?: string;
+    };
+    description?: string;
+    options: {
+      appId: string;
+      projectId: string;
+      includeAssertions?: boolean;
+    };
+  }) {
+    const { data } = await this.client.post('/maestro/generate', input);
+    return data;
+  }
+
+  // Edit Maestro flow
+  async editMaestroFlow(input: {
+    existingYaml: string;
+    instruction: string;
+    projectId: string;
+    context?: {
+      errorMessage?: string;
+      failedCommand?: string;
+    };
+  }) {
+    const { data } = await this.client.post('/maestro/edit', input);
+    return data;
+  }
+
+  // Validate Maestro YAML
+  async validateMaestroYaml(yaml: string, projectId?: string) {
+    const { data } = await this.client.post('/maestro/validate', { yaml, projectId });
+    return data;
+  }
+
+  // Get Maestro commands reference
+  async getMaestroCommands() {
+    const { data } = await this.client.get('/maestro/commands');
+    return data;
+  }
+
+  // Clear Maestro cache
+  async clearMaestroCache(projectId?: string) {
+    const { data } = await this.client.delete('/maestro/cache', { params: { projectId } });
+    return data;
+  }
 }
 
 export const api = new ApiClient();

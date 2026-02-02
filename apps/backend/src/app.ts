@@ -45,6 +45,8 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 // Sprint 20: Postman Import & Templates
 import postmanRoutes from './routes/postman.routes.js';
 import templateRoutes from './routes/template.routes.js';
+// MaestroSmith: Maestro YAML flow generation
+import maestroRoutes from './routes/maestro.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -130,6 +132,8 @@ app.use('/api/dashboard', dashboardRoutes);
 // Sprint 20: Postman Import & Templates
 app.use('/api/postman', postmanRoutes);
 app.use('/api/templates', templateRoutes);
+// MaestroSmith: Maestro YAML flow generation
+app.use('/api/maestro', maestroRoutes);
 
 // =============================================================================
 // ERROR HANDLING

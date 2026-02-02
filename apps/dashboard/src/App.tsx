@@ -34,6 +34,7 @@ import {
   ApprovalsPage,
   AuditLogsPage,
   AdminFeedbackPage,
+  MaestroSmithPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -109,6 +110,7 @@ export function App() {
             <Route path="approvals" element={<ApprovalsPage />} />
             <Route path="audit-logs" element={<AuditLogsPage />} />
             <Route path="admin-feedback" element={<AdminFeedbackPage />} />
+            <Route path="maestrosmith" element={<MaestroSmithPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

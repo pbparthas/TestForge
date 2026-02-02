@@ -39,6 +39,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   MessageSquare,
+  Smartphone,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -73,6 +74,7 @@ const navGroups = [
       { path: '/self-healing', icon: Heart, label: 'Self-Healing' },
       { path: '/visual-testing', icon: Eye, label: 'Visual Testing' },
       { path: '/recorder', icon: Video, label: 'Recorder' },
+      { path: '/maestrosmith', icon: Smartphone, label: 'MaestroSmith' },
     ],
   },
   {
