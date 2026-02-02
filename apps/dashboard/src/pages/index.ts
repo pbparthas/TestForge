@@ -27,3 +27,5 @@ export { FlakyTestsPage } from './FlakyTests';
 export { JenkinsIntegrationsPage } from './JenkinsIntegrations';
 export { ReportsPage } from './Reports';
 export { ApprovalsPage } from './Approvals';
+export { AuditLogsPage } from './AuditLogs';
+export { AdminFeedbackPage } from './AdminFeedback';

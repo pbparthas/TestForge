@@ -32,6 +32,8 @@ import {
   JenkinsIntegrationsPage,
   ReportsPage,
   ApprovalsPage,
+  AuditLogsPage,
+  AdminFeedbackPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -105,6 +107,8 @@ export function App() {
             <Route path="jenkins" element={<JenkinsIntegrationsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="approvals" element={<ApprovalsPage />} />
+            <Route path="audit-logs" element={<AuditLogsPage />} />
+            <Route path="admin-feedback" element={<AdminFeedbackPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

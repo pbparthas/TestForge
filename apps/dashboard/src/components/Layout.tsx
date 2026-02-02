@@ -37,6 +37,8 @@ import {
   Settings2,
   FileBarChart,
   CheckCircle2,
+  ShieldCheck,
+  MessageSquare,
 } from 'lucide-react';
 
 // Navigation groups - matching QualityPilot structure
@@ -110,6 +112,19 @@ const navGroups = [
     defaultOpen: true,
     items: [
       { path: '/jenkins', icon: Settings2, label: 'CI/CD Integrations' },
+      { path: '/audit-logs', icon: Shield, label: 'Audit Logs' },
+    ],
+  },
+];
+
+// Admin-only navigation items
+const adminNavItems = [
+  {
+    title: 'Admin',
+    icon: ShieldCheck,
+    defaultOpen: true,
+    items: [
+      { path: '/admin-feedback', icon: MessageSquare, label: 'Feedback & Support' },
     ],
   },
 ];
@@ -123,9 +138,9 @@ export function Layout() {
   // Feedback widget state
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
-  // Track which groups are open/closed
+  // Track which groups are open/closed (include admin groups)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
-    navGroups.reduce((acc, group) => ({
+    [...navGroups, ...adminNavItems].reduce((acc, group) => ({
       ...acc,
       [group.title]: group.defaultOpen,
     }), {})
@@ -183,7 +198,8 @@ export function Layout() {
 
         {/* Navigation Groups */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navGroups.map((group) => {
+          {/* Combine nav groups with admin groups if user is admin */}
+          {[...navGroups, ...(user?.role === 'admin' ? adminNavItems : [])].map((group) => {
             const GroupIcon = group.icon;
             const isOpen = openGroups[group.title];
 

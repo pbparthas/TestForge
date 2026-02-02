@@ -360,6 +360,11 @@ class ApiClient {
     return { data };
   }
 
+  async patch<T = Record<string, unknown>>(path: string, body: Record<string, unknown>): Promise<{ data: T }> {
+    const { data } = await this.client.patch(path, body);
+    return { data };
+  }
+
   // ==========================================================================
   // Flaky Tests (Sprint 14)
   // ==========================================================================

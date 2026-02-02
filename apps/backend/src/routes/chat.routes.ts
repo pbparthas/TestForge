@@ -144,7 +144,7 @@ router.delete(
 // =============================================================================
 
 /**
- * Send a message in a conversation
+ * Send a message in a conversation (returns help suggestions)
  * POST /api/chat/conversations/:id/messages
  */
 router.post(
@@ -162,11 +162,13 @@ router.post(
       throw new ValidationError('You do not have access to this conversation');
     }
 
-    const message = await chatService.sendMessage(req.params.id, content);
+    const result = await chatService.sendMessage(req.params.id, content);
 
     res.status(201).json({
       message: 'Message sent',
-      data: message,
+      data: result.userMessage,
+      systemMessage: result.systemMessage,
+      suggestions: result.suggestions,
     });
   })
 );
@@ -256,6 +258,69 @@ router.post(
     res.json({
       message: 'Suggestion dismissed',
       data: suggestion,
+    });
+  })
+);
+
+// =============================================================================
+// Admin Routes (Admin Only)
+// =============================================================================
+
+/**
+ * Get all conversations (admin only)
+ * GET /api/chat/conversations/admin
+ */
+router.get(
+  '/conversations/admin',
+  asyncHandler(async (req, res) => {
+    // Admin only
+    if (req.user!.role !== 'admin' && req.user!.role !== 'lead') {
+      throw new ValidationError('Admin access required');
+    }
+
+    const { status, category, limit, offset } = req.query;
+
+    const result = await chatService.getAllConversations({
+      status: status as any,
+      category: category as any,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
+      offset: offset ? parseInt(offset as string, 10) : undefined,
+    });
+
+    res.json({
+      data: result.data,
+      total: result.total,
+    });
+  })
+);
+
+/**
+ * Admin reply to a conversation
+ * POST /api/chat/conversations/:id/admin-reply
+ */
+router.post(
+  '/conversations/:id/admin-reply',
+  asyncHandler(async (req, res) => {
+    // Admin only
+    if (req.user!.role !== 'admin' && req.user!.role !== 'lead') {
+      throw new ValidationError('Admin access required');
+    }
+
+    const { content } = req.body;
+
+    if (!content || typeof content !== 'string') {
+      throw new ValidationError('Reply content is required');
+    }
+
+    const message = await chatService.addAdminReply(
+      req.params.id,
+      content,
+      req.user!.userId
+    );
+
+    res.status(201).json({
+      message: 'Reply sent',
+      data: message,
     });
   })
 );

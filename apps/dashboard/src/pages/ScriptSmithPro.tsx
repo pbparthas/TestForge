@@ -526,8 +526,21 @@ function ProvideInputStep({
             setLoading(false);
             return;
           }
-          // For demo: just use file names
-          input = { screenshots: screenshots.map(s => s.name) };
+          // Convert first screenshot to base64
+          const screenshotFile = screenshots[0]!;
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(screenshotFile);
+          });
+          input = {
+            screenshot: {
+              base64,
+              annotations: [],
+              url: window.location.href
+            }
+          };
           break;
 
         case 'record':

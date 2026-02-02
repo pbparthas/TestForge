@@ -73,11 +73,13 @@ model RefreshToken {
 enum Framework {
   playwright
   cypress
+  maestro
 }
 
 enum Language {
   typescript
   javascript
+  yaml
 }
 
 model Project {

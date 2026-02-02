@@ -87,7 +87,6 @@ export function ChatWidget() {
   const [helpTopics, setHelpTopics] = useState<HelpTopic[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [newCategory, setNewCategory] = useState<'help_question' | 'feature_request' | 'bug_report'>('help_question');
-  const [newTitle, setNewTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -138,41 +137,71 @@ export function ChatWidget() {
     }
   };
 
-  // Create new conversation
-  const createConversation = async () => {
-    if (!newTitle.trim()) {
-      setError('Please enter a title');
-      return;
-    }
+  // Start conversation with first message directly (no title required)
+  const startConversationWithMessage = async () => {
+    if (!newMessage.trim()) return;
+
+    const messageContent = newMessage.trim();
+    setNewMessage('');
+    setLoading(true);
+    setError(null);
 
     try {
-      setLoading(true);
-      const result = await api.createConversation({
-        title: newTitle.trim(),
+      // Create conversation with first message as title (truncated)
+      const title = messageContent.length > 50
+        ? messageContent.substring(0, 47) + '...'
+        : messageContent;
+
+      const convResult = await api.createConversation({
+        title,
         category: newCategory,
         contextType: getContextType(),
       });
-      setCurrentConversation(result.data);
-      setMessages([]);
-      setSuggestions([]);
+
+      setCurrentConversation(convResult.data);
       setView('conversation');
-      setNewTitle('');
+
+      // Add optimistic user message
+      const tempMessage: Message = {
+        id: 'temp-' + Date.now(),
+        role: 'user',
+        content: messageContent,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages([tempMessage]);
+
+      // Send the message
+      const msgResult = await api.sendMessage(convResult.data.id, messageContent);
+
+      // Update with real messages
+      const newMessages: Message[] = [msgResult.data];
+      if (msgResult.systemMessage) {
+        newMessages.push(msgResult.systemMessage);
+      }
+      setMessages(newMessages);
+
+      // Show help suggestions if found
+      if (msgResult.suggestions && msgResult.suggestions.length > 0) {
+        setHelpTopics(msgResult.suggestions);
+      }
+
       loadConversations();
-    } catch (err) {
-      setError('Failed to create conversation');
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to start conversation');
+      setMessages([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Send message
+  // Send message (returns help suggestions)
   const sendMessage = async () => {
     if (!newMessage.trim() || !currentConversation) return;
 
     const messageContent = newMessage.trim();
     setNewMessage('');
 
-    // Optimistic update
+    // Optimistic update - show user message immediately
     const tempMessage: Message = {
       id: 'temp-' + Date.now(),
       role: 'user',
@@ -183,10 +212,25 @@ export function ChatWidget() {
 
     try {
       const result = await api.sendMessage(currentConversation.id, messageContent);
-      // Replace temp message with real one
-      setMessages((prev) => prev.map((m) => (m.id === tempMessage.id ? result.data : m)));
+
+      // Replace temp message with real user message
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => !m.id.startsWith('temp-'));
+        const newMessages = [result.data];
+        // Add system message if present
+        if (result.systemMessage) {
+          newMessages.push(result.systemMessage);
+        }
+        return [...filtered, ...newMessages];
+      });
+
+      // Show help suggestions if found
+      if (result.suggestions && result.suggestions.length > 0) {
+        setHelpTopics(result.suggestions);
+      }
     } catch (err: any) {
-      setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
+      // Remove temp message on error
+      setMessages((prev) => prev.filter((m) => !m.id.startsWith('temp-')));
       setError(err.response?.data?.error?.message || 'Failed to send message');
     }
   };
@@ -361,14 +405,14 @@ export function ChatWidget() {
           </>
         )}
 
-        {/* New Conversation View */}
+        {/* New Conversation View - Simplified: Just pick category and start typing */}
         {view === 'new' && (
-          <div className="p-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                What do you need help with?
+          <div className="flex flex-col h-full">
+            <div className="p-3 border-b border-gray-200">
+              <label className="block text-xs font-medium text-gray-500 mb-2">
+                I need help with:
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex gap-2">
                 {(Object.keys(CATEGORY_CONFIG) as Array<keyof typeof CATEGORY_CONFIG>).map((cat) => {
                   const config = CATEGORY_CONFIG[cat];
                   const Icon = config.icon;
@@ -377,14 +421,14 @@ export function ChatWidget() {
                       key={cat}
                       onClick={() => setNewCategory(cat)}
                       className={cn(
-                        'p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all',
+                        'flex-1 py-2 px-3 rounded-lg border flex items-center justify-center gap-1.5 transition-all text-sm',
                         newCategory === cat
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
                       )}
                     >
-                      <Icon className={cn('w-5 h-5', config.color)} />
-                      <span className="text-xs font-medium text-gray-700">
+                      <Icon className="w-4 h-4" />
+                      <span className="font-medium">
                         {cat === 'help_question' && 'Help'}
                         {cat === 'feature_request' && 'Feature'}
                         {cat === 'bug_report' && 'Bug'}
@@ -395,26 +439,38 @@ export function ChatWidget() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
-              <input
-                type="text"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="Brief description of your request..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+            {/* Direct message input - no title required */}
+            <div className="flex-1 flex items-center justify-center p-6 text-center">
+              <div className="text-gray-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="font-medium">Type your question below</p>
+                <p className="text-sm">No title needed - just ask!</p>
+              </div>
             </div>
 
-            <button
-              onClick={createConversation}
-              disabled={loading || !newTitle.trim()}
-              className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating...' : 'Start Conversation'}
-            </button>
+            <div className="p-3 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && newMessage.trim()) {
+                      await startConversationWithMessage();
+                    }
+                  }}
+                  placeholder="Type your question..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+                <button
+                  onClick={startConversationWithMessage}
+                  disabled={!newMessage.trim() || loading}
+                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -470,7 +526,25 @@ export function ChatWidget() {
                 ))
               )}
 
-              {/* Suggestions */}
+              {/* Help Topics (FAQ suggestions based on user message) */}
+              {helpTopics.length > 0 && (
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  <p className="text-xs font-medium text-gray-500 uppercase mb-2">
+                    Related Help Topics
+                  </p>
+                  {helpTopics.slice(0, 3).map((topic) => (
+                    <div
+                      key={topic.id}
+                      className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2"
+                    >
+                      <p className="text-sm font-medium text-gray-900">{topic.question}</p>
+                      <p className="text-sm text-gray-600 mt-1">{topic.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Action Suggestions */}
               {suggestions.filter((s) => s.status === 'pending').length > 0 && (
                 <div className="border-t border-gray-200 pt-3 mt-3">
                   <p className="text-xs font-medium text-gray-500 uppercase mb-2">
