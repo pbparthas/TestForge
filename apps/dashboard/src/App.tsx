@@ -35,6 +35,8 @@ import {
   AuditLogsPage,
   AdminFeedbackPage,
   MaestroSmithPage,
+  CodeReviewPage,
+  GitSettingsPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -111,6 +113,8 @@ export function App() {
             <Route path="audit-logs" element={<AuditLogsPage />} />
             <Route path="admin-feedback" element={<AdminFeedbackPage />} />
             <Route path="maestrosmith" element={<MaestroSmithPage />} />
+            <Route path="code-review/:artifactId" element={<CodeReviewPage />} />
+            <Route path="git-settings" element={<GitSettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

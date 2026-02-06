@@ -47,6 +47,9 @@ import postmanRoutes from './routes/postman.routes.js';
 import templateRoutes from './routes/template.routes.js';
 // MaestroSmith: Maestro YAML flow generation
 import maestroRoutes from './routes/maestro.routes.js';
+// Git Integration
+import gitWebhookRoutes from './routes/git-webhook.routes.js';
+import gitRoutes from './routes/git.routes.js';
 
 // =============================================================================
 // APP SETUP
@@ -134,6 +137,8 @@ app.use('/api/postman', postmanRoutes);
 app.use('/api/templates', templateRoutes);
 // MaestroSmith: Maestro YAML flow generation
 app.use('/api/maestro', maestroRoutes);
+app.use('/api/git/webhook', gitWebhookRoutes);
+app.use('/api/git', gitRoutes);
 
 // =============================================================================
 // ERROR HANDLING

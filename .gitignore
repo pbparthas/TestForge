@@ -39,3 +39,4 @@ prisma/*.db-journal
 # Misc
 *.tsbuildinfo
 .eslintcache
+.mcp.json

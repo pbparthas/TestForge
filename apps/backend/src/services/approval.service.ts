@@ -20,6 +20,7 @@ import { NotFoundError, ValidationError } from '../errors/index.js';
 import { logger } from '../utils/logger.js';
 import { riskAssessmentService } from './risk-assessment.service.js';
 import { slaService } from './sla.service.js';
+import { gitService } from './git.service.js';
 
 // ============================================================================
 // TYPES
@@ -486,6 +487,11 @@ export class ApprovalService {
     // Complete SLA tracking if fully approved
     if (isFullyApproved) {
       await slaService.completeSLATracking(artifactId);
+
+      // Git merge hook: merge develop→main for script artifacts with git integration
+      if (artifact.type === 'script' && artifact.targetEntityId) {
+        await this.tryGitMerge(artifact.targetEntityId, artifact.projectId);
+      }
     }
 
     await this.recordHistory(
@@ -699,6 +705,32 @@ export class ApprovalService {
   // ============================================================================
   // PRIVATE METHODS
   // ============================================================================
+
+  /**
+   * Try git merge after approval — only for script artifacts with git integration
+   * Failures are logged but don't rollback the approval
+   */
+  private async tryGitMerge(scriptId: string, projectId: string): Promise<void> {
+    try {
+      const script = await prisma.script.findUnique({ where: { id: scriptId } });
+      if (!script?.filePath) return;
+
+      const integration = await prisma.gitIntegration.findUnique({ where: { projectId } });
+      if (!integration?.isActive) return;
+
+      await gitService.merge(projectId);
+      await gitService.push(projectId, integration.defaultBranch);
+
+      await prisma.script.update({
+        where: { id: scriptId },
+        data: { status: 'approved' },
+      });
+
+      logger.info({ scriptId, projectId }, 'Git merge completed after approval');
+    } catch (err) {
+      logger.error({ scriptId, projectId, error: err }, 'Git merge failed after approval');
+    }
+  }
 
   /**
    * Validate state transition

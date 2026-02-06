@@ -117,6 +117,7 @@ model Project {
   approvalSettings     ApprovalSettings?
   postmanImports       PostmanImport[]
   testTemplates        TestTemplate[]
+  gitIntegration       GitIntegration?
 
   @@map("projects")
 }
@@ -263,12 +264,17 @@ model Script {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 
+  filePath      String?  @map("file_path")
+  gitCommitHash String?  @map("git_commit_hash")
+
   // Relations
-  testCase   TestCase          @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
-  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy  User              @relation("ScriptCreator", fields: [createdById], references: [id])
-  results    ExecutionResult[]
-  flakyTests FlakyTest[]
+  testCase       TestCase          @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy      User              @relation("ScriptCreator", fields: [createdById], references: [id])
+  results        ExecutionResult[]
+  flakyTests     FlakyTest[]
+  fileLocks      FileLock[]
+  reviewComments ReviewComment[]
 
   @@index([testCaseId])
   @@index([projectId])
@@ -1222,6 +1228,7 @@ model Artifact {
   slaTracking     SLATracking?
   history         ArtifactHistory[]
   feedback        ApprovalFeedback[]
+  reviewComments  ReviewComment[]
 
   @@index([projectId])
   @@index([type])
@@ -1760,4 +1767,97 @@ model TestTemplate {
   @@index([createdById])
   @@index([usageCount(sort: Desc)])
   @@map("test_templates")
+}
+
+// =============================================================================
+// GIT INTEGRATION (Sprint 27)
+// =============================================================================
+
+model GitIntegration {
+  id              String    @id @default(uuid())
+  projectId       String    @unique @map("project_id")
+  repositoryUrl   String    @map("repository_url")
+  sshKeyEncrypted String    @map("ssh_key_encrypted") @db.Text
+  defaultBranch   String    @default("main") @map("default_branch")
+  developBranch   String    @default("develop") @map("develop_branch")
+  workspacePath   String    @map("workspace_path")
+  lastSyncAt      DateTime? @map("last_sync_at")
+  lastSyncStatus  String?   @map("last_sync_status")
+  lastSyncError   String?   @map("last_sync_error")
+  webhookSecret   String?   @map("webhook_secret")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdById     String    @map("created_by_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileLocks   FileLock[]
+  syncHistory GitSyncHistory[]
+
+  @@map("git_integrations")
+}
+
+model GitSyncHistory {
+  id            String    @id @default(uuid())
+  integrationId String    @map("integration_id")
+  syncType      String    @map("sync_type") // push, pull, clone, merge
+  branch        String?
+  commitHash    String?   @map("commit_hash")
+  filesChanged  Int       @default(0) @map("files_changed")
+  status        String    // success, failed, partial
+  errorMessage  String?   @map("error_message")
+  startedAt     DateTime  @default(now()) @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+
+  // Relations
+  integration GitIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId])
+  @@index([startedAt])
+  @@map("git_sync_history")
+}
+
+model FileLock {
+  id            String    @id @default(uuid())
+  integrationId String    @map("integration_id")
+  scriptId      String    @map("script_id")
+  userId        String    @map("user_id")
+  filePath      String    @map("file_path")
+  lockedAt      DateTime  @default(now()) @map("locked_at")
+  expiresAt     DateTime  @map("expires_at")
+  isReleased    Boolean   @default(false) @map("is_released")
+  releasedAt    DateTime? @map("released_at")
+
+  // Relations
+  integration GitIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  script      Script         @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@unique([scriptId, isReleased])
+  @@index([integrationId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("file_locks")
+}
+
+model ReviewComment {
+  id         String   @id @default(uuid())
+  artifactId String   @map("artifact_id")
+  scriptId   String?  @map("script_id")
+  userId     String   @map("user_id")
+  filePath   String?  @map("file_path")
+  lineNumber Int?     @map("line_number")
+  lineEnd    Int?     @map("line_end")
+  content    String
+  isResolved Boolean  @default(false) @map("is_resolved")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  artifact Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  script   Script?  @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+
+  @@index([artifactId])
+  @@index([scriptId])
+  @@map("review_comments")
 }

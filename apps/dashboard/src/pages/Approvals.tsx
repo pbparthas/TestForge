@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '../stores/project';
 import { api } from '../services/api';
 import { Card, Badge, Button, Input } from '../components/ui';
@@ -78,6 +79,7 @@ const SLA_COLORS: Record<string, { variant: 'default' | 'success' | 'warning' | 
 };
 
 export function ApprovalsPage() {
+  const navigate = useNavigate();
   const { currentProject } = useProjectStore();
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [reviewQueue, setReviewQueue] = useState<ReviewQueue | null>(null);
@@ -221,6 +223,11 @@ export function ApprovalsPage() {
         </div>
         {showActions && (
           <div className="flex gap-2 ml-4">
+            {artifact.type === 'script' && (
+              <Button size="sm" variant="secondary" onClick={() => navigate(`/code-review/${artifact.id}`)}>
+                Review Code
+              </Button>
+            )}
             {artifact.state === 'pending_review' && (
               <Button size="sm" onClick={() => handleClaim(artifact)} disabled={processing}>
                 Claim
@@ -402,6 +409,19 @@ export function ApprovalsPage() {
               </div>
               {selectedArtifact.description && (
                 <p className="text-sm text-gray-600 mt-2">{selectedArtifact.description}</p>
+              )}
+              {selectedArtifact.type === 'script' && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mt-2"
+                  onClick={() => {
+                    setShowReviewModal(false);
+                    navigate(`/code-review/${selectedArtifact.id}`);
+                  }}
+                >
+                  Open Code Review
+                </Button>
               )}
             </div>
 

@@ -30,3 +30,5 @@ export { ApprovalsPage } from './Approvals';
 export { AuditLogsPage } from './AuditLogs';
 export { AdminFeedbackPage } from './AdminFeedback';
 export { MaestroSmithPage } from './MaestroSmith';
+export { CodeReviewPage } from './CodeReview';
+export { GitSettingsPage } from './GitSettings';

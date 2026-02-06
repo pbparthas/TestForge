@@ -1293,6 +1293,121 @@ class ApiClient {
     const { data } = await this.client.delete('/maestro/cache', { params: { projectId } });
     return data;
   }
+
+  // ============================================================================
+  // GIT INTEGRATION
+  // ============================================================================
+
+  // Create git integration for project
+  async createGitIntegration(input: {
+    projectId: string;
+    repositoryUrl: string;
+    sshKey: string;
+    defaultBranch?: string;
+    developBranch?: string;
+  }) {
+    const { data } = await this.client.post('/git/integrations', input);
+    return data;
+  }
+
+  // Get git integration for project
+  async getGitIntegration(projectId: string) {
+    const { data } = await this.client.get(`/git/integrations/${projectId}`);
+    return data;
+  }
+
+  // Test git connection
+  async testGitConnection(integrationId: string, repositoryUrl: string, sshKey: string) {
+    const { data } = await this.client.post(`/git/integrations/${integrationId}/test`, { repositoryUrl, sshKey });
+    return data;
+  }
+
+  // Acquire file lock
+  async acquireFileLock(input: {
+    integrationId: string;
+    scriptId: string;
+    filePath: string;
+    durationMinutes?: number;
+  }) {
+    const { data } = await this.client.post('/git/locks/acquire', input);
+    return data;
+  }
+
+  // Release file lock
+  async releaseFileLock(lockId: string) {
+    const { data } = await this.client.post(`/git/locks/${lockId}/release`);
+    return data;
+  }
+
+  // Check file lock status
+  async checkFileLock(scriptId: string) {
+    const { data } = await this.client.get(`/git/locks/check/${scriptId}`);
+    return data;
+  }
+
+  // Extend file lock
+  async extendFileLock(lockId: string, minutes: number) {
+    const { data } = await this.client.post(`/git/locks/${lockId}/extend`, { minutes });
+    return data;
+  }
+
+  // Force release file lock (admin)
+  async forceReleaseFileLock(scriptId: string) {
+    const { data } = await this.client.post(`/git/locks/${scriptId}/force`);
+    return data;
+  }
+
+  // Sync script to git
+  async syncScriptToGit(scriptId: string, commitMessage?: string) {
+    const { data } = await this.client.post('/git/sync/to-git', { scriptId, commitMessage });
+    return data;
+  }
+
+  // Sync files from git
+  async syncFromGit(projectId: string, filePaths?: string[]) {
+    const { data } = await this.client.post('/git/sync/from-git', { projectId, filePaths });
+    return data;
+  }
+
+  // Get git diff for script
+  async getGitDiff(scriptId: string, options?: { filePath?: string; source?: string; target?: string }) {
+    const { data } = await this.client.get(`/git/diff/${scriptId}`, { params: options });
+    return data;
+  }
+
+  // Get git history for project
+  async getGitHistory(projectId: string, maxCount = 50) {
+    const { data } = await this.client.get(`/git/history/${projectId}`, { params: { maxCount } });
+    return data;
+  }
+
+  // ============================================================================
+  // REVIEW COMMENTS
+  // ============================================================================
+
+  // Add review comment
+  async addReviewComment(artifactId: string, input: {
+    content: string;
+    scriptId?: string;
+    filePath?: string;
+    lineNumber?: number;
+    lineEnd?: number;
+  }) {
+    const { data } = await this.client.post(`/git/reviews/${artifactId}/comments`, input);
+    return data;
+  }
+
+  // Get review comments for artifact
+  async getReviewComments(artifactId: string) {
+    const { data } = await this.client.get(`/git/reviews/${artifactId}/comments`);
+    return data;
+  }
+
+  // Resolve review comment
+  async resolveReviewComment(commentId: string) {
+    const { data } = await this.client.patch(`/git/reviews/comments/${commentId}/resolve`);
+    return data;
+  }
 }
 
 export const api = new ApiClient();

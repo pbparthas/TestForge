@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // All mocks must be hoisted
-const { mockPrisma, mockRiskAssessmentService, mockSlaService } = vi.hoisted(() => ({
+const { mockPrisma, mockRiskAssessmentService, mockSlaService, mockGitService } = vi.hoisted(() => ({
   mockPrisma: {
     artifact: {
       create: vi.fn(),
@@ -35,6 +35,13 @@ const { mockPrisma, mockRiskAssessmentService, mockSlaService } = vi.hoisted(() 
     project: {
       findUnique: vi.fn(),
     },
+    script: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    gitIntegration: {
+      findUnique: vi.fn(),
+    },
   },
   mockRiskAssessmentService: {
     assessRisk: vi.fn(),
@@ -44,6 +51,11 @@ const { mockPrisma, mockRiskAssessmentService, mockSlaService } = vi.hoisted(() 
     createSLATracking: vi.fn(),
     completeSLATracking: vi.fn(),
   },
+  mockGitService: {
+    merge: vi.fn(),
+    push: vi.fn(),
+    getIntegration: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/utils/prisma.js', () => ({ prisma: mockPrisma }));
@@ -52,6 +64,10 @@ vi.mock('../../../src/services/risk-assessment.service.js', () => ({
 }));
 vi.mock('../../../src/services/sla.service.js', () => ({
   slaService: mockSlaService,
+}));
+vi.mock('../../../src/services/git.service.js', () => ({
+  gitService: mockGitService,
+  GitService: vi.fn(),
 }));
 
 import { ApprovalService } from '../../../src/services/approval.service.js';
@@ -587,6 +603,87 @@ describe('ApprovalService', () => {
         })
       );
       expect(result.state).toBe('pending_review'); // Not fully approved yet
+    });
+
+    it('should trigger git merge for approved script artifacts with git integration', async () => {
+      const scriptArtifact = {
+        ...mockArtifact,
+        type: 'script' as const,
+        targetEntityId: 'script-123',
+        state: 'in_review' as const,
+        workflow: mockWorkflow,
+      };
+      mockPrisma.artifact.findUnique.mockResolvedValue(scriptArtifact);
+      mockPrisma.approvalStep.findFirst.mockResolvedValue({
+        id: 'step-1',
+        workflowId: mockWorkflow.id,
+        assignedToId: mockUser.id,
+        status: 'in_progress',
+      });
+      mockPrisma.approvalStep.update.mockResolvedValue({});
+      mockPrisma.approvalWorkflow.update.mockResolvedValue({});
+      mockPrisma.artifact.update.mockResolvedValue({
+        ...scriptArtifact,
+        state: 'approved',
+        approvedAt: new Date(),
+      });
+      mockPrisma.artifactHistory.create.mockResolvedValue({});
+      mockSlaService.completeSLATracking.mockResolvedValue();
+      mockPrisma.script.findUnique.mockResolvedValue({
+        id: 'script-123',
+        filePath: 'tests/login.spec.ts',
+        projectId: mockArtifact.projectId,
+      });
+      mockPrisma.gitIntegration.findUnique.mockResolvedValue({
+        id: 'git-int-123',
+        projectId: mockArtifact.projectId,
+        defaultBranch: 'main',
+        isActive: true,
+      });
+      mockGitService.merge.mockResolvedValue({});
+      mockGitService.push.mockResolvedValue({});
+      mockPrisma.script.update.mockResolvedValue({});
+
+      await service.approve({
+        artifactId: mockArtifact.id,
+        userId: mockUser.id,
+        comment: 'LGTM - merge it',
+      });
+
+      expect(mockGitService.merge).toHaveBeenCalledWith(mockArtifact.projectId);
+      expect(mockGitService.push).toHaveBeenCalledWith(mockArtifact.projectId, 'main');
+    });
+
+    it('should not trigger git merge for non-script artifacts', async () => {
+      const testCaseArtifact = {
+        ...mockArtifact,
+        type: 'test_case' as const,
+        state: 'in_review' as const,
+        workflow: mockWorkflow,
+      };
+      mockPrisma.artifact.findUnique.mockResolvedValue(testCaseArtifact);
+      mockPrisma.approvalStep.findFirst.mockResolvedValue({
+        id: 'step-1',
+        workflowId: mockWorkflow.id,
+        assignedToId: mockUser.id,
+        status: 'in_progress',
+      });
+      mockPrisma.approvalStep.update.mockResolvedValue({});
+      mockPrisma.approvalWorkflow.update.mockResolvedValue({});
+      mockPrisma.artifact.update.mockResolvedValue({
+        ...testCaseArtifact,
+        state: 'approved',
+        approvedAt: new Date(),
+      });
+      mockPrisma.artifactHistory.create.mockResolvedValue({});
+      mockSlaService.completeSLATracking.mockResolvedValue();
+
+      await service.approve({
+        artifactId: mockArtifact.id,
+        userId: mockUser.id,
+      });
+
+      expect(mockGitService.merge).not.toHaveBeenCalled();
     });
   });
 

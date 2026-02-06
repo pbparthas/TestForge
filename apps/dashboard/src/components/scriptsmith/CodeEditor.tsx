@@ -1,22 +1,22 @@
 /**
  * CodeEditor Component
- * Syntax-highlighted code editor with basic editing capabilities
- * Uses a textarea with syntax highlighting overlay for simplicity
- * (Monaco can be added later via dynamic import for full features)
+ * Monaco-powered code editor with copy/download toolbar
  */
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Card, Button } from '../ui';
+import { MonacoEditor } from '../monaco/MonacoEditor';
 
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
-  language?: 'typescript' | 'javascript' | 'python' | 'java' | 'csharp';
+  language?: 'typescript' | 'javascript' | 'python' | 'java' | 'csharp' | 'yaml';
   readOnly?: boolean;
   height?: string;
   showLineNumbers?: boolean;
   onCopy?: () => void;
   onDownload?: () => void;
+  onSave?: (value: string) => void;
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -25,6 +25,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
   python: 'Python',
   java: 'Java',
   csharp: 'C#',
+  yaml: 'YAML',
 };
 
 export function CodeEditor({
@@ -33,11 +34,10 @@ export function CodeEditor({
   language = 'typescript',
   readOnly = false,
   height = '400px',
-  showLineNumbers = true,
   onCopy,
   onDownload,
+  onSave,
 }: CodeEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [copied, setCopied] = useState(false);
 
   const lines = value.split('\n');
@@ -47,31 +47,6 @@ export function CodeEditor({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     onCopy?.();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = textareaRef.current;
-      if (textarea) {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const newValue = value.substring(0, start) + '  ' + value.substring(end);
-        onChange(newValue);
-        // Set cursor position after the inserted spaces
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + 2;
-        }, 0);
-      }
-    }
-  };
-
-  // Sync scroll between textarea and line numbers
-  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
-    const lineNumbers = document.getElementById('line-numbers');
-    if (lineNumbers) {
-      lineNumbers.scrollTop = e.currentTarget.scrollTop;
-    }
   };
 
   return (
@@ -123,38 +98,15 @@ export function CodeEditor({
         </div>
       </div>
 
-      {/* Editor Body */}
-      <div className="flex bg-gray-900" style={{ height }}>
-        {/* Line Numbers */}
-        {showLineNumbers && (
-          <div
-            id="line-numbers"
-            className="flex-shrink-0 py-3 px-3 text-right text-gray-500 text-sm font-mono select-none overflow-hidden bg-gray-850"
-            style={{ minWidth: '50px' }}
-          >
-            {lines.map((_, i) => (
-              <div key={i} className="leading-6">
-                {i + 1}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Code Area */}
-        <div className="flex-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onScroll={handleScroll}
-            readOnly={readOnly}
-            spellCheck={false}
-            className="absolute inset-0 w-full h-full p-3 bg-transparent text-gray-100 font-mono text-sm leading-6 resize-none focus:outline-none"
-            style={{ caretColor: '#fff' }}
-          />
-        </div>
-      </div>
+      {/* Monaco Editor */}
+      <MonacoEditor
+        value={value}
+        onChange={onChange}
+        language={language}
+        readOnly={readOnly}
+        height={height}
+        onSave={onSave}
+      />
 
       {/* Footer */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-t border-gray-700 text-xs text-gray-400">
