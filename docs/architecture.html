@@ -1587,6 +1587,292 @@
       color: var(--text-secondary);
     }
 
+    /* ==================== Git & Approvals Tab ==================== */
+    .ga-content {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .ga-intro {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.1));
+      border-left: 4px solid var(--accent-cyan);
+      padding: 20px 24px;
+      border-radius: 8px;
+      margin-bottom: 32px;
+      line-height: 1.6;
+      font-size: 18px;
+      color: var(--text-secondary);
+    }
+
+    .ga-intro strong { color: var(--text-primary); }
+
+    .ga-section {
+      margin-bottom: 36px;
+    }
+
+    .ga-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .ga-section-icon {
+      font-size: 26px;
+    }
+
+    /* Flow diagram */
+    .ga-flow {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 8px 0;
+      margin-bottom: 24px;
+    }
+
+    .ga-flow-step {
+      flex: 1;
+      min-width: 150px;
+      max-width: 200px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .ga-flow-step:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+      transition: all 0.2s;
+    }
+
+    .ga-flow-step.highlight {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1));
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .ga-flow-step.danger {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(249, 115, 22, 0.08));
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .ga-flow-icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 10px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .ga-flow-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .ga-flow-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .ga-flow-arrow {
+      display: flex;
+      align-items: center;
+      font-size: 22px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* Two-column layout */
+    .ga-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    /* Info cards */
+    .ga-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .ga-card-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ga-card-body {
+      padding: 18px;
+    }
+
+    .ga-card-body ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ga-card-body li {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .ga-card-body li strong {
+      color: var(--text-primary);
+    }
+
+    .ga-li-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* State machine diagram */
+    .ga-states {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .ga-state {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+
+    .ga-state.draft { background: rgba(148, 163, 184, 0.15); border-color: rgba(148, 163, 184, 0.3); color: #94a3b8; }
+    .ga-state.pending { background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.3); color: #eab308; }
+    .ga-state.review { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6; }
+    .ga-state.approved { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3); color: #22c55e; }
+    .ga-state.rejected { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
+    .ga-state.archived { background: rgba(107, 114, 128, 0.15); border-color: rgba(107, 114, 128, 0.3); color: #6b7280; }
+
+    .ga-state-arrow {
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 18px;
+    }
+
+    /* Config table */
+    .ga-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+    }
+
+    .ga-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ga-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .ga-table td:first-child {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .ga-table code {
+      background: var(--bg-tertiary);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 15px;
+      color: var(--accent-cyan);
+    }
+
+    /* Endpoint pills */
+    .ga-endpoints {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ga-endpoint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .ga-method {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .ga-method.get { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .ga-method.post { background: rgba(34, 197, 94, 0.2); color: #34d399; }
+    .ga-method.patch { background: rgba(234, 179, 8, 0.2); color: #fbbf24; }
+
+    .ga-path { color: var(--text-secondary); }
+
+    /* Risk grid */
+    .ga-risk-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .ga-risk-card {
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .ga-risk-level {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .ga-risk-card .ga-risk-detail {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
     /* ==================== RESPONSIVE STYLES ==================== */
 
     @media (max-width: 1024px) {
@@ -1626,6 +1912,28 @@
       }
 
       .cascade-arrow {
+        display: none;
+      }
+
+      .ga-columns {
+        grid-template-columns: 1fr;
+      }
+
+      .ga-risk-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .ga-flow {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .ga-flow-step {
+        min-width: 140px;
+        flex: 1 1 140px;
+      }
+
+      .ga-flow-arrow {
         display: none;
       }
     }
@@ -1983,6 +2291,7 @@
       <button class="nav-tab" data-view="timeline">Sprint Timeline</button>
       <button class="nav-tab" data-view="integrations">Integrations</button>
       <button class="nav-tab" data-view="security">Security</button>
+      <button class="nav-tab" data-view="gitapprovals">Git & Approvals</button>
     </nav>
 
     <!-- Architecture View -->
@@ -3371,6 +3680,316 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Git & Approvals View -->
+    <div id="gitapprovals" class="view-container">
+      <div class="ga-content">
+
+        <div class="ga-intro">
+          TestForge uses a <strong>two-branch Git model</strong> (develop/main) with <strong>server-side workspaces</strong> and a
+          <strong>human-in-the-loop approval workflow</strong>. AI agents write scripts to the develop branch. Every artifact must
+          pass risk-scored review before merging to main. Approval triggers an automatic <code>--no-ff</code> merge &mdash;
+          the business decision (approve) is separated from the technical action (merge).
+        </div>
+
+        <!-- ── Git Workflow ── -->
+        <div class="ga-section">
+          <div class="ga-section-header">
+            <span class="ga-section-icon">&#128268;</span>
+            Git Workflow &mdash; Two-Branch Model
+          </div>
+
+          <div class="ga-flow">
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-purple">&#9997;</div>
+              <div class="ga-flow-title">Edit Script</div>
+              <div class="ga-flow-desc">AI agent or user edits in Monaco editor</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-orange">&#128274;</div>
+              <div class="ga-flow-title">Acquire Lock</div>
+              <div class="ga-flow-desc">File-level lock, 30min expiry, one user at a time</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-blue">&#128190;</div>
+              <div class="ga-flow-title">Sync to Git</div>
+              <div class="ga-flow-desc">Write to workspace, commit + push to develop</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-cyan">&#128196;</div>
+              <div class="ga-flow-title">Code Review</div>
+              <div class="ga-flow-desc">Monaco diff viewer, inline comments, resolve threads</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step highlight">
+              <div class="ga-flow-icon bg-green">&#9989;</div>
+              <div class="ga-flow-title">Approve</div>
+              <div class="ga-flow-desc">HITL approval with risk scoring</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step highlight">
+              <div class="ga-flow-icon bg-green">&#128256;</div>
+              <div class="ga-flow-title">Auto-Merge</div>
+              <div class="ga-flow-desc">develop &#8594; main with --no-ff, push to origin</div>
+            </div>
+          </div>
+
+          <div class="ga-columns">
+            <div class="ga-card">
+              <div class="ga-card-header" style="background: rgba(6, 182, 212, 0.1);">
+                <span>&#128268;</span> Git Integration Services
+              </div>
+              <div class="ga-card-body">
+                <ul>
+                  <li><span class="ga-li-icon">&#128194;</span> <div><strong>Workspace Service</strong> &mdash; server-side /testforge-workspace/{projectId} with path traversal protection, read/write/list/delete</div></li>
+                  <li><span class="ga-li-icon">&#128268;</span> <div><strong>Git Service</strong> &mdash; clone, commit, push, pull, merge, diff, log via simple-git with SSH key auth (AES-256 encrypted at rest)</div></li>
+                  <li><span class="ga-li-icon">&#128274;</span> <div><strong>File Lock Service</strong> &mdash; acquire/release/extend/force-release, 30min default expiry, auto-cleanup cron, one active lock per script</div></li>
+                  <li><span class="ga-li-icon">&#128259;</span> <div><strong>Sync Service</strong> &mdash; bidirectional DB &#8596; filesystem sync, conflict detection (content hash comparison), webhook-triggered pull</div></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="ga-card">
+              <div class="ga-card-header" style="background: rgba(139, 92, 246, 0.1);">
+                <span>&#128421;</span> Branches &amp; Merge Strategy
+              </div>
+              <div class="ga-card-body">
+                <ul>
+                  <li><span class="ga-li-icon">&#128309;</span> <div><strong>develop</strong> &mdash; working branch where all commits land (AI scripts, manual edits)</div></li>
+                  <li><span class="ga-li-icon">&#128994;</span> <div><strong>main</strong> &mdash; production branch, only receives code via post-approval merge</div></li>
+                  <li><span class="ga-li-icon">&#128256;</span> <div><strong>Merge strategy</strong> &mdash; <code>--no-ff</code> always creates merge commit for traceability</div></li>
+                  <li><span class="ga-li-icon">&#9888;</span> <div><strong>Merge failure</strong> &mdash; does NOT rollback approval; logged and flagged for manual resolution</div></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Approval Workflow ── -->
+        <div class="ga-section">
+          <div class="ga-section-header">
+            <span class="ga-section-icon">&#9989;</span>
+            Approval Workflow &mdash; State Machine
+          </div>
+
+          <div class="ga-states">
+            <span class="ga-state draft">draft</span>
+            <span class="ga-state-arrow">&#8594;</span>
+            <span class="ga-state pending">pending_review</span>
+            <span class="ga-state-arrow">&#8594;</span>
+            <span class="ga-state review">in_review</span>
+            <span class="ga-state-arrow">&#8594;</span>
+            <span class="ga-state approved">approved</span>
+            <span class="ga-state-arrow">&#8594;</span>
+            <span class="ga-state archived">archived</span>
+          </div>
+          <div class="ga-states" style="margin-top: -4px;">
+            <span style="width: 240px;"></span>
+            <span class="ga-state review">in_review</span>
+            <span class="ga-state-arrow">&#8594;</span>
+            <span class="ga-state rejected">rejected</span>
+            <span class="ga-state-arrow">&#8594;</span>
+            <span class="ga-state draft">draft (v2)</span>
+          </div>
+
+          <div class="ga-flow" style="margin-top: 24px;">
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-purple">&#129302;</div>
+              <div class="ga-flow-title">AI Generates</div>
+              <div class="ga-flow-desc">Agent creates artifact (test case, script, fix)</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-orange">&#128202;</div>
+              <div class="ga-flow-title">Risk Assessment</div>
+              <div class="ga-flow-desc">Score 0-100, factors: complexity, scope, impact</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-yellow">&#128229;</div>
+              <div class="ga-flow-title">Submit</div>
+              <div class="ga-flow-desc">Check auto-approve eligibility or queue for review</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step">
+              <div class="ga-flow-icon bg-blue">&#128100;</div>
+              <div class="ga-flow-title">Claim &amp; Review</div>
+              <div class="ga-flow-desc">Reviewer claims, inspects diff, adds comments</div>
+            </div>
+            <div class="ga-flow-arrow">&#8594;</div>
+            <div class="ga-flow-step highlight">
+              <div class="ga-flow-icon bg-green">&#9989;</div>
+              <div class="ga-flow-title">Approve</div>
+              <div class="ga-flow-desc">All required approvals met, trigger git merge</div>
+            </div>
+          </div>
+
+          <div class="ga-columns" style="margin-top: 4px;">
+            <div class="ga-card">
+              <div class="ga-card-header" style="background: rgba(34, 197, 94, 0.1);">
+                <span>&#9889;</span> Auto-Approve Rules
+              </div>
+              <div class="ga-card-body">
+                <ul>
+                  <li><span class="ga-li-icon">&#128200;</span> <div><strong>Risk level</strong> must be &#8804; configured max (default: <code>low</code>)</div></li>
+                  <li><span class="ga-li-icon">&#129504;</span> <div><strong>AI confidence</strong> must be &#8805; configured min (default: <code>90%</code>)</div></li>
+                  <li><span class="ga-li-icon">&#128221;</span> <div><strong>Reason logged</strong>: "Auto-approved: Risk low &#8804; low, Confidence 95% &#8805; 90%"</div></li>
+                  <li><span class="ga-li-icon">&#128275;</span> <div><strong>Bypass</strong>: auto-approve can be disabled per project in ApprovalSettings</div></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="ga-card">
+              <div class="ga-card-header" style="background: rgba(239, 68, 68, 0.1);">
+                <span>&#10060;</span> Rejection &amp; Feedback
+              </div>
+              <div class="ga-card-body">
+                <ul>
+                  <li><span class="ga-li-icon">&#128218;</span> <div><strong>Structured feedback</strong> with category (accuracy, incomplete, security, style, scope creep, duplicate)</div></li>
+                  <li><span class="ga-li-icon">&#9888;</span> <div><strong>Severity levels</strong>: low, medium, high, critical per feedback item</div></li>
+                  <li><span class="ga-li-icon">&#128221;</span> <div><strong>Suggested fix</strong>, affected section, and corrected content fields for AI learning</div></li>
+                  <li><span class="ga-li-icon">&#128260;</span> <div><strong>Revise flow</strong>: creates new version (v2+), archives old version, resets to draft</div></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Risk Scoring & SLA ── -->
+        <div class="ga-section">
+          <div class="ga-section-header">
+            <span class="ga-section-icon">&#128200;</span>
+            Risk Scoring &amp; SLA Tracking
+          </div>
+
+          <div class="ga-risk-grid">
+            <div class="ga-risk-card" style="border-color: rgba(34, 197, 94, 0.3);">
+              <div class="ga-risk-level" style="color: #22c55e;">LOW</div>
+              <div class="ga-risk-detail">Score &#8804; 25<br>SLA: <strong>1 hour</strong><br>1 approval<br>Auto-approve eligible</div>
+            </div>
+            <div class="ga-risk-card" style="border-color: rgba(234, 179, 8, 0.3);">
+              <div class="ga-risk-level" style="color: #eab308;">MEDIUM</div>
+              <div class="ga-risk-detail">Score 26&ndash;50<br>SLA: <strong>4 hours</strong><br>1 approval<br>Lead recommended</div>
+            </div>
+            <div class="ga-risk-card" style="border-color: rgba(249, 115, 22, 0.3);">
+              <div class="ga-risk-level" style="color: #f97316;">HIGH</div>
+              <div class="ga-risk-detail">Score 51&ndash;75<br>SLA: <strong>24 hours</strong><br>2 approvals<br>Lead required</div>
+            </div>
+            <div class="ga-risk-card" style="border-color: rgba(239, 68, 68, 0.3);">
+              <div class="ga-risk-level" style="color: #ef4444;">CRITICAL</div>
+              <div class="ga-risk-detail">Score 76&ndash;100<br>SLA: <strong>48 hours</strong><br>2 approvals<br>Admin required</div>
+            </div>
+          </div>
+
+          <div class="ga-card" style="margin-top: 20px;">
+            <div class="ga-card-header" style="background: rgba(234, 179, 8, 0.1);">
+              <span>&#9200;</span> SLA Escalation
+            </div>
+            <div class="ga-card-body">
+              <ul>
+                <li><span class="ga-li-icon">&#128993;</span> <div><strong>Warning</strong> at 75% of deadline elapsed &mdash; notification sent to assignee</div></li>
+                <li><span class="ga-li-icon">&#128308;</span> <div><strong>Breached</strong> when deadline passes &mdash; status changes, escalation chain triggered</div></li>
+                <li><span class="ga-li-icon">&#128101;</span> <div><strong>Escalation chain</strong> &mdash; configurable list of user IDs, auto-escalate on breach</div></li>
+                <li><span class="ga-li-icon">&#128276;</span> <div><strong>Notifications</strong> on submission, approval, rejection, and SLA warning (all configurable per project)</div></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── API Endpoints ── -->
+        <div class="ga-section">
+          <div class="ga-section-header">
+            <span class="ga-section-icon">&#128421;</span>
+            API Endpoints (15 Git + Review)
+          </div>
+
+          <div class="ga-endpoints">
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/integrations</span></span>
+            <span class="ga-endpoint"><span class="ga-method get">GET</span><span class="ga-path">/git/integrations/:projectId</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/integrations/:id/test</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/locks/acquire</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/locks/:lockId/release</span></span>
+            <span class="ga-endpoint"><span class="ga-method get">GET</span><span class="ga-path">/git/locks/check/:scriptId</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/locks/:lockId/extend</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/locks/:scriptId/force</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/sync/to-git</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/sync/from-git</span></span>
+            <span class="ga-endpoint"><span class="ga-method get">GET</span><span class="ga-path">/git/diff/:scriptId</span></span>
+            <span class="ga-endpoint"><span class="ga-method get">GET</span><span class="ga-path">/git/history/:projectId</span></span>
+            <span class="ga-endpoint"><span class="ga-method post">POST</span><span class="ga-path">/git/reviews/:artifactId/comments</span></span>
+            <span class="ga-endpoint"><span class="ga-method get">GET</span><span class="ga-path">/git/reviews/:artifactId/comments</span></span>
+            <span class="ga-endpoint"><span class="ga-method patch">PATCH</span><span class="ga-path">/git/reviews/comments/:id/resolve</span></span>
+          </div>
+        </div>
+
+        <!-- ── Data Models ── -->
+        <div class="ga-section">
+          <div class="ga-section-header">
+            <span class="ga-section-icon">&#128451;</span>
+            Data Models
+          </div>
+
+          <div class="ga-columns">
+            <div class="ga-card">
+              <div class="ga-card-header" style="background: rgba(6, 182, 212, 0.1);">
+                <span>&#128268;</span> Git Models
+              </div>
+              <div class="ga-card-body">
+                <table class="ga-table">
+                  <tr><th>Model</th><th>Key Fields</th></tr>
+                  <tr><td>GitIntegration</td><td><code>repositoryUrl</code>, <code>sshKeyEncrypted</code>, <code>defaultBranch</code>, <code>developBranch</code>, <code>webhookSecret</code></td></tr>
+                  <tr><td>GitSyncHistory</td><td><code>syncType</code> (push/pull/merge), <code>commitHash</code>, <code>filesChanged</code>, <code>status</code></td></tr>
+                  <tr><td>FileLock</td><td><code>scriptId</code>, <code>userId</code>, <code>filePath</code>, <code>expiresAt</code>, <code>isReleased</code></td></tr>
+                  <tr><td>ReviewComment</td><td><code>artifactId</code>, <code>filePath</code>, <code>lineNumber</code>, <code>content</code>, <code>isResolved</code></td></tr>
+                </table>
+              </div>
+            </div>
+
+            <div class="ga-card">
+              <div class="ga-card-header" style="background: rgba(139, 92, 246, 0.1);">
+                <span>&#9989;</span> Approval Models
+              </div>
+              <div class="ga-card-body">
+                <table class="ga-table">
+                  <tr><th>Model</th><th>Key Fields</th></tr>
+                  <tr><td>Artifact</td><td><code>state</code>, <code>riskLevel</code>, <code>riskScore</code>, <code>aiConfidenceScore</code>, <code>version</code>, <code>previousVersionId</code></td></tr>
+                  <tr><td>ApprovalWorkflow</td><td><code>requiredApprovals</code>, <code>currentApprovals</code>, <code>autoApproved</code>, <code>requiresAdmin</code></td></tr>
+                  <tr><td>ApprovalStep</td><td><code>stepOrder</code>, <code>requiredRole</code>, <code>status</code> (pending/approved/rejected)</td></tr>
+                  <tr><td>SLATracking</td><td><code>deadline</code>, <code>deadlineHours</code>, <code>status</code> (within/approaching/breached/escalated)</td></tr>
+                  <tr><td>ApprovalFeedback</td><td><code>category</code>, <code>severity</code>, <code>suggestedFix</code>, <code>correctedContent</code></td></tr>
+                  <tr><td>ApprovalSettings</td><td><code>autoApproveEnabled</code>, <code>autoApproveMaxRisk</code>, <code>autoApproveMinConfidence</code>, SLA hours per risk</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Key Decisions ── -->
+        <div class="ga-section">
+          <div class="ga-section-header">
+            <span class="ga-section-icon">&#128161;</span>
+            Key Architecture Decisions
+          </div>
+
+          <div class="ga-card">
+            <div class="ga-card-body">
+              <ul>
+                <li><span class="ga-li-icon">&#128274;</span> <div><strong>File-level locking</strong> (not branch-per-user) &mdash; simpler model, prevents concurrent edits on the same script without branching overhead</div></li>
+                <li><span class="ga-li-icon">&#128256;</span> <div><strong>Post-approval merge hook</strong> (not pre-approval) &mdash; approval is the business decision, merge is the automated side-effect</div></li>
+                <li><span class="ga-li-icon">&#9888;</span> <div><strong>Merge failure doesn't rollback approval</strong> &mdash; logged, flagged for manual fix. Approval represents the human judgment, which shouldn't be lost</div></li>
+                <li><span class="ga-li-icon">&#128268;</span> <div><strong>HMAC-only webhook auth</strong> &mdash; returns 200 even on sync error (fire-and-forget) to prevent info leakage to external systems</div></li>
+                <li><span class="ga-li-icon">&#128274;</span> <div><strong>SSH key encrypted at rest</strong> (AES-256-CBC) &mdash; never exposed in API responses, decrypted only for git operations</div></li>
+                <li><span class="ga-li-icon">&#128260;</span> <div><strong>Versioned artifacts</strong> &mdash; rejection creates a new version (v2+), old version archived. Full audit trail via ArtifactHistory</div></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
