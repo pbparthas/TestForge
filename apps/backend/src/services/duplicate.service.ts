@@ -19,6 +19,7 @@ import type {
 import { prisma } from '../utils/prisma.js';
 import { NotFoundError } from '../errors/index.js';
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from '../utils/logger.js';
 
 // =============================================================================
 // TYPES
@@ -474,7 +475,7 @@ Respond in JSON format:
       };
     } catch (error) {
       // Log error but don't fail - fall back to Levenshtein results
-      console.error('AI semantic check failed:', error);
+      logger.error({ error }, 'AI semantic check failed');
       return {
         isDuplicate: false,
         confidence: 0,

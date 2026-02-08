@@ -8,6 +8,7 @@ import type { AuditCategory } from '@prisma/client';
 import { auditEnhancedService } from '../services/audit-enhanced.service.js';
 import { AuthenticatedRequest } from './auth.middleware.js';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger.js';
 
 // =============================================================================
 // TYPES
@@ -194,7 +195,7 @@ export function createAuditMiddleware(config: AuditConfig = {}) {
         });
       } catch (error) {
         // Don't fail request if audit logging fails
-        console.error('Failed to create audit log:', error);
+        logger.error({ error }, 'Failed to create audit log');
       }
     });
 

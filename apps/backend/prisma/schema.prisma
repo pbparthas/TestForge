@@ -984,6 +984,7 @@ model Report {
   @@index([type])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt])
   @@map("reports")
 }
 
@@ -1835,6 +1836,7 @@ model FileLock {
 
   @@unique([scriptId, isReleased])
   @@index([integrationId])
+  @@index([integrationId, filePath])
   @@index([userId])
   @@index([expiresAt])
   @@map("file_locks")

@@ -283,76 +283,90 @@ export class ScriptSmithAgent extends BaseAgent {
     const deviceTarget = options.deviceTarget ?? getDefaultDeviceTarget();
 
     let prompt = `Generate a ${framework} test script in ${language}.\n\n`;
-
-    // Input method specific content
-    if (input.inputMethod === 'test_case' && input.testCase) {
-      prompt += `TEST CASE:\n`;
-      prompt += `Title: ${input.testCase.title}\n`;
-      if (input.testCase.preconditions) {
-        prompt += `Preconditions: ${input.testCase.preconditions}\n`;
-      }
-      prompt += `Steps:\n`;
-      for (const step of input.testCase.steps) {
-        prompt += `  ${step.order}. Action: ${step.action}\n     Expected: ${step.expected}\n`;
-      }
-    } else if (input.inputMethod === 'recording' && input.recording) {
-      prompt += `RECORDED ACTIONS:\n${JSON.stringify(input.recording.actions, null, 2)}\n`;
-    } else if (input.inputMethod === 'description' && input.description) {
-      prompt += `DESCRIPTION:\n${input.description}\n`;
-    }
-
-    // Device targeting
-    prompt += `\nDEVICE TARGET:\n`;
-    prompt += `- Type: ${deviceTarget.type}\n`;
-    prompt += `- Viewport: ${deviceTarget.viewport.width}x${deviceTarget.viewport.height}\n`;
-    if (deviceTarget.deviceName) {
-      prompt += `- Device: ${deviceTarget.deviceName}\n`;
-    }
-    if (deviceTarget.isTouchEnabled) {
-      prompt += `- Touch enabled: yes\n`;
-    }
-    if (deviceTarget.userAgent) {
-      prompt += `- Include viewport configuration in test setup\n`;
-    }
-
-    // Basic options
-    prompt += `\nOPTIONS:\n`;
-    prompt += `- Framework: ${framework}\n`;
-    prompt += `- Language: ${language}\n`;
-    prompt += `- Include Page Objects: ${options.includePageObjects ?? false}\n`;
-
-    if (options.baseUrl) {
-      prompt += `- Base URL: ${options.baseUrl}\n`;
-    }
-    if (options.useExistingHelpers?.length) {
-      prompt += `- Use these existing helpers: ${options.useExistingHelpers.join(', ')}\n`;
-    }
-
-    // Transformation options
-    if (options.extractUtilities) {
-      prompt += `- Extract reusable code into separate utility functions\n`;
-    }
-    if (options.addLogging) {
-      prompt += `- Add console.log statements for debugging key steps\n`;
-    }
-    if (options.generateRandomData) {
-      prompt += `- Use randomized test data (faker-style) for inputs\n`;
-    }
-    if (options.includeComments !== false) {
-      prompt += `- Include comments explaining each step\n`;
-    }
-    if (options.waitStrategy) {
-      prompt += `- Wait strategy: ${options.waitStrategy}\n`;
-    }
-    if (options.selectorPreference) {
-      prompt += `- Selector preference: ${options.selectorPreference}\n`;
-    }
-    if (options.codeStyle) {
-      prompt += `- Code style: ${options.codeStyle}\n`;
-    }
-
+    prompt += this.buildInputMethodSection(input);
+    prompt += this.buildDeviceTargetSection(deviceTarget);
+    prompt += this.buildBasicOptionsSection(options, framework, language);
+    prompt += this.buildTransformationOptionsSection(options);
     prompt += `\nReturn the script as a JSON object.`;
     return prompt;
+  }
+
+  private buildInputMethodSection(input: GenerateScriptInput): string {
+    if (input.inputMethod === 'test_case' && input.testCase) {
+      let section = `TEST CASE:\n`;
+      section += `Title: ${input.testCase.title}\n`;
+      if (input.testCase.preconditions) {
+        section += `Preconditions: ${input.testCase.preconditions}\n`;
+      }
+      section += `Steps:\n`;
+      for (const step of input.testCase.steps) {
+        section += `  ${step.order}. Action: ${step.action}\n     Expected: ${step.expected}\n`;
+      }
+      return section;
+    }
+    if (input.inputMethod === 'recording' && input.recording) {
+      return `RECORDED ACTIONS:\n${JSON.stringify(input.recording.actions, null, 2)}\n`;
+    }
+    if (input.inputMethod === 'description' && input.description) {
+      return `DESCRIPTION:\n${input.description}\n`;
+    }
+    return '';
+  }
+
+  private buildDeviceTargetSection(deviceTarget: DeviceTarget): string {
+    let section = `\nDEVICE TARGET:\n`;
+    section += `- Type: ${deviceTarget.type}\n`;
+    section += `- Viewport: ${deviceTarget.viewport.width}x${deviceTarget.viewport.height}\n`;
+    if (deviceTarget.deviceName) {
+      section += `- Device: ${deviceTarget.deviceName}\n`;
+    }
+    if (deviceTarget.isTouchEnabled) {
+      section += `- Touch enabled: yes\n`;
+    }
+    if (deviceTarget.userAgent) {
+      section += `- Include viewport configuration in test setup\n`;
+    }
+    return section;
+  }
+
+  private buildBasicOptionsSection(options: TransformationOptions, framework: string, language: string): string {
+    let section = `\nOPTIONS:\n`;
+    section += `- Framework: ${framework}\n`;
+    section += `- Language: ${language}\n`;
+    section += `- Include Page Objects: ${options.includePageObjects ?? false}\n`;
+    if (options.baseUrl) {
+      section += `- Base URL: ${options.baseUrl}\n`;
+    }
+    if (options.useExistingHelpers?.length) {
+      section += `- Use these existing helpers: ${options.useExistingHelpers.join(', ')}\n`;
+    }
+    return section;
+  }
+
+  private buildTransformationOptionsSection(options: TransformationOptions): string {
+    let section = '';
+    if (options.extractUtilities) {
+      section += `- Extract reusable code into separate utility functions\n`;
+    }
+    if (options.addLogging) {
+      section += `- Add console.log statements for debugging key steps\n`;
+    }
+    if (options.generateRandomData) {
+      section += `- Use randomized test data (faker-style) for inputs\n`;
+    }
+    if (options.includeComments !== false) {
+      section += `- Include comments explaining each step\n`;
+    }
+    if (options.waitStrategy) {
+      section += `- Wait strategy: ${options.waitStrategy}\n`;
+    }
+    if (options.selectorPreference) {
+      section += `- Selector preference: ${options.selectorPreference}\n`;
+    }
+    if (options.codeStyle) {
+      section += `- Code style: ${options.codeStyle}\n`;
+    }
+    return section;
   }
 
   private buildScreenshotPrompt(input: GenerateScriptInput): string {
@@ -363,12 +377,10 @@ export class ScriptSmithAgent extends BaseAgent {
 
     let prompt = `Generate a ${framework} test script in ${language} based on the attached screenshot.\n\n`;
 
-    // Screenshot context
     if (input.screenshot?.url) {
       prompt += `Page URL: ${input.screenshot.url}\n\n`;
     }
 
-    // Annotations
     if (input.screenshot?.annotations?.length) {
       prompt += `ANNOTATIONS (user marked these areas):\n`;
       for (const ann of input.screenshot.annotations) {
@@ -381,12 +393,8 @@ export class ScriptSmithAgent extends BaseAgent {
       prompt += `\nUse these annotations to understand the intended test flow.\n`;
     }
 
-    // Device targeting
-    prompt += `\nDEVICE TARGET:\n`;
-    prompt += `- Type: ${deviceTarget.type}\n`;
-    prompt += `- Viewport: ${deviceTarget.viewport.width}x${deviceTarget.viewport.height}\n`;
+    prompt += this.buildDeviceTargetSection(deviceTarget);
 
-    // Options
     prompt += `\nOPTIONS:\n`;
     prompt += `- Framework: ${framework}\n`;
     prompt += `- Language: ${language}\n`;
