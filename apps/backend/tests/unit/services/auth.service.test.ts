@@ -126,7 +126,7 @@ describe('AuthService', () => {
         name: 'Test User',
       });
 
-      expect(mockBcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(mockBcrypt.hash).toHaveBeenCalledWith('password123', 12);
     });
   });
 

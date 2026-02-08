@@ -9,6 +9,8 @@ import { userService } from '../services/user.service.js';
 import { authenticate, authorize, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { ValidationError, ForbiddenError } from '../errors/index.js';
 import type { UserRole } from '@prisma/client';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
 
@@ -36,24 +38,6 @@ const updateUserSchema = z.object({
 // =============================================================================
 // HELPERS
 // =============================================================================
-
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    const errors = result.error.errors.map(e => ({
-      field: e.path.join('.'),
-      message: e.message,
-    }));
-    throw new ValidationError('Validation failed', errors);
-  }
-  return result.data;
-}
-
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
 
 function excludePassword<T extends { passwordHash?: string }>(user: T): Omit<T, 'passwordHash'> {
   const { passwordHash: _, ...userWithoutPassword } = user;

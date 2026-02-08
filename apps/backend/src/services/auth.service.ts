@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma.js';
 import { UnauthorizedError, ConflictError, NotFoundError } from '../errors/index.js';
+import { SALT_ROUNDS } from '../utils/security-config.js';
 
 // =============================================================================
 // TYPES
@@ -49,7 +50,6 @@ export interface AccessTokenPayload {
 const JWT_SECRET = process.env.JWT_SECRET || 'testforge-dev-secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
-const SALT_ROUNDS = 10;
 
 // =============================================================================
 // SERVICE

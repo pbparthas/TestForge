@@ -91,6 +91,57 @@ describe('Auth Middleware', () => {
     });
   });
 
+  describe('authenticate (cookie auth — SEC-003)', () => {
+    it('should authenticate via httpOnly cookie', () => {
+      (mockRequest as any).cookies = { access_token: 'cookie-jwt' };
+      mockAuthService.verifyAccessToken.mockReturnValue({
+        userId: 'user-123',
+        role: 'qae' as UserRole,
+      });
+
+      authenticate(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockAuthService.verifyAccessToken).toHaveBeenCalledWith('cookie-jwt');
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should prefer cookie over Bearer header when both present', () => {
+      mockRequest.headers = { authorization: 'Bearer header-jwt' };
+      (mockRequest as any).cookies = { access_token: 'cookie-jwt' };
+      mockAuthService.verifyAccessToken.mockReturnValue({
+        userId: 'user-123',
+        role: 'qae' as UserRole,
+      });
+
+      authenticate(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockAuthService.verifyAccessToken).toHaveBeenCalledWith('cookie-jwt');
+    });
+
+    it('should fall back to Bearer when no cookie present', () => {
+      mockRequest.headers = { authorization: 'Bearer header-jwt' };
+      (mockRequest as any).cookies = {};
+      mockAuthService.verifyAccessToken.mockReturnValue({
+        userId: 'user-123',
+        role: 'qae' as UserRole,
+      });
+
+      authenticate(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockAuthService.verifyAccessToken).toHaveBeenCalledWith('header-jwt');
+    });
+
+    it('should return 401 when neither cookie nor header present', () => {
+      (mockRequest as any).cookies = {};
+      mockRequest.headers = {};
+
+      authenticate(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+  });
+
   describe('authorize', () => {
     beforeEach(() => {
       // Setup authenticated user

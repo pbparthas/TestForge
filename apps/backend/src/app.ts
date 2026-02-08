@@ -5,8 +5,10 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { rateLimit } from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { AppError } from './errors/index.js';
+import { authLimiter, aiLimiter, defaultLimiter } from './middleware/rate-limit.middleware.js';
+import { csrfProtection } from './middleware/csrf.middleware.js';
 import { logger } from './utils/logger.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -67,20 +69,15 @@ app.use(cors({
   credentials: true,
 }));
 
+// Cookie parsing (SEC-003)
+app.use(cookieParser());
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
-});
-
-app.use(limiter);
+// Rate limiting (tiered — SEC-007)
+app.use(defaultLimiter);
 
 // Request logging
 app.use((req: Request, _res: Response, next: NextFunction) => {
@@ -96,6 +93,13 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
+
+// Tiered rate limiters (applied before route handlers)
+app.use('/api/auth', authLimiter);
+app.use('/api/ai', aiLimiter);
+
+// CSRF protection (SEC-006) — after cookie-parser, before routes
+app.use(csrfProtection);
 
 // API routes
 app.use('/api/auth', authRoutes);

@@ -24,37 +24,45 @@ export interface AuthenticatedRequest extends Request {
 // =============================================================================
 
 /**
- * Authenticate request by verifying JWT token
+ * Extract token from request: cookie first, then Bearer header (dual-mode SEC-003).
+ */
+function extractToken(req: Request): string | null {
+  // 1. Try httpOnly cookie
+  const cookieToken = req.cookies?.access_token;
+  if (cookieToken) return cookieToken;
+
+  // 2. Fall back to Authorization: Bearer header
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && parts[0] === 'Bearer') {
+      return parts[1];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Authenticate request by verifying JWT token.
+ * Supports both httpOnly cookie and Bearer header (dual-mode transition).
  */
 export function authenticate(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  const authHeader = req.headers.authorization;
+  const token = extractToken(req);
 
-  if (!authHeader) {
+  if (!token) {
     res.status(401).json({
       error: {
         code: 'UNAUTHORIZED',
-        message: 'No authorization header provided',
+        message: 'No authentication token provided',
       },
     });
     return;
   }
-
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    res.status(401).json({
-      error: {
-        code: 'UNAUTHORIZED',
-        message: 'Invalid authorization header format',
-      },
-    });
-    return;
-  }
-
-  const token = parts[1];
 
   try {
     const payload = authService.verifyAccessToken(token);
@@ -71,37 +79,25 @@ export function authenticate(
 }
 
 /**
- * Authenticate request and verify user is active (async version)
+ * Authenticate request and verify user is active (async version).
+ * Supports both httpOnly cookie and Bearer header (dual-mode transition).
  */
 export async function authenticateWithActiveCheck(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const authHeader = req.headers.authorization;
+  const token = extractToken(req);
 
-  if (!authHeader) {
+  if (!token) {
     res.status(401).json({
       error: {
         code: 'UNAUTHORIZED',
-        message: 'No authorization header provided',
+        message: 'No authentication token provided',
       },
     });
     return;
   }
-
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    res.status(401).json({
-      error: {
-        code: 'UNAUTHORIZED',
-        message: 'Invalid authorization header format',
-      },
-    });
-    return;
-  }
-
-  const token = parts[1];
 
   try {
     const payload = authService.verifyAccessToken(token);

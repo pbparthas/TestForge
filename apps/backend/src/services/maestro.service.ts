@@ -6,6 +6,7 @@
 
 import { parse as parseYaml } from 'yaml';
 import { ValidationError } from '../errors/index.js';
+import { validateExternalUrl } from '../utils/url-security.js';
 import { logger } from '../utils/logger.js';
 
 // =============================================================================
@@ -179,6 +180,7 @@ export class MaestroService {
 
       logger.info({ projectId, url: url.replace(gitlab.accessToken, '***') }, 'Fetching registry from GitLab');
 
+      validateExternalUrl(url);
       const response = await fetch(url, {
         headers: {
           'PRIVATE-TOKEN': gitlab.accessToken,

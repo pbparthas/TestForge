@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { testSuiteService } from '../services/testsuite.service.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
 router.use(authenticate);
@@ -33,23 +35,6 @@ const reorderSchema = z.object({
     orderIndex: z.number(),
   })),
 });
-
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError('Validation failed', result.error.errors.map(e => ({
-      field: e.path.join('.'),
-      message: e.message,
-    })));
-  }
-  return result.data;
-}
-
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
 
 // Routes
 router.get('/', asyncHandler(async (req, res) => {

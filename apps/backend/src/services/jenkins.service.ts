@@ -6,6 +6,7 @@
 import { prisma } from '../utils/prisma.js';
 import { encrypt, decrypt, getEncryptionKey } from '../utils/encryption.js';
 import { NotFoundError, ValidationError } from '../errors/index.js';
+import { validateExternalUrl } from '../utils/url-security.js';
 import type { JenkinsIntegration, JenkinsBuild, JenkinsBuildStatus } from '@prisma/client';
 
 // =============================================================================
@@ -72,16 +73,13 @@ export interface IntegrationFilters {
 // =============================================================================
 
 export class JenkinsService {
-  private encryptionKey: string;
+  private _encryptionKey: string | null = null;
 
-  constructor() {
-    // Get encryption key from environment
-    try {
-      this.encryptionKey = getEncryptionKey();
-    } catch {
-      // For testing, use a placeholder key
-      this.encryptionKey = 'a'.repeat(64);
+  private get encryptionKey(): string {
+    if (!this._encryptionKey) {
+      this._encryptionKey = getEncryptionKey();
     }
+    return this._encryptionKey;
   }
 
   // ===========================================================================
@@ -208,6 +206,7 @@ export class JenkinsService {
   async testConnection(input: TestConnectionInput): Promise<TestConnectionResult> {
     try {
       const serverUrl = input.serverUrl.replace(/\/+$/, '');
+      validateExternalUrl(serverUrl);
       const authHeader = this.buildAuthHeader(input.username, input.apiToken);
 
       const response = await fetch(`${serverUrl}/api/json`, {
@@ -286,6 +285,7 @@ export class JenkinsService {
 
     // Trigger build
     const buildUrl = `${integration.serverUrl}${integration.jobPath}/buildWithParameters`;
+    validateExternalUrl(integration.serverUrl);
     const response = await fetch(buildUrl, {
       method: 'POST',
       headers: {
@@ -352,6 +352,7 @@ export class JenkinsService {
     const authHeader = this.buildAuthHeader(integration.username, apiToken);
 
     // Fetch build status from Jenkins
+    validateExternalUrl(build.jenkinsBuildUrl);
     const response = await fetch(`${build.jenkinsBuildUrl}api/json`, {
       method: 'GET',
       headers: {
@@ -450,6 +451,7 @@ export class JenkinsService {
     const apiToken = decrypt(integration.apiTokenEncrypted, this.encryptionKey);
     const authHeader = this.buildAuthHeader(integration.username, apiToken);
 
+    validateExternalUrl(build.jenkinsBuildUrl);
     const response = await fetch(`${build.jenkinsBuildUrl}consoleText`, {
       method: 'GET',
       headers: {

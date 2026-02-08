@@ -21,6 +21,8 @@ import { testPilotOrchestratorService } from '../services/testpilot.orchestrator
 import { prisma } from '../utils/prisma.js';
 import { ValidationError, NotFoundError } from '../errors/index.js';
 import { logger } from '../utils/logger.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
 router.use(authenticateWithActiveCheck);
@@ -28,23 +30,6 @@ router.use(authenticateWithActiveCheck);
 // =============================================================================
 // HELPERS
 // =============================================================================
-
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError('Validation failed', result.error.errors.map(e => ({
-      field: e.path.join('.'),
-      message: e.message,
-    })));
-  }
-  return result.data;
-}
-
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

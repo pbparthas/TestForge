@@ -9,25 +9,12 @@ import { reportService } from '../services/report.service.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
 import fs from 'fs';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
+import { validateBasePath } from '../utils/path-security.js';
 
 const router = Router();
 router.use(authenticate);
-
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError('Validation failed', result.error.errors.map(e => ({
-      field: e.path.join('.'), message: e.message,
-    })));
-  }
-  return result.data;
-}
-
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
 
 // Schemas
 const reportParametersSchema = z.object({
@@ -144,9 +131,11 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // Download report
 router.get('/:id/download', asyncHandler(async (req, res) => {
   const { filePath, fileName, mimeType } = await reportService.download(req.params.id);
+  const reportsBase = process.env.REPORTS_DIR || '/testforge-workspace/reports';
+  const safePath = validateBasePath(filePath, reportsBase);
   res.setHeader('Content-Type', mimeType);
   res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-  const stream = fs.createReadStream(filePath);
+  const stream = fs.createReadStream(safePath);
   stream.pipe(res);
 }));
 

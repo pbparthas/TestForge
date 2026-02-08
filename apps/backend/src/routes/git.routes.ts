@@ -11,6 +11,9 @@ import { fileLockService } from '../services/file-lock.service.js';
 import { syncService } from '../services/sync.service.js';
 import { prisma } from '../utils/prisma.js';
 import { ValidationError } from '../errors/index.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
+import { sanitizePath } from '../utils/path-security.js';
 
 const router = Router();
 router.use(authenticate);
@@ -18,29 +21,6 @@ router.use(authenticate);
 // =============================================================================
 // HELPERS
 // =============================================================================
-
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError(
-      'Validation failed',
-      result.error.errors.map((e) => ({
-        field: e.path.join('.'),
-        message: e.message,
-      }))
-    );
-  }
-  return result.data;
-}
-
-function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
 // =============================================================================
 // VALIDATION SCHEMAS
 // =============================================================================
@@ -201,8 +181,10 @@ router.post(
 router.get(
   '/diff/:scriptId',
   asyncHandler(async (req: Request, res: Response) => {
+    const rawFilePath = (req.query.filePath as string) || '';
+    const safeFilePath = rawFilePath ? sanitizePath(rawFilePath) : '';
     const diff = await gitService.getDiff(req.params.scriptId, {
-      filePath: (req.query.filePath as string) || '',
+      filePath: safeFilePath,
       source: (req.query.source as string) || 'main',
       target: (req.query.target as string) || 'develop',
     });

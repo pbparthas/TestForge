@@ -350,7 +350,7 @@ describe('ScriptSmith Session Routes Integration', () => {
         .post(`/api/scriptsmith/sessions/${mockSession.id}/save`)
         .set('Authorization', `Bearer ${userToken}`)
         .send({
-          targetDir: '/output/dir',
+          targetDir: 'output/dir',
           overwrite: false,
         });
 
@@ -423,7 +423,7 @@ describe('ScriptSmith Session Routes Integration', () => {
       const res = await request(app)
         .post('/api/scriptsmith/analyze-framework')
         .set('Authorization', `Bearer ${userToken}`)
-        .send({ projectPath: '/path/to/project' });
+        .send({ projectPath: 'path/to/project' });
 
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Framework analysis complete');

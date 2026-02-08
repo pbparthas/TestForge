@@ -9,6 +9,8 @@ import { authenticate, authorize, AuthenticatedRequest } from '../middleware/aut
 import { templateService } from '../services/template.service.js';
 import { ValidationError } from '../errors/index.js';
 import type { TestTemplateCategory } from '@prisma/client';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
 
@@ -18,29 +20,6 @@ router.use(authenticate);
 // =============================================================================
 // HELPERS
 // =============================================================================
-
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError(
-      'Validation failed',
-      result.error.errors.map((e) => ({
-        field: e.path.join('.'),
-        message: e.message,
-      }))
-    );
-  }
-  return result.data;
-}
-
-function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
 // =============================================================================
 // SCHEMAS
 // =============================================================================

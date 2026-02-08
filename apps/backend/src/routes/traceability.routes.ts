@@ -5,16 +5,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { traceabilityService } from '../services/traceability.service.js';
 import { authenticate } from '../middleware/auth.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
 router.use(authenticate);
-
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
 router.get('/coverage/:projectId', asyncHandler(async (req, res) => {
   const coverage = await traceabilityService.getProjectCoverage(req.params.projectId as string);
   res.json({ data: coverage });

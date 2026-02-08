@@ -8,6 +8,9 @@ import { z } from 'zod';
 import { authService } from '../services/auth.service.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
+import { generateCsrfToken, setCsrfCookie } from '../middleware/csrf.middleware.js';
 
 const router = Router();
 
@@ -40,22 +43,30 @@ const changePasswordSchema = z.object({
 // HELPERS
 // =============================================================================
 
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    const errors = result.error.errors.map(e => ({
-      field: e.path.join('.'),
-      message: e.message,
-    }));
-    throw new ValidationError('Validation failed', errors);
-  }
-  return result.data;
+const isProduction = process.env.NODE_ENV === 'production';
+
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+  res.cookie('access_token', accessToken, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    path: '/api',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+  res.cookie('refresh_token', refreshToken, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    path: '/api/auth/refresh',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+  setCsrfCookie(res, generateCsrfToken());
 }
 
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+function clearAuthCookies(res: Response): void {
+  res.clearCookie('access_token', { path: '/api' });
+  res.clearCookie('refresh_token', { path: '/api/auth/refresh' });
+  res.clearCookie('csrf_token', { path: '/' });
 }
 
 // =============================================================================
@@ -69,6 +80,8 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
 router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   const data = validate(registerSchema, req.body);
   const result = await authService.register(data);
+
+  setAuthCookies(res, result.accessToken, result.refreshToken);
 
   res.status(201).json({
     message: 'User registered successfully',
@@ -84,6 +97,8 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   const data = validate(loginSchema, req.body);
   const result = await authService.login(data);
 
+  setAuthCookies(res, result.accessToken, result.refreshToken);
+
   res.json({
     message: 'Login successful',
     data: result,
@@ -95,8 +110,17 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
  * Refresh access token using refresh token
  */
 router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
-  const data = validate(refreshSchema, req.body);
-  const result = await authService.refreshTokens(data.refreshToken);
+  // Accept refresh token from body or cookie
+  const refreshToken = req.body.refreshToken || req.cookies?.refresh_token;
+  if (!refreshToken) {
+    res.status(400).json({
+      error: { code: 'VALIDATION_ERROR', message: 'Refresh token is required' },
+    });
+    return;
+  }
+  const result = await authService.refreshTokens(refreshToken);
+
+  setAuthCookies(res, result.accessToken, result.refreshToken);
 
   res.json({
     message: 'Tokens refreshed successfully',
@@ -111,6 +135,8 @@ router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
 router.post('/logout', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const { userId } = (req as AuthenticatedRequest).user;
   await authService.logout(userId);
+
+  clearAuthCookies(res);
 
   res.json({
     message: 'Logged out successfully',

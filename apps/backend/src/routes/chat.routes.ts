@@ -7,16 +7,9 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { chatService } from '../services/chat.service.js';
 import { ValidationError } from '../errors/index.js';
+import { asyncHandler } from '../utils/async-handler.js';
 
 // Async handler wrapper
-function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
 const router = Router();
 
 // All routes require authentication

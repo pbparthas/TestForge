@@ -7,6 +7,7 @@ import type { User, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../utils/prisma.js';
 import { NotFoundError, ConflictError } from '../errors/index.js';
+import { SALT_ROUNDS } from '../utils/security-config.js';
 
 // =============================================================================
 // TYPES
@@ -48,8 +49,6 @@ export interface PaginatedResult<T> {
 // =============================================================================
 
 export class UserService {
-  private readonly SALT_ROUNDS = 10;
-
   /**
    * Create a new user
    */
@@ -64,7 +63,7 @@ export class UserService {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(input.password, this.SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
 
     // Create user
     const user = await prisma.user.create({
@@ -192,7 +191,7 @@ export class UserService {
       throw new NotFoundError('User', id);
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
     await prisma.user.update({
       where: { id },

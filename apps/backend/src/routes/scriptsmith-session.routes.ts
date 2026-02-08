@@ -18,35 +18,12 @@ import { z } from 'zod';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { scriptSmithSessionService } from '../services/scriptsmith-session.service.js';
 import { ValidationError } from '../errors/index.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
+import { sanitizePath } from '../utils/path-security.js';
 
 const router = Router();
 router.use(authenticate);
-
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError(
-      'Validation failed',
-      result.error.errors.map((e) => ({
-        field: e.path.join('.'),
-        message: e.message,
-      }))
-    );
-  }
-  return result.data;
-}
-
-function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -280,9 +257,10 @@ router.post(
     const id = req.params.id as string;
     const data = validate(saveToFrameworkSchema, req.body);
 
+    const safeTargetDir = sanitizePath(data.targetDir);
     const result = await scriptSmithSessionService.saveToFramework(
       id,
-      data.targetDir,
+      safeTargetDir,
       data.overwrite
     );
 
@@ -313,8 +291,9 @@ router.post(
   asyncHandler(async (req, res) => {
     const data = validate(analyzeFrameworkSchema, req.body);
 
+    const safeProjectPath = sanitizePath(data.projectPath);
     const analysis = await scriptSmithSessionService.analyzeFramework(
-      data.projectPath
+      safeProjectPath
     );
 
     res.json({
