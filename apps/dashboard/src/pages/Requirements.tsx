@@ -3,20 +3,20 @@
  * Full CRUD with search, filters, and traceability
  */
 
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useRequirements, useCreateRequirement, useUpdateRequirement } from '../hooks/queries';
 import { Card, Button, StatusBadge, PriorityBadge, Input } from '../components/ui';
 import { Search, Plus, Filter, Link as LinkIcon, X } from 'lucide-react';
 import type { Requirement } from '../types';
 
 export function RequirementsPage() {
   const { currentProject } = useProjectStore();
-  const [requirements, setRequirements] = useState<Requirement[]>([]);
-  const [filteredRequirements, setFilteredRequirements] = useState<Requirement[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page] = useState(1);
-  const [, setTotal] = useState(0);
+  const { data, isLoading } = useRequirements(currentProject?.id, page);
+  const requirements = data?.items ?? [];
+  const createRequirement = useCreateRequirement();
+  const updateRequirement = useUpdateRequirement();
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,32 +41,7 @@ export function RequirementsPage() {
     externalId: '',
   });
 
-  useEffect(() => {
-    if (currentProject) {
-      loadRequirements();
-    }
-  }, [currentProject, page]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [requirements, searchQuery, priorityFilter, statusFilter]);
-
-  const loadRequirements = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    try {
-      const response = await api.getRequirements(page, 50, currentProject.id);
-      const items = response.data?.data || response.data?.items || response.data || [];
-      setRequirements(Array.isArray(items) ? items : []);
-      setTotal(response.data?.total || items.length);
-    } catch (err) {
-      console.error('Failed to load requirements', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
+  const filteredRequirements = useMemo(() => {
     let filtered = [...requirements];
 
     if (searchQuery) {
@@ -86,8 +61,8 @@ export function RequirementsPage() {
       filtered = filtered.filter(r => r.status === statusFilter);
     }
 
-    setFilteredRequirements(filtered);
-  };
+    return filtered;
+  }, [requirements, searchQuery, priorityFilter, statusFilter]);
 
   const handleCreate = () => {
     setEditingRequirement(null);
@@ -117,12 +92,11 @@ export function RequirementsPage() {
     e.preventDefault();
     try {
       if (editingRequirement) {
-        await api.updateRequirement(editingRequirement.id, formData);
+        await updateRequirement.mutateAsync({ id: editingRequirement.id, updates: formData });
       } else {
-        await api.createRequirement({ ...formData, projectId: currentProject!.id });
+        await createRequirement.mutateAsync({ ...formData, projectId: currentProject!.id });
       }
       setIsModalOpen(false);
-      loadRequirements();
     } catch (err) {
       console.error('Failed to save requirement', err);
     }
@@ -221,7 +195,7 @@ export function RequirementsPage() {
 
       {/* Requirements List */}
       <Card>
-        {loading ? (
+        {isLoading ? (
           <p className="text-center py-8 text-gray-500">Loading...</p>
         ) : filteredRequirements.length === 0 ? (
           <div className="text-center py-8">

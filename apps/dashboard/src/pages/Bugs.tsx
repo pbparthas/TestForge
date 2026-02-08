@@ -2,37 +2,16 @@
  * Bugs Page
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useBugs } from '../hooks/queries';
 import { Card, StatusBadge, PriorityBadge } from '../components/ui';
-import type { Bug } from '../types';
 
 export function BugsPage() {
   const { currentProject } = useProjectStore();
-  const [bugs, setBugs] = useState<Bug[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useBugs(currentProject?.id);
+  const bugs = data?.items ?? [];
   const [filter, setFilter] = useState<string>('all');
-
-  useEffect(() => {
-    if (currentProject) {
-      loadBugs();
-    }
-  }, [currentProject]);
-
-  const loadBugs = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    try {
-      const response = await api.getBugs(1, 50, currentProject.id);
-      const items = response.data?.data || response.data?.items || response.data || [];
-      setBugs(Array.isArray(items) ? items : []);
-    } catch (err) {
-      console.error('Failed to load bugs', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredBugs = filter === 'all'
     ? bugs
@@ -72,7 +51,7 @@ export function BugsPage() {
       </div>
 
       <Card>
-        {loading ? (
+        {isLoading ? (
           <p className="text-center py-8 text-gray-500">Loading...</p>
         ) : filteredBugs.length === 0 ? (
           <p className="text-center py-8 text-gray-500">

@@ -1,36 +1,84 @@
 /**
  * API Client
- * Centralized HTTP client with auth handling
+ * Centralized HTTP client with httpOnly cookie auth and CSRF protection
  */
 
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
 class ApiClient {
   private client: AxiosInstance;
+  private isRefreshing = false;
+  private refreshQueue: Array<{
+    resolve: (config: InternalAxiosRequestConfig) => void;
+    reject: (error: unknown) => void;
+  }> = [];
 
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
       headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
     });
 
+    // Attach CSRF token to mutating requests
     this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      const method = config.method?.toUpperCase();
+      if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        const csrfToken = getCookie('csrf_token');
+        if (csrfToken) {
+          config.headers['X-CSRF-Token'] = csrfToken;
+        }
       }
       return config;
     });
 
+    // Handle 401 with silent token refresh
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+          // Don't retry refresh or login requests
+          if (originalRequest.url?.includes('/auth/refresh') || originalRequest.url?.includes('/auth/login')) {
+            window.location.href = '/login';
+            return Promise.reject(error);
+          }
+
+          if (this.isRefreshing) {
+            // Queue requests while refresh is in progress
+            return new Promise((resolve, reject) => {
+              this.refreshQueue.push({ resolve, reject });
+            }).then((config) => this.client(config as InternalAxiosRequestConfig));
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            await this.client.post('/auth/refresh');
+            // Refresh succeeded — retry queued requests
+            this.refreshQueue.forEach(({ resolve }) => resolve(originalRequest));
+            this.refreshQueue = [];
+            return this.client(originalRequest);
+          } catch {
+            // Refresh failed — redirect to login
+            this.refreshQueue.forEach(({ reject }) => reject(error));
+            this.refreshQueue = [];
+            window.location.href = '/login';
+            return Promise.reject(error);
+          } finally {
+            this.isRefreshing = false;
+          }
         }
+
         return Promise.reject(error);
       }
     );
@@ -49,6 +97,11 @@ class ApiClient {
 
   async getMe() {
     const { data } = await this.client.get('/auth/me');
+    return data;
+  }
+
+  async logout() {
+    const { data } = await this.client.post('/auth/logout');
     return data;
   }
 

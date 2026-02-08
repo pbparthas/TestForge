@@ -3,9 +3,9 @@
  * Full CRUD with bulk operations, version history, import/export
  */
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useTestCases, useCreateTestCase, useUpdateTestCase } from '../hooks/queries';
 import { Card, Button, StatusBadge, PriorityBadge, Input } from '../components/ui';
 import {
   Search,
@@ -36,10 +36,12 @@ type ViewMode = 'table' | 'tree';
 
 export function TestCasesPage() {
   const { currentProject } = useProjectStore();
-  const [testCases, setTestCases] = useState<TestCase[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const { data, isLoading } = useTestCases(currentProject?.id, page);
+  const testCases = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const createTestCase = useCreateTestCase();
+  const updateTestCase = useUpdateTestCase();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // View mode
@@ -195,27 +197,6 @@ export function TestCasesPage() {
     },
   });
 
-  useEffect(() => {
-    if (currentProject) {
-      loadTestCases();
-    }
-  }, [currentProject, page]);
-
-  const loadTestCases = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    try {
-      const response = await api.getTestCases(page, 100, currentProject.id);
-      const items = response.data?.data || response.data?.items || response.data || [];
-      setTestCases(Array.isArray(items) ? items : []);
-      setTotal(response.data?.total || items.length);
-    } catch (err) {
-      console.error('Failed to load test cases', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCreate = () => {
     setEditingTestCase(null);
     setFormData({
@@ -260,12 +241,11 @@ export function TestCasesPage() {
       };
 
       if (editingTestCase) {
-        await api.updateTestCase(editingTestCase.id, data);
+        await updateTestCase.mutateAsync({ id: editingTestCase.id, updates: data });
       } else {
-        await api.createTestCase({ ...data, projectId: currentProject!.id });
+        await createTestCase.mutateAsync({ ...data, projectId: currentProject!.id });
       }
       setIsModalOpen(false);
-      loadTestCases();
     } catch (err) {
       console.error('Failed to save test case', err);
     }
@@ -273,7 +253,7 @@ export function TestCasesPage() {
 
   const handleDuplicate = async (testCase: TestCase) => {
     try {
-      const data = {
+      await createTestCase.mutateAsync({
         projectId: currentProject!.id,
         title: `${testCase.title} (Copy)`,
         description: testCase.description,
@@ -281,9 +261,7 @@ export function TestCasesPage() {
         priority: testCase.priority,
         steps: testCase.steps,
         expectedResult: testCase.expectedResult,
-      };
-      await api.createTestCase(data);
-      loadTestCases();
+      });
     } catch (err) {
       console.error('Failed to duplicate test case', err);
     }
@@ -295,24 +273,20 @@ export function TestCasesPage() {
     if (!confirm(`Delete ${selectedIds.size} test case(s)?`)) return;
 
     try {
-      // In production, batch API call - for now, archive instead
       for (const id of selectedIds) {
-        await api.updateTestCase(id, { status: 'archived' });
+        await updateTestCase.mutateAsync({ id, updates: { status: 'archived' } });
       }
       setSelectedIds(new Set());
-      loadTestCases();
     } catch (err) {
       console.error('Failed to delete test cases', err);
     }
   };
 
   const handleBulkMove = () => {
-    // Open move to suite modal
     alert(`Move ${selectedIds.size} test case(s) to suite - coming soon`);
   };
 
   const handleBulkTag = () => {
-    // Open tag modal
     alert(`Tag ${selectedIds.size} test case(s) - coming soon`);
   };
 
@@ -322,10 +296,9 @@ export function TestCasesPage() {
 
     try {
       for (const id of selectedIds) {
-        await api.updateTestCase(id, { status: 'archived' });
+        await updateTestCase.mutateAsync({ id, updates: { status: 'archived' } });
       }
       setSelectedIds(new Set());
-      loadTestCases();
     } catch (err) {
       console.error('Failed to archive test cases', err);
     }
@@ -338,7 +311,7 @@ export function TestCasesPage() {
       for (const id of selectedIds) {
         const tc = testCases.find(t => t.id === id);
         if (tc) {
-          await api.createTestCase({
+          await createTestCase.mutateAsync({
             projectId: currentProject!.id,
             title: `${tc.title} (Copy)`,
             description: tc.description,
@@ -347,7 +320,6 @@ export function TestCasesPage() {
         }
       }
       setSelectedIds(new Set());
-      loadTestCases();
     } catch (err) {
       console.error('Failed to duplicate test cases', err);
     }
@@ -413,17 +385,18 @@ export function TestCasesPage() {
   const handleRestoreVersion = async (version: TestCaseVersion) => {
     setIsRestoring(true);
     try {
-      // Restore version
-      await api.updateTestCase(version.testCaseId, {
-        title: version.title,
-        description: version.description,
-        type: version.type,
-        priority: version.priority,
-        steps: version.steps,
-        expectedResult: version.expectedResult,
+      await updateTestCase.mutateAsync({
+        id: version.testCaseId,
+        updates: {
+          title: version.title,
+          description: version.description,
+          type: version.type,
+          priority: version.priority,
+          steps: version.steps,
+          expectedResult: version.expectedResult,
+        },
       });
       setVersionModalOpen(false);
-      loadTestCases();
     } catch (err) {
       console.error('Failed to restore version', err);
     } finally {
@@ -601,7 +574,7 @@ export function TestCasesPage() {
 
           {/* Content */}
           <Card>
-            {loading ? (
+            {isLoading ? (
               <p className="text-center py-8 text-gray-500">Loading...</p>
             ) : filteredTestCases.length === 0 ? (
               <div className="text-center py-8">

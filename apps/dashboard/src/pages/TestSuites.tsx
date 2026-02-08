@@ -3,18 +3,21 @@
  * Full CRUD with search, filters, and test case management
  */
 
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useTestSuites, useCreateTestSuite, useUpdateTestSuite, useDuplicateTestSuite, useTriggerExecution } from '../hooks/queries';
 import { Card, Button, StatusBadge, Input } from '../components/ui';
 import { Search, Plus, FolderOpen, Play, ChevronRight, X, Copy } from 'lucide-react';
 import type { TestSuite } from '../types';
 
 export function TestSuitesPage() {
   const { currentProject } = useProjectStore();
-  const [suites, setSuites] = useState<TestSuite[]>([]);
-  const [filteredSuites, setFilteredSuites] = useState<TestSuite[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useTestSuites(currentProject?.id);
+  const suites = data?.items ?? [];
+  const createSuite = useCreateTestSuite();
+  const updateSuite = useUpdateTestSuite();
+  const duplicateSuite = useDuplicateTestSuite();
+  const triggerExecution = useTriggerExecution();
   const [expandedSuite, setExpandedSuite] = useState<string | null>(null);
 
   // Filters
@@ -30,31 +33,7 @@ export function TestSuitesPage() {
     tags: '',
   });
 
-  useEffect(() => {
-    if (currentProject) {
-      loadSuites();
-    }
-  }, [currentProject]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [suites, searchQuery, statusFilter]);
-
-  const loadSuites = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    try {
-      const response = await api.getTestSuites(1, 100, currentProject.id);
-      const items = response.data?.data || response.data?.items || response.data || [];
-      setSuites(Array.isArray(items) ? items : []);
-    } catch (err) {
-      console.error('Failed to load test suites', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
+  const filteredSuites = useMemo(() => {
     let filtered = [...suites];
 
     if (searchQuery) {
@@ -69,8 +48,8 @@ export function TestSuitesPage() {
       filtered = filtered.filter(s => s.status === statusFilter);
     }
 
-    setFilteredSuites(filtered);
-  };
+    return filtered;
+  }, [suites, searchQuery, statusFilter]);
 
   const handleCreate = () => {
     setEditingSuite(null);
@@ -103,12 +82,11 @@ export function TestSuitesPage() {
       };
 
       if (editingSuite) {
-        await api.updateTestSuite(editingSuite.id, data);
+        await updateSuite.mutateAsync({ id: editingSuite.id, updates: data });
       } else {
-        await api.createTestSuite({ ...data, projectId: currentProject!.id });
+        await createSuite.mutateAsync({ ...data, projectId: currentProject!.id });
       }
       setIsModalOpen(false);
-      loadSuites();
     } catch (err) {
       console.error('Failed to save test suite', err);
     }
@@ -117,8 +95,7 @@ export function TestSuitesPage() {
   const handleDuplicate = async (suite: TestSuite, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await api.duplicateTestSuite(suite.id);
-      loadSuites();
+      await duplicateSuite.mutateAsync(suite.id);
     } catch (err) {
       console.error('Failed to duplicate suite', err);
     }
@@ -127,7 +104,7 @@ export function TestSuitesPage() {
   const handleRunSuite = async (suite: TestSuite, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await api.triggerExecution(currentProject!.id, suite.id);
+      await triggerExecution.mutateAsync({ projectId: currentProject!.id, suiteId: suite.id });
       window.location.href = '/executions';
     } catch (err) {
       console.error('Failed to run suite', err);
@@ -191,7 +168,7 @@ export function TestSuitesPage() {
 
       {/* Suites List */}
       <div className="space-y-4">
-        {loading ? (
+        {isLoading ? (
           <Card>
             <p className="text-center py-8 text-gray-500">Loading...</p>
           </Card>

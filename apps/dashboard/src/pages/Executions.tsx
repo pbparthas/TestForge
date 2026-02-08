@@ -3,113 +3,26 @@
  * Run Tests view and History view with real-time status updates
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useExecutions, useEnvironments, useExecutionTestSuites } from '../hooks/queries';
 import { Card } from '../components/ui';
 import { RunTestsView, HistoryView } from '../components/executions';
 
 type ViewMode = 'run' | 'history';
 
-interface Environment {
-  id: string;
-  name: string;
-  baseUrl: string;
-}
-
-interface TestSuite {
-  id: string;
-  name: string;
-  testCount: number;
-}
-
-interface Execution {
-  id: string;
-  status: string;
-  triggerType: string;
-  startedAt?: string;
-  completedAt?: string;
-  summary?: {
-    total: number;
-    passed: number;
-    failed: number;
-    skipped: number;
-    duration?: number;
-  };
-  environment?: { name: string };
-  device?: string;
-  browser?: string;
-}
-
 export function ExecutionsPage() {
   const { currentProject } = useProjectStore();
   const [viewMode, setViewMode] = useState<ViewMode>('run');
-  const [executions, setExecutions] = useState<Execution[]>([]);
-  const [environments, setEnvironments] = useState<Environment[]>([]);
-  const [testSuites, setTestSuites] = useState<TestSuite[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const loadExecutions = useCallback(async () => {
-    if (!currentProject) return;
-    try {
-      const response = await api.getExecutions(1, 50, currentProject.id);
-      const items = response.data?.data || response.data?.items || response.data || [];
-      setExecutions(Array.isArray(items) ? items : []);
-    } catch (err) {
-      console.error('Failed to load executions', err);
-    }
-  }, [currentProject]);
+  const { data: executionsData, isLoading, refetch: refetchExecutions } = useExecutions(currentProject?.id);
+  const { data: environments = [] } = useEnvironments(currentProject?.id);
+  const { data: testSuites = [] } = useExecutionTestSuites(currentProject?.id);
 
-  const loadEnvironments = useCallback(async () => {
-    if (!currentProject) return;
-    try {
-      const response = await api.get<{ data: Environment[] }>('/environments', {
-        projectId: currentProject.id,
-      });
-      const items = response.data?.data || response.data || [];
-      setEnvironments(Array.isArray(items) ? items : []);
-    } catch (err) {
-      console.error('Failed to load environments', err);
-      // Provide default environments for demo
-      setEnvironments([
-        { id: 'dev', name: 'Development', baseUrl: 'http://localhost:3000' },
-        { id: 'staging', name: 'Staging', baseUrl: 'https://staging.example.com' },
-        { id: 'prod', name: 'Production', baseUrl: 'https://example.com' },
-      ]);
-    }
-  }, [currentProject]);
-
-  const loadTestSuites = useCallback(async () => {
-    if (!currentProject) return;
-    try {
-      const response = await api.getTestSuites(1, 20, currentProject.id);
-      const items = response.data?.data || response.data?.items || response.data || [];
-      setTestSuites(
-        Array.isArray(items)
-          ? items.map((s: { id: string; name: string; testCases?: unknown[] }) => ({
-              id: s.id,
-              name: s.name,
-              testCount: s.testCases?.length || 0,
-            }))
-          : []
-      );
-    } catch (err) {
-      console.error('Failed to load test suites', err);
-    }
-  }, [currentProject]);
-
-  useEffect(() => {
-    if (currentProject) {
-      setLoading(true);
-      Promise.all([loadExecutions(), loadEnvironments(), loadTestSuites()]).finally(() => {
-        setLoading(false);
-      });
-    }
-  }, [currentProject, loadExecutions, loadEnvironments, loadTestSuites]);
+  const executions = executionsData?.items ?? [];
 
   const handleExecutionStart = (_executionId: string) => {
-    // Refresh executions list
-    loadExecutions();
+    refetchExecutions();
   };
 
   if (!currentProject) {
@@ -244,8 +157,8 @@ export function ExecutionsPage() {
         <HistoryView
           projectId={currentProject.id}
           executions={executions}
-          loading={loading}
-          onRefresh={loadExecutions}
+          loading={isLoading}
+          onRefresh={refetchExecutions}
         />
       )}
     </div>
