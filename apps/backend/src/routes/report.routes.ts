@@ -5,12 +5,13 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { reportService } from '../services/report.service.js';
+import { reportService } from '../services/report/index.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
 import fs from 'fs';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 import { validateBasePath } from '../utils/path-security.js';
 
 const router = Router();
@@ -110,8 +111,7 @@ const updateScheduleSchema = z.object({
 
 // List reports
 router.get('/', asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
   const type = req.query.type as 'execution_summary' | 'coverage' | 'flaky_analysis' | 'trend' | 'ai_cost' | 'custom' | undefined;
   const status = req.query.status as 'pending' | 'generating' | 'completed' | 'failed' | undefined;

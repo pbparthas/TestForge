@@ -13,6 +13,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 router.use(authenticate);
@@ -100,8 +101,7 @@ const settingsSchema = z.object({
 
 // List artifacts
 router.get('/artifacts', asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
   const type = req.query.type as string | undefined;
   const state = req.query.state as string | undefined;
@@ -238,8 +238,7 @@ router.get('/artifacts/:id/feedback', asyncHandler(async (req, res) => {
 
 // Get review queue
 router.get('/queue', authorize(['admin', 'lead', 'qae']), asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
   const type = req.query.type as string | undefined;
   const riskLevel = req.query.riskLevel as string | undefined;
@@ -267,8 +266,7 @@ router.get('/sla/:artifactId', asyncHandler(async (req, res) => {
 
 // Get approaching SLAs
 router.get('/sla/approaching', authorize(['admin', 'lead']), asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
 
   const result = await slaService.getApproachingSLAs(projectId, page, limit);
@@ -277,8 +275,7 @@ router.get('/sla/approaching', authorize(['admin', 'lead']), asyncHandler(async 
 
 // Get breached SLAs
 router.get('/sla/breached', authorize(['admin', 'lead']), asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
 
   const result = await slaService.getBreachedSLAs(projectId, page, limit);

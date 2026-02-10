@@ -10,6 +10,7 @@ import { authenticate, authorize, AuthenticatedRequest } from '../middleware/aut
 import { ValidationError } from '../errors/index.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 
@@ -62,8 +63,7 @@ const updateAccessSchema = z.object({
  * List all teams with pagination
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const isActive = req.query.isActive !== undefined
     ? req.query.isActive === 'true'
     : undefined;

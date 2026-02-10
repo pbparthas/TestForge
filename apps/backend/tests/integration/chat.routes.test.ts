@@ -20,7 +20,7 @@ const { mockChatService, mockJwt } = vi.hoisted(() => ({
   mockJwt: { verify: vi.fn(), sign: vi.fn() },
 }));
 
-vi.mock('../../src/services/chat.service.js', () => ({
+vi.mock('../../src/services/chat/index.js', () => ({
   chatService: mockChatService,
 }));
 vi.mock('jsonwebtoken', () => ({ default: mockJwt }));

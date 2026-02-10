@@ -11,6 +11,7 @@ import { ValidationError } from '../errors/index.js';
 import type { Framework, Language } from '@prisma/client';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 
@@ -51,8 +52,7 @@ const updateProjectSchema = z.object({
  * List all projects with pagination
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const framework = req.query.framework as Framework | undefined;
   const language = req.query.language as Language | undefined;
   const isActive = req.query.isActive !== undefined

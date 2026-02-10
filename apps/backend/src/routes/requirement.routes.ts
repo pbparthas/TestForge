@@ -10,6 +10,7 @@ import { ValidationError } from '../errors/index.js';
 import type { Priority, Status } from '@prisma/client';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 router.use(authenticate);
@@ -32,8 +33,7 @@ const updateSchema = z.object({
 });
 
 router.get('/', asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
   const priority = req.query.priority as Priority | undefined;
   const status = req.query.status as Status | undefined;

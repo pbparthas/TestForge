@@ -75,7 +75,7 @@ vi.mock('fs', () => ({
   createWriteStream: mockFs.createWriteStream,
 }));
 
-import { ReportService } from '../../../src/services/report.service.js';
+import { ReportService } from '../../../src/services/report/index.js';
 import { NotFoundError } from '../../../src/errors/index.js';
 
 describe('ReportService', () => {

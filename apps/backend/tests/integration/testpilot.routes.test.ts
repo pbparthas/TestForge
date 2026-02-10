@@ -54,7 +54,7 @@ const { mockPrisma, mockJwt, mockOrchestratorService } = vi.hoisted(() => ({
 
 vi.mock('../../src/utils/prisma.js', () => ({ prisma: mockPrisma }));
 vi.mock('jsonwebtoken', () => ({ default: mockJwt }));
-vi.mock('../../src/services/testpilot.orchestrator.service.js', () => ({
+vi.mock('../../src/services/testpilot/index.js', () => ({
   TestPilotOrchestratorService: vi.fn().mockImplementation(() => mockOrchestratorService),
   testPilotOrchestratorService: mockOrchestratorService,
 }));

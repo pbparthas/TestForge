@@ -9,6 +9,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 router.use(authenticate);
@@ -38,8 +39,7 @@ const createFromFailureSchema = z.object({
 });
 
 router.get('/', asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
   const status = req.query.status as 'open' | 'in_progress' | 'resolved' | 'closed' | 'wont_fix' | undefined;
   const priority = req.query.priority as 'low' | 'medium' | 'high' | 'critical' | undefined;

@@ -11,6 +11,7 @@ import { ValidationError } from '../errors/index.js';
 import type { Priority, Status, TestType } from '@prisma/client';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 
@@ -74,8 +75,7 @@ const bulkUpdateStatusSchema = z.object({
  * List test cases with pagination and filtering
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
   const requirementId = req.query.requirementId as string | undefined;
   const priority = req.query.priority as Priority | undefined;

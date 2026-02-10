@@ -17,7 +17,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authenticateWithActiveCheck, authorize, AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { testPilotOrchestratorService } from '../services/testpilot.orchestrator.service.js';
+import { testPilotOrchestratorService } from '../services/testpilot/index.js';
 import { prisma } from '../utils/prisma.js';
 import { ValidationError, NotFoundError } from '../errors/index.js';
 import { logger } from '../utils/logger.js';

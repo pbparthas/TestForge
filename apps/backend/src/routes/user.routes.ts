@@ -11,6 +11,7 @@ import { ValidationError, ForbiddenError } from '../errors/index.js';
 import type { UserRole } from '@prisma/client';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 
@@ -53,8 +54,7 @@ function excludePassword<T extends { passwordHash?: string }>(user: T): Omit<T, 
  * List all users with pagination (admin only)
  */
 router.get('/', authorize(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const role = req.query.role as UserRole | undefined;
   const isActive = req.query.isActive !== undefined
     ? req.query.isActive === 'true'

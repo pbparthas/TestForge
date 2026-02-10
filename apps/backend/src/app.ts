@@ -19,7 +19,7 @@ import requirementRoutes from './routes/requirement.routes.js';
 import environmentRoutes from './routes/environment.routes.js';
 import deviceRoutes from './routes/device.routes.js';
 import scriptRoutes from './routes/script.routes.js';
-import aiRoutes from './routes/ai.routes.js';
+import aiRoutes from './routes/ai/index.js';
 import visualRoutes from './routes/visual.routes.js';
 import recorderRoutes from './routes/recorder.routes.js';
 import executionRoutes from './routes/execution.routes.js';

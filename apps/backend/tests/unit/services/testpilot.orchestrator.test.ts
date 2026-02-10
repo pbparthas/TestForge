@@ -120,7 +120,7 @@ import {
   ExecutionStatus,
   StepType,
   PredefinedWorkflow,
-} from '../../../src/services/testpilot.orchestrator.service.js';
+} from '../../../src/services/testpilot/index.js';
 
 // ============================================================================
 // Test Data

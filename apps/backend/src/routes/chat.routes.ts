@@ -5,7 +5,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth.middleware.js';
-import { chatService } from '../services/chat.service.js';
+import { chatService } from '../services/chat/index.js';
 import { ValidationError } from '../errors/index.js';
 import { asyncHandler } from '../utils/async-handler.js';
 

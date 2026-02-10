@@ -30,7 +30,7 @@ const { mockPrisma } = vi.hoisted(() => ({
 vi.mock('../../../src/utils/prisma.js', () => ({ prisma: mockPrisma }));
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ChatService } from '../../../src/services/chat.service.js';
+import { ChatService } from '../../../src/services/chat/index.js';
 import { NotFoundError, ValidationError } from '../../../src/errors/index.js';
 
 describe('ChatService', () => {

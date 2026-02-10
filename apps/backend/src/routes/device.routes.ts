@@ -9,6 +9,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../errors/index.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { parsePagination } from '../utils/request-helpers.js';
 
 const router = Router();
 router.use(authenticate);
@@ -31,8 +32,7 @@ const updateSchema = z.object({
 });
 
 router.get('/', asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const { page, limit } = parsePagination(req);
   const projectId = req.query.projectId as string | undefined;
   const type = req.query.type as 'browser' | 'mobile' | 'tablet' | undefined;
   const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
