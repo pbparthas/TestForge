@@ -7,6 +7,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { syncService } from '../services/sync.service.js';
 import { logger } from '../utils/logger.js';
+import { secrets } from '../config/secrets.js';
 
 const router = Router();
 
@@ -26,7 +27,7 @@ function verifySignature(payload: string, signature: string, secret: string): bo
 // =============================================================================
 
 router.post('/', async (req: Request, res: Response) => {
-  const secret = process.env.GIT_WEBHOOK_SECRET;
+  const secret = secrets.git?.webhookSecret;
   if (!secret) {
     res.status(400).json({ error: { code: 'WEBHOOK_NOT_CONFIGURED', message: 'Webhook secret not configured' } });
     return;

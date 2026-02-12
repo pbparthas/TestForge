@@ -52,6 +52,7 @@ import maestroRoutes from './routes/maestro.routes.js';
 // Git Integration
 import gitWebhookRoutes from './routes/git-webhook.routes.js';
 import gitRoutes from './routes/git.routes.js';
+import { secrets } from './config/secrets.js';
 
 // =============================================================================
 // APP SETUP
@@ -65,7 +66,7 @@ const app = express();
 
 // CORS
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: secrets.cors.origin,
   credentials: true,
 }));
 

@@ -20,6 +20,7 @@ import { prisma } from '../utils/prisma.js';
 import { NotFoundError } from '../errors/index.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { logger } from '../utils/logger.js';
+import { secrets } from '../config/secrets.js';
 
 // =============================================================================
 // TYPES
@@ -69,9 +70,9 @@ export class DuplicateDetectionService {
   private anthropic: Anthropic | null = null;
 
   constructor() {
-    if (process.env.ANTHROPIC_API_KEY) {
+    if (secrets.anthropic?.apiKey) {
       this.anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
+        apiKey: secrets.anthropic.apiKey,
       });
     }
   }

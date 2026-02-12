@@ -3,7 +3,7 @@
  * HMAC-verified webhook receiver for GitHub/GitLab push events
  */
 
-const { mockSyncService, mockLogger } = vi.hoisted(() => ({
+const { mockSyncService, mockLogger, mockSecrets } = vi.hoisted(() => ({
   mockSyncService: {
     syncFilesFromGit: vi.fn(),
   },
@@ -13,6 +13,13 @@ const { mockSyncService, mockLogger } = vi.hoisted(() => ({
     warn: vi.fn(),
     debug: vi.fn(),
   },
+  mockSecrets: {
+    jwt: { secret: 'test', expiresIn: '15m', refreshExpiresIn: '7d' },
+    database: { url: 'postgresql://localhost:5432/test' },
+    encryption: { key: 'a'.repeat(64) },
+    cors: { origin: 'http://localhost:5173' },
+    git: { webhookSecret: 'test-webhook-secret' } as { webhookSecret: string } | undefined,
+  },
 }));
 
 vi.mock('../../src/services/sync.service.js', () => ({
@@ -20,6 +27,10 @@ vi.mock('../../src/services/sync.service.js', () => ({
   SyncService: vi.fn(),
 }));
 vi.mock('../../src/utils/logger.js', () => ({ logger: mockLogger }));
+vi.mock('../../src/config/secrets.js', () => ({
+  secrets: mockSecrets,
+  loadSecrets: () => mockSecrets,
+}));
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
@@ -31,7 +42,7 @@ describe('Git Webhook Routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.GIT_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    mockSecrets.git = { webhookSecret: WEBHOOK_SECRET };
   });
 
   function signPayload(payload: string, secret: string): string {
@@ -100,7 +111,7 @@ describe('Git Webhook Routes', () => {
     });
 
     it('should return 400 when webhook secret is not configured', async () => {
-      delete process.env.GIT_WEBHOOK_SECRET;
+      mockSecrets.git = undefined;
 
       const body = JSON.stringify(pushPayload);
       const signature = signPayload(body, WEBHOOK_SECRET);

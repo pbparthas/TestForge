@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma.js';
 import { UnauthorizedError, ConflictError, NotFoundError } from '../errors/index.js';
 import { SALT_ROUNDS } from '../utils/security-config.js';
+import { secrets } from '../config/secrets.js';
 
 // =============================================================================
 // TYPES
@@ -47,9 +48,9 @@ export interface AccessTokenPayload {
 // CONFIG
 // =============================================================================
 
-const JWT_SECRET = process.env.JWT_SECRET || 'testforge-dev-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+const JWT_SECRET = secrets.jwt.secret;
+const JWT_EXPIRES_IN = secrets.jwt.expiresIn;
+const JWT_REFRESH_EXPIRES_IN = secrets.jwt.refreshExpiresIn;
 
 // =============================================================================
 // SERVICE

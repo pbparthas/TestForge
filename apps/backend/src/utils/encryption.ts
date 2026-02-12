@@ -4,6 +4,7 @@
  */
 
 import crypto from 'crypto';
+import { secrets } from '../config/secrets.js';
 
 const ALGORITHM = 'aes-256-cbc';
 const IV_LENGTH = 16; // AES block size
@@ -75,10 +76,7 @@ export function decrypt(ciphertext: string, key: string): string {
  * @returns The encryption key or throws if not set
  */
 export function getEncryptionKey(): string {
-  const key = process.env.ENCRYPTION_KEY;
-  if (!key) {
-    throw new Error('ENCRYPTION_KEY environment variable is not set');
-  }
+  const key = secrets.encryption.key;
   if (key.length !== KEY_LENGTH * 2) {
     throw new Error(`Invalid ENCRYPTION_KEY length. Expected ${KEY_LENGTH * 2} hex characters`);
   }
