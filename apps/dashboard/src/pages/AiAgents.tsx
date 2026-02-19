@@ -5,7 +5,17 @@
 
 import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import {
+  useGenerateTestCases,
+  useGenerateScript,
+  useReviewCode,
+  useDiagnoseFailure,
+  useFixLocator,
+  useGenerateApiTests,
+  useGenerateApiChain,
+  useGenerateUnitTests,
+  useAiUsageSummary,
+} from '../hooks/queries';
 import { Card, Button, Input } from '../components/ui';
 import {
   Sparkles,
@@ -86,22 +96,19 @@ export function AiAgentsPage() {
 }
 
 function TestWeaverPanel({ projectId }: { projectId: string }) {
+  const generateMutation = useGenerateTestCases();
   const [specification, setSpecification] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ testCases?: unknown[] } | null>(null);
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     if (!specification.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.generateTestCases(projectId, specification);
+      const response = await generateMutation.mutateAsync({ projectId, specification }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to generate test cases');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -126,7 +133,7 @@ function TestWeaverPanel({ projectId }: { projectId: string }) {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <Button onClick={handleGenerate} isLoading={loading}>
+        <Button onClick={handleGenerate} isLoading={generateMutation.isPending}>
           <Sparkles className="w-4 h-4 mr-2" />
           Generate Test Cases
         </Button>
@@ -145,27 +152,24 @@ function TestWeaverPanel({ projectId }: { projectId: string }) {
 }
 
 function ScriptSmithPanel({ projectId }: { projectId: string }) {
+  const scriptMutation = useGenerateScript();
   const [title, setTitle] = useState('');
   const [steps, setSteps] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ script?: string } | null>(null);
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     if (!title.trim()) return;
-    setLoading(true);
     setError('');
     try {
       const stepsArray = steps.split('\n').filter(s => s.trim()).map((action, i) => ({
         order: i + 1,
         action: action.trim(),
       }));
-      const response = await api.generateScript(projectId, { title, steps: stepsArray });
+      const response = await scriptMutation.mutateAsync({ projectId, testCase: { title, steps: stepsArray } }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to generate script');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -197,7 +201,7 @@ function ScriptSmithPanel({ projectId }: { projectId: string }) {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <Button onClick={handleGenerate} isLoading={loading}>
+        <Button onClick={handleGenerate} isLoading={scriptMutation.isPending}>
           <Code className="w-4 h-4 mr-2" />
           Generate Script
         </Button>
@@ -216,24 +220,21 @@ function ScriptSmithPanel({ projectId }: { projectId: string }) {
 }
 
 function FrameworkPanel({ projectId }: { projectId: string }) {
+  const reviewMutation = useReviewCode();
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('typescript');
   const [reviewType, setReviewType] = useState('best_practices');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ analysis?: unknown; suggestions?: unknown[] } | null>(null);
   const [error, setError] = useState('');
 
   const handleAnalyze = async () => {
     if (!code.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.reviewCode(projectId, code, language, reviewType);
+      const response = await reviewMutation.mutateAsync({ projectId, codeSnippet: code, language, reviewType }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to analyze code');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -285,7 +286,7 @@ function FrameworkPanel({ projectId }: { projectId: string }) {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <Button onClick={handleAnalyze} isLoading={loading}>
+        <Button onClick={handleAnalyze} isLoading={reviewMutation.isPending}>
           <Wrench className="w-4 h-4 mr-2" />
           Analyze Code
         </Button>
@@ -304,38 +305,33 @@ function FrameworkPanel({ projectId }: { projectId: string }) {
 }
 
 function SelfHealingPanel({ projectId }: { projectId: string }) {
+  const diagnoseMutation = useDiagnoseFailure();
+  const fixMutation = useFixLocator();
   const [testCaseId, setTestCaseId] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [oldLocator, setOldLocator] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ diagnosis?: unknown; fix?: unknown } | null>(null);
   const [error, setError] = useState('');
 
   const handleDiagnose = async () => {
     if (!errorMessage.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.diagnoseFailure(projectId, testCaseId, errorMessage);
+      const response = await diagnoseMutation.mutateAsync({ projectId, testCaseId, errorMessage }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to diagnose failure');
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleFix = async () => {
     if (!oldLocator.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.fixLocator(projectId, testCaseId, oldLocator);
+      const response = await fixMutation.mutateAsync({ projectId, testCaseId, oldLocator }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to fix locator');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -363,7 +359,7 @@ function SelfHealingPanel({ projectId }: { projectId: string }) {
           />
         </div>
 
-        <Button onClick={handleDiagnose} isLoading={loading} variant="secondary">
+        <Button onClick={handleDiagnose} isLoading={diagnoseMutation.isPending} variant="secondary">
           <HeartPulse className="w-4 h-4 mr-2" />
           Diagnose Failure
         </Button>
@@ -377,7 +373,7 @@ function SelfHealingPanel({ projectId }: { projectId: string }) {
           placeholder="e.g., #login-button or [data-testid='submit']"
         />
 
-        <Button onClick={handleFix} isLoading={loading}>
+        <Button onClick={handleFix} isLoading={fixMutation.isPending}>
           <HeartPulse className="w-4 h-4 mr-2" />
           Fix Locator
         </Button>
@@ -398,42 +394,36 @@ function SelfHealingPanel({ projectId }: { projectId: string }) {
 }
 
 function FlowPilotPanel({ projectId }: { projectId: string }) {
+  const apiTestsMutation = useGenerateApiTests();
+  const apiChainMutation = useGenerateApiChain();
   const [openApiSpec, setOpenApiSpec] = useState('');
   const [userFlow, setUserFlow] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ tests?: unknown[]; chain?: unknown } | null>(null);
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     if (!openApiSpec.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.generateApiTests(projectId, openApiSpec);
+      const response = await apiTestsMutation.mutateAsync({ projectId, openApiSpec }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to generate API tests');
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleGenerateChain = async () => {
     if (!userFlow.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      // Simple example endpoints
       const endpoints = [
         { method: 'POST', path: '/auth/login', description: 'Login user' },
         { method: 'GET', path: '/users/me', description: 'Get current user' },
       ];
-      const response = await api.generateApiChain(projectId, userFlow, endpoints);
+      const response = await apiChainMutation.mutateAsync({ projectId, userFlow, endpoints }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to generate API chain');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -456,7 +446,7 @@ function FlowPilotPanel({ projectId }: { projectId: string }) {
           />
         </div>
 
-        <Button onClick={handleGenerate} isLoading={loading}>
+        <Button onClick={handleGenerate} isLoading={apiTestsMutation.isPending}>
           <Workflow className="w-4 h-4 mr-2" />
           Generate API Tests
         </Button>
@@ -475,7 +465,7 @@ function FlowPilotPanel({ projectId }: { projectId: string }) {
           />
         </div>
 
-        <Button onClick={handleGenerateChain} isLoading={loading} variant="secondary">
+        <Button onClick={handleGenerateChain} isLoading={apiChainMutation.isPending} variant="secondary">
           <Workflow className="w-4 h-4 mr-2" />
           Generate API Chain
         </Button>
@@ -496,24 +486,21 @@ function FlowPilotPanel({ projectId }: { projectId: string }) {
 }
 
 function CodeGuardianPanel({ projectId }: { projectId: string }) {
+  const unitTestMutation = useGenerateUnitTests();
   const [sourceCode, setSourceCode] = useState('');
   const [language, setLanguage] = useState('typescript');
   const [framework, setFramework] = useState('vitest');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ tests?: string; analysis?: unknown } | null>(null);
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     if (!sourceCode.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.generateUnitTests(projectId, sourceCode, language, framework);
+      const response = await unitTestMutation.mutateAsync([projectId, sourceCode, language, framework]) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to generate unit tests');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -565,7 +552,7 @@ function CodeGuardianPanel({ projectId }: { projectId: string }) {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <Button onClick={handleGenerate} isLoading={loading}>
+        <Button onClick={handleGenerate} isLoading={unitTestMutation.isPending}>
           <Shield className="w-4 h-4 mr-2" />
           Generate Unit Tests
         </Button>
@@ -584,31 +571,13 @@ function CodeGuardianPanel({ projectId }: { projectId: string }) {
 }
 
 function UsagePanel({ projectId }: { projectId: string }) {
-  const [usage, setUsage] = useState<{
-    totalCalls?: number;
-    totalTokens?: number;
-    totalCostUsd?: number;
-    totalCostInr?: number;
-    byAgent?: Record<string, { calls: number; tokens: number; costUsd: number }>;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const loadUsage = async () => {
-    setLoading(true);
-    try {
-      const response = await api.getAiUsageSummary(projectId);
-      setUsage(response.data);
-    } catch (err) {
-      console.error('Failed to load usage', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: usageData, isLoading, refetch } = useAiUsageSummary(projectId);
+  const usage = (usageData as any)?.data || usageData || null;
 
   return (
     <Card title="AI Usage & Costs">
       <div className="space-y-4">
-        <Button onClick={loadUsage} isLoading={loading} variant="secondary">
+        <Button onClick={() => refetch()} isLoading={isLoading} variant="secondary">
           <BarChart3 className="w-4 h-4 mr-2" />
           Load Usage Data
         </Button>
@@ -650,7 +619,7 @@ function UsagePanel({ projectId }: { projectId: string }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(usage.byAgent).map(([agent, data]) => (
+                      {Object.entries(usage.byAgent).map(([agent, data]: [string, any]) => (
                         <tr key={agent} className="border-b border-gray-100">
                           <td className="py-2 px-4 text-sm text-gray-900 capitalize">{agent.replace(/_/g, ' ')}</td>
                           <td className="py-2 px-4 text-sm text-gray-600 text-right">{data.calls}</td>

@@ -3,9 +3,17 @@
  * Monaco diff viewer with inline review comments for Git-integrated script artifacts
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../services/api';
+import {
+  useArtifactDetail,
+  useReviewComments,
+  useGitDiff,
+  useAddReviewComment,
+  useResolveReviewComment,
+  useApproveArtifact,
+  useRejectArtifact,
+} from '../hooks/queries';
 import { Card, Badge, Button } from '../components/ui';
 import { MonacoDiffEditor } from '../components/monaco/MonacoDiffEditor';
 
@@ -23,76 +31,41 @@ interface ReviewComment {
   createdAt: string;
 }
 
-interface ArtifactDetail {
-  id: string;
-  projectId: string;
-  type: string;
-  state: string;
-  title: string;
-  description: string | null;
-  content: Record<string, unknown>;
-  targetEntityId: string | null;
-  riskLevel: string;
-}
-
 export function CodeReviewPage() {
   const { artifactId } = useParams<{ artifactId: string }>();
 
-  const [artifact, setArtifact] = useState<ArtifactDetail | null>(null);
-  const [comments, setComments] = useState<ReviewComment[]>([]);
-  const [diff, setDiff] = useState<{ original: string; modified: string } | null>(null);
+  // Queries
+  const { data: artifactData, isLoading: artifactLoading, refetch: refetchArtifact } = useArtifactDetail(artifactId);
+  const artifact = (artifactData as any)?.data || artifactData || null;
+  const { data: commentsData } = useReviewComments(artifactId);
+  const comments: ReviewComment[] = (commentsData as any)?.data || commentsData || [];
+  const targetEntityId = artifact?.targetEntityId;
+  const { data: diffData } = useGitDiff(targetEntityId);
+
+  // Mutations
+  const addCommentMutation = useAddReviewComment();
+  const resolveCommentMutation = useResolveReviewComment();
+  const approveMutation = useApproveArtifact();
+  const rejectMutation = useRejectArtifact();
+
   const [newComment, setNewComment] = useState('');
   const [commentLine, setCommentLine] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
-  // Load artifact, comments, and diff
+  // Compute diff from query data or artifact content
+  const [diff, setDiff] = useState<{ original: string; modified: string } | null>(null);
   useEffect(() => {
-    if (!artifactId) return;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [artifactRes, commentsRes] = await Promise.all([
-          api.getArtifact(artifactId!),
-          api.getReviewComments(artifactId!),
-        ]);
-
-        setArtifact(artifactRes.data);
-        setComments(commentsRes.data || []);
-
-        // Load diff if this is a script artifact with git integration
-        if (artifactRes.data?.targetEntityId) {
-          try {
-            const diffRes = await api.getGitDiff(artifactRes.data.targetEntityId);
-            if (diffRes.data) {
-              // Parse unified diff into original/modified
-              const diffStr = typeof diffRes.data === 'string' ? diffRes.data : '';
-              setDiff({
-                original: extractOriginal(diffStr),
-                modified: extractModified(diffStr),
-              });
-            }
-          } catch {
-            // No diff available — show content from artifact instead
-            const content = artifactRes.data.content as Record<string, string>;
-            setDiff({
-              original: content.originalCode || '',
-              modified: content.code || content.generatedCode || '',
-            });
-          }
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load review');
-      } finally {
-        setLoading(false);
+    if (diffData) {
+      const rawDiff = (diffData as any)?.data || diffData;
+      const diffStr = typeof rawDiff === 'string' ? rawDiff : '';
+      if (diffStr) {
+        setDiff({ original: extractOriginal(diffStr), modified: extractModified(diffStr) });
       }
+    } else if (artifact?.targetEntityId && artifact?.content) {
+      const content = artifact.content as Record<string, string>;
+      setDiff({ original: content.originalCode || '', modified: content.code || content.generatedCode || '' });
     }
-
-    load();
-  }, [artifactId]);
+  }, [diffData, artifact]);
 
   const handleAddComment = useCallback((lineNumber: number) => {
     setCommentLine(lineNumber);
@@ -101,26 +74,21 @@ export function CodeReviewPage() {
   const handleSubmitComment = async () => {
     if (!artifactId || !newComment.trim()) return;
 
-    setSubmitting(true);
     try {
-      const res = await api.addReviewComment(artifactId, {
-        content: newComment.trim(),
-        lineNumber: commentLine || undefined,
+      await addCommentMutation.mutateAsync({
+        artifactId,
+        input: { content: newComment.trim(), lineNumber: commentLine || undefined },
       });
-      setComments(prev => [...prev, res.data]);
       setNewComment('');
       setCommentLine(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add comment');
-    } finally {
-      setSubmitting(false);
     }
   };
 
   const handleResolveComment = async (commentId: string) => {
     try {
-      await api.resolveReviewComment(commentId);
-      setComments(prev => prev.map(c => c.id === commentId ? { ...c, isResolved: true } : c));
+      await resolveCommentMutation.mutateAsync(commentId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resolve comment');
     }
@@ -129,10 +97,8 @@ export function CodeReviewPage() {
   const handleApprove = async () => {
     if (!artifactId) return;
     try {
-      await api.approveArtifact(artifactId, 'Approved via code review');
-      // Reload artifact to get updated state
-      const res = await api.getArtifact(artifactId);
-      setArtifact(res.data);
+      await approveMutation.mutateAsync({ id: artifactId, comment: 'Approved via code review' });
+      refetchArtifact();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to approve');
     }
@@ -142,21 +108,22 @@ export function CodeReviewPage() {
     if (!artifactId) return;
     const unresolvedComments = comments.filter(c => !c.isResolved);
     try {
-      await api.rejectArtifact(
-        artifactId,
-        'Rejected via code review',
-        unresolvedComments.map(c => ({
+      await rejectMutation.mutateAsync({
+        id: artifactId,
+        reason: 'Rejected via code review',
+        findings: unresolvedComments.map(c => ({
           category: 'code_quality',
           severity: 'medium',
           description: c.content,
-        }))
-      );
-      const res = await api.getArtifact(artifactId);
-      setArtifact(res.data);
+        })),
+      });
+      refetchArtifact();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reject');
     }
   };
+
+  const loading = artifactLoading;
 
   if (loading) {
     return (
@@ -260,10 +227,10 @@ export function CodeReviewPage() {
             </div>
             <Button
               onClick={handleSubmitComment}
-              disabled={!newComment.trim() || submitting}
+              disabled={!newComment.trim() || addCommentMutation.isPending}
               variant="primary"
             >
-              {submitting ? 'Adding...' : 'Comment'}
+              {addCommentMutation.isPending ? 'Adding...' : 'Comment'}
             </Button>
           </div>
         </div>

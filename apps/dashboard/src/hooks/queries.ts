@@ -1105,3 +1105,201 @@ export function useDeleteTestPilotWorkflow() {
     },
   });
 }
+
+// =========================================================================
+// AI Agents (legacy page)
+// =========================================================================
+
+export function useGenerateTestCases() {
+  return useMutation({
+    mutationFn: ({ projectId, specification }: { projectId: string; specification: string }) =>
+      api.generateTestCases(projectId, specification),
+  });
+}
+
+export function useGenerateScript() {
+  return useMutation({
+    mutationFn: ({ projectId, testCase }: { projectId: string; testCase: { title: string; steps: unknown[] } }) =>
+      api.generateScript(projectId, testCase),
+  });
+}
+
+export function useReviewCode() {
+  return useMutation({
+    mutationFn: ({ projectId, codeSnippet, language, reviewType }: { projectId: string; codeSnippet: string; language: string; reviewType: string }) =>
+      api.reviewCode(projectId, codeSnippet, language, reviewType),
+  });
+}
+
+export function useGenerateApiTests() {
+  return useMutation({
+    mutationFn: ({ projectId, openApiSpec }: { projectId: string; openApiSpec: string }) =>
+      api.generateApiTests(projectId, openApiSpec),
+  });
+}
+
+export function useGenerateApiChain() {
+  return useMutation({
+    mutationFn: ({ projectId, userFlow, endpoints }: { projectId: string; userFlow: string; endpoints: { method: string; path: string; description: string }[] }) =>
+      api.generateApiChain(projectId, userFlow, endpoints),
+  });
+}
+
+export function useAiUsageSummary(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['aiUsageSummary', projectId] as const,
+    queryFn: () => api.getAiUsageSummary(projectId!),
+    enabled: !!projectId,
+  });
+}
+
+// =========================================================================
+// MaestroSmith
+// =========================================================================
+
+export function useMaestroRegistryStatus(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['maestroRegistryStatus', projectId] as const,
+    queryFn: () => api.getMaestroRegistryStatus(projectId!),
+    enabled: !!projectId,
+  });
+}
+
+export function useMaestroWidgets(projectId: string | undefined, query?: string) {
+  return useQuery({
+    queryKey: ['maestroWidgets', projectId, query] as const,
+    queryFn: () => api.getMaestroWidgets(projectId!, query),
+    enabled: !!projectId,
+  });
+}
+
+export function useMaestroCommands() {
+  return useQuery({
+    queryKey: ['maestroCommands'] as const,
+    queryFn: () => api.getMaestroCommands(),
+  });
+}
+
+export function useSetMaestroConfig() {
+  return useMutation({
+    mutationFn: ({ projectId, config }: { projectId: string; config: Record<string, unknown> }) =>
+      api.setMaestroConfig(projectId, config as any),
+  });
+}
+
+export function useSyncMaestroRegistry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: string) => api.syncMaestroRegistry(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maestroRegistryStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['maestroWidgets'] });
+    },
+  });
+}
+
+export function useGenerateMaestroFlow() {
+  return useMutation({
+    mutationFn: (input: Parameters<typeof api.generateMaestroFlow>[0]) =>
+      api.generateMaestroFlow(input),
+  });
+}
+
+export function useEditMaestroFlow() {
+  return useMutation({
+    mutationFn: (input: Parameters<typeof api.editMaestroFlow>[0]) =>
+      api.editMaestroFlow(input),
+  });
+}
+
+export function useValidateMaestroYaml() {
+  return useMutation({
+    mutationFn: ({ yaml, projectId }: { yaml: string; projectId?: string }) =>
+      api.validateMaestroYaml(yaml, projectId),
+  });
+}
+
+// =========================================================================
+// Code Review
+// =========================================================================
+
+export function useArtifactDetail(artifactId: string | undefined) {
+  return useQuery({
+    queryKey: ['artifactDetail', artifactId] as const,
+    queryFn: () => api.getArtifact(artifactId!),
+    enabled: !!artifactId,
+  });
+}
+
+export function useReviewComments(artifactId: string | undefined) {
+  return useQuery({
+    queryKey: ['reviewComments', artifactId] as const,
+    queryFn: () => api.getReviewComments(artifactId!),
+    enabled: !!artifactId,
+  });
+}
+
+export function useGitDiff(scriptId: string | undefined) {
+  return useQuery({
+    queryKey: ['gitDiff', scriptId] as const,
+    queryFn: () => api.getGitDiff(scriptId!),
+    enabled: !!scriptId,
+  });
+}
+
+export function useAddReviewComment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ artifactId, input }: { artifactId: string; input: { content: string; lineNumber?: number } }) =>
+      api.addReviewComment(artifactId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviewComments'] });
+    },
+  });
+}
+
+export function useResolveReviewComment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) => api.resolveReviewComment(commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviewComments'] });
+    },
+  });
+}
+
+// =========================================================================
+// Git Settings
+// =========================================================================
+
+export function useGitIntegration(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['gitIntegration', projectId] as const,
+    queryFn: () => api.getGitIntegration(projectId!),
+    enabled: !!projectId,
+  });
+}
+
+export function useTestGitConnection() {
+  return useMutation({
+    mutationFn: ({ integrationId, repositoryUrl, sshKey }: { integrationId: string; repositoryUrl: string; sshKey: string }) =>
+      api.testGitConnection(integrationId, repositoryUrl, sshKey),
+  });
+}
+
+export function useCreateGitIntegration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { projectId: string; repositoryUrl: string; sshKey: string; defaultBranch: string; developBranch: string }) =>
+      api.createGitIntegration(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gitIntegration'] });
+    },
+  });
+}
+
+export function useSyncFromGit() {
+  return useMutation({
+    mutationFn: (projectId: string) => api.syncFromGit(projectId),
+  });
+}

@@ -3,9 +3,14 @@
  * Configure repository URL, SSH key, branches, and test connection
  */
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import {
+  useGitIntegration,
+  useTestGitConnection,
+  useCreateGitIntegration,
+  useSyncFromGit,
+} from '../hooks/queries';
 import { Card, Badge, Button, Input } from '../components/ui';
 
 interface GitIntegration {
@@ -23,10 +28,15 @@ interface GitIntegration {
 export function GitSettingsPage() {
   const { currentProject } = useProjectStore();
 
-  const [integration, setIntegration] = useState<GitIntegration | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
+  // Query
+  const { data: integrationRes, isLoading: loading } = useGitIntegration(currentProject?.id);
+  const integration: GitIntegration | null = (integrationRes as any)?.data || integrationRes || null;
+
+  // Mutations
+  const testConnectionMutation = useTestGitConnection();
+  const createIntegrationMutation = useCreateGitIntegration();
+  const syncMutation = useSyncFromGit();
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null);
@@ -37,30 +47,14 @@ export function GitSettingsPage() {
   const [defaultBranch, setDefaultBranch] = useState('main');
   const [developBranch, setDevelopBranch] = useState('develop');
 
+  // Populate form from loaded integration
   useEffect(() => {
-    if (!currentProject) return;
-    loadIntegration();
-  }, [currentProject]);
-
-  const loadIntegration = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.getGitIntegration(currentProject.id);
-      if (res.data) {
-        setIntegration(res.data);
-        setRepoUrl(res.data.repositoryUrl || '');
-        setDefaultBranch(res.data.defaultBranch || 'main');
-        setDevelopBranch(res.data.developBranch || 'develop');
-      }
-    } catch {
-      // No integration yet — that's fine, show the create form
-      setIntegration(null);
-    } finally {
-      setLoading(false);
+    if (integration) {
+      setRepoUrl(integration.repositoryUrl || '');
+      setDefaultBranch(integration.defaultBranch || 'main');
+      setDevelopBranch(integration.developBranch || 'develop');
     }
-  };
+  }, [integration]);
 
   const handleTestConnection = async () => {
     if (!repoUrl || !sshKey) {
@@ -68,20 +62,17 @@ export function GitSettingsPage() {
       return;
     }
 
-    setTesting(true);
     setTestResult(null);
     setError(null);
     try {
-      const res = await api.testGitConnection(
-        integration?.id || 'new',
-        repoUrl,
-        sshKey
-      );
-      setTestResult(res.data);
+      const res = await testConnectionMutation.mutateAsync({
+        integrationId: integration?.id || 'new',
+        repositoryUrl: repoUrl,
+        sshKey,
+      });
+      setTestResult((res as any).data || res);
     } catch (err) {
       setTestResult({ success: false, message: err instanceof Error ? err.message : 'Connection failed' });
-    } finally {
-      setTesting(false);
     }
   };
 
@@ -91,24 +82,20 @@ export function GitSettingsPage() {
       return;
     }
 
-    setSaving(true);
     setError(null);
     setSuccess(null);
     try {
-      const res = await api.createGitIntegration({
+      await createIntegrationMutation.mutateAsync({
         projectId: currentProject.id,
         repositoryUrl: repoUrl,
         sshKey,
         defaultBranch,
         developBranch,
       });
-      setIntegration(res.data);
       setSshKey(''); // Clear SSH key from form after save
       setSuccess('Git integration configured successfully');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save integration');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -117,8 +104,9 @@ export function GitSettingsPage() {
     setError(null);
     setSuccess(null);
     try {
-      const res = await api.syncFromGit(currentProject.id);
-      setSuccess(`Sync complete: ${res.data.updated} updated, ${res.data.created} created`);
+      const res = await syncMutation.mutateAsync(currentProject.id);
+      const data = (res as any).data || res;
+      setSuccess(`Sync complete: ${data.updated} updated, ${data.created} created`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sync failed');
     }
@@ -250,16 +238,16 @@ export function GitSettingsPage() {
             <Button
               variant="secondary"
               onClick={handleTestConnection}
-              disabled={testing || !repoUrl || !sshKey}
+              disabled={testConnectionMutation.isPending || !repoUrl || !sshKey}
             >
-              {testing ? 'Testing...' : 'Test Connection'}
+              {testConnectionMutation.isPending ? 'Testing...' : 'Test Connection'}
             </Button>
             <Button
               variant="primary"
               onClick={handleSave}
-              disabled={saving || !repoUrl || !sshKey}
+              disabled={createIntegrationMutation.isPending || !repoUrl || !sshKey}
             >
-              {saving ? 'Saving...' : integration ? 'Update Integration' : 'Create Integration'}
+              {createIntegrationMutation.isPending ? 'Saving...' : integration ? 'Update Integration' : 'Create Integration'}
             </Button>
           </div>
         </div>

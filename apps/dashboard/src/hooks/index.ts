@@ -116,4 +116,31 @@ export {
   useTestPilotExecute,
   useCreateTestPilotWorkflow,
   useDeleteTestPilotWorkflow,
+  // AI Agents (legacy page)
+  useGenerateTestCases,
+  useGenerateScript,
+  useReviewCode,
+  useGenerateApiTests,
+  useGenerateApiChain,
+  useAiUsageSummary,
+  // MaestroSmith
+  useMaestroRegistryStatus,
+  useMaestroWidgets,
+  useMaestroCommands,
+  useSetMaestroConfig,
+  useSyncMaestroRegistry,
+  useGenerateMaestroFlow,
+  useEditMaestroFlow,
+  useValidateMaestroYaml,
+  // Code Review
+  useArtifactDetail,
+  useReviewComments,
+  useGitDiff,
+  useAddReviewComment,
+  useResolveReviewComment,
+  // Git Settings
+  useGitIntegration,
+  useTestGitConnection,
+  useCreateGitIntegration,
+  useSyncFromGit,
 } from './queries';

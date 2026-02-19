@@ -10,9 +10,18 @@
  * - Command reference
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import {
+  useMaestroRegistryStatus,
+  useMaestroWidgets,
+  useMaestroCommands,
+  useSetMaestroConfig,
+  useSyncMaestroRegistry,
+  useGenerateMaestroFlow,
+  useEditMaestroFlow,
+  useValidateMaestroYaml,
+} from '../hooks/queries';
 import { Card, Button, Input } from '../components/ui';
 import {
   Smartphone,
@@ -53,14 +62,6 @@ interface MaestroConfig {
   defaultAppId: string;
 }
 
-interface RegistryStatus {
-  cached: boolean;
-  version?: string;
-  widgetCount?: number;
-  fetchedAt?: string;
-  appId?: string;
-}
-
 interface RegistryWidget {
   eventName: string;
   file: string;
@@ -97,6 +98,20 @@ export function MaestroSmithPage() {
   const { currentProject } = useProjectStore();
   const [activeTab, setActiveTab] = useState<TabId>('generate');
 
+  // React Query hooks
+  const { data: registryData } = useMaestroRegistryStatus(currentProject?.id);
+  const registryStatus = (registryData as any)?.data || registryData || null;
+  const [widgetSearch, setWidgetSearch] = useState('');
+  const { data: widgetsData } = useMaestroWidgets(currentProject?.id, widgetSearch || undefined);
+  const widgets: RegistryWidget[] = (widgetsData as any)?.data || widgetsData || [];
+  const { data: commandsData } = useMaestroCommands();
+  const commands: MaestroCommand[] = (commandsData as any)?.data || commandsData || [];
+  const configMutation = useSetMaestroConfig();
+  const syncMutation = useSyncMaestroRegistry();
+  const generateMutation = useGenerateMaestroFlow();
+  const editMutation = useEditMaestroFlow();
+  const validateMutation = useValidateMaestroYaml();
+
   // Config state
   const [config, setConfig] = useState<MaestroConfig>({
     enabled: true,
@@ -110,14 +125,7 @@ export function MaestroSmithPage() {
     },
     defaultAppId: 'com.bankbazaar.app',
   });
-  const [configSaving, setConfigSaving] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
-
-  // Registry state
-  const [registryStatus, setRegistryStatus] = useState<RegistryStatus | null>(null);
-  const [widgets, setWidgets] = useState<RegistryWidget[]>([]);
-  const [widgetSearch, setWidgetSearch] = useState('');
-  const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Generation state
@@ -128,16 +136,13 @@ export function MaestroSmithPage() {
     { order: 1, action: '', expected: '' },
   ]);
   const [includeAssertions, setIncludeAssertions] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [generatedFlow, setGeneratedFlow] = useState<GeneratedFlow | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
   // Edit state
   const [editInstruction, setEditInstruction] = useState('');
-  const [editing, setEditing] = useState(false);
 
   // Validation state
-  const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{
     valid: boolean;
     errors: string[];
@@ -145,93 +150,42 @@ export function MaestroSmithPage() {
   } | null>(null);
 
   // Commands reference
-  const [commands, setCommands] = useState<MaestroCommand[]>([]);
   const [expandedCommands, setExpandedCommands] = useState<Set<string>>(new Set());
-
-  // Load registry status and commands on mount
-  useEffect(() => {
-    if (currentProject) {
-      loadRegistryStatus();
-      loadCommands();
-    }
-  }, [currentProject]);
-
-  const loadRegistryStatus = async () => {
-    if (!currentProject) return;
-    try {
-      const response = await api.getMaestroRegistryStatus(currentProject.id);
-      setRegistryStatus(response.data);
-      if (response.data.cached) {
-        loadWidgets();
-      }
-    } catch {
-      // Registry not configured yet
-    }
-  };
-
-  const loadWidgets = async (query?: string) => {
-    if (!currentProject) return;
-    try {
-      const response = await api.getMaestroWidgets(currentProject.id, query);
-      setWidgets(response.data || []);
-    } catch {
-      setWidgets([]);
-    }
-  };
-
-  const loadCommands = async () => {
-    try {
-      const response = await api.getMaestroCommands();
-      setCommands(response.data || []);
-    } catch {
-      // Ignore
-    }
-  };
 
   const saveConfig = async () => {
     if (!currentProject) return;
-    setConfigSaving(true);
     setConfigSaved(false);
 
     try {
-      await api.setMaestroConfig(currentProject.id, config);
+      await configMutation.mutateAsync({ projectId: currentProject.id, config: config as unknown as Record<string, unknown> });
       setConfigSaved(true);
       setTimeout(() => setConfigSaved(false), 3000);
-    } catch (err) {
-      console.error('Failed to save config:', err);
-    } finally {
-      setConfigSaving(false);
+    } catch {
+      // Failed to save
     }
   };
 
   const syncRegistry = async () => {
     if (!currentProject) return;
-    setSyncing(true);
     setSyncError(null);
 
     try {
-      const response = await api.syncMaestroRegistry(currentProject.id);
-      if (response.data.success) {
-        await loadRegistryStatus();
-        await loadWidgets();
-      } else {
-        setSyncError(response.data.error || 'Sync failed');
+      const response = await syncMutation.mutateAsync(currentProject.id) as any;
+      if (!response.data?.success) {
+        setSyncError(response.data?.error || 'Sync failed');
       }
     } catch (err) {
       setSyncError((err as Error).message);
-    } finally {
-      setSyncing(false);
     }
   };
 
   const generateFlow = async () => {
     if (!currentProject) return;
-    setGenerating(true);
     setGenerateError(null);
     setGeneratedFlow(null);
 
     try {
-      const input: Parameters<typeof api.generateMaestroFlow>[0] = {
+      const input: Parameters<typeof generateMutation.mutateAsync>[0] = {
         inputMethod,
         options: {
           appId: config.defaultAppId,
@@ -249,25 +203,22 @@ export function MaestroSmithPage() {
         };
       }
 
-      const response = await api.generateMaestroFlow(input);
+      const response = await generateMutation.mutateAsync(input) as any;
       setGeneratedFlow(response.data);
     } catch (err) {
       setGenerateError((err as Error).message);
-    } finally {
-      setGenerating(false);
     }
   };
 
   const editFlow = async () => {
     if (!currentProject || !generatedFlow) return;
-    setEditing(true);
 
     try {
-      const response = await api.editMaestroFlow({
+      const response = await editMutation.mutateAsync({
         existingYaml: generatedFlow.yaml,
         instruction: editInstruction,
         projectId: currentProject.id,
-      });
+      }) as any;
       setGeneratedFlow({
         ...generatedFlow,
         yaml: response.data.yaml,
@@ -276,17 +227,14 @@ export function MaestroSmithPage() {
       setEditInstruction('');
     } catch (err) {
       setGenerateError((err as Error).message);
-    } finally {
-      setEditing(false);
     }
   };
 
   const validateYaml = async () => {
     if (!generatedFlow) return;
-    setValidating(true);
 
     try {
-      const response = await api.validateMaestroYaml(generatedFlow.yaml, currentProject?.id);
+      const response = await validateMutation.mutateAsync({ yaml: generatedFlow.yaml, projectId: currentProject?.id }) as any;
       setValidationResult({
         valid: response.data.valid,
         errors: response.data.errors || [],
@@ -298,8 +246,6 @@ export function MaestroSmithPage() {
         errors: [(err as Error).message],
         warnings: [],
       });
-    } finally {
-      setValidating(false);
     }
   };
 
@@ -517,10 +463,10 @@ export function MaestroSmithPage() {
 
               <Button
                 onClick={generateFlow}
-                disabled={generating || (inputMethod === 'description' ? !description : !testCaseTitle)}
+                disabled={generateMutation.isPending || (inputMethod === 'description' ? !description : !testCaseTitle)}
                 className="w-full mt-4 bg-orange-600 hover:bg-orange-700"
               >
-                {generating ? (
+                {generateMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Generating...
@@ -552,8 +498,8 @@ export function MaestroSmithPage() {
                     placeholder="e.g., Add timeout wait for dashboard"
                     className="flex-1"
                   />
-                  <Button onClick={editFlow} disabled={editing || !editInstruction}>
-                    {editing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit3 className="w-4 h-4" />}
+                  <Button onClick={editFlow} disabled={editMutation.isPending || !editInstruction}>
+                    {editMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit3 className="w-4 h-4" />}
                   </Button>
                 </div>
               </Card>
@@ -567,8 +513,8 @@ export function MaestroSmithPage() {
                 <h3 className="font-medium">Generated YAML</h3>
                 {generatedFlow && (
                   <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={validateYaml} disabled={validating}>
-                      {validating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    <Button size="sm" variant="ghost" onClick={validateYaml} disabled={validateMutation.isPending}>
+                      {validateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={copyYaml}>
                       <Copy className="w-4 h-4" />
@@ -643,8 +589,8 @@ export function MaestroSmithPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium">Widget Registry</h3>
-            <Button onClick={syncRegistry} disabled={syncing} size="sm">
-              {syncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            <Button onClick={syncRegistry} disabled={syncMutation.isPending} size="sm">
+              {syncMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
               Sync from GitLab
             </Button>
           </div>
@@ -663,7 +609,6 @@ export function MaestroSmithPage() {
               value={widgetSearch}
               onChange={e => {
                 setWidgetSearch(e.target.value);
-                loadWidgets(e.target.value);
               }}
               className="pl-9"
             />
@@ -797,8 +742,8 @@ export function MaestroSmithPage() {
               />
             </div>
 
-            <Button onClick={saveConfig} disabled={configSaving}>
-              {configSaving ? (
+            <Button onClick={saveConfig} disabled={configMutation.isPending}>
+              {configMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : configSaved ? (
                 <Check className="w-4 h-4 mr-2" />
