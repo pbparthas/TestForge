@@ -3,8 +3,16 @@
  * Sprint 15: CI/CD Integration settings and build management
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
+import {
+  useJenkinsIntegrations,
+  useJenkinsBuilds,
+  useCreateJenkinsIntegration,
+  useUpdateJenkinsIntegration,
+  useDeleteJenkinsIntegration,
+  useTriggerJenkinsBuild,
+} from '../hooks/queries';
 import { api } from '../services/api';
 import { cn } from '../utils/cn';
 import {
@@ -270,9 +278,13 @@ function BuildRow({
 
 export function JenkinsIntegrationsPage() {
   const { currentProject } = useProjectStore();
-  const [integrations, setIntegrations] = useState<JenkinsIntegration[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const projectId = currentProject?.id;
+  const { data: integrations = [] as JenkinsIntegration[], isLoading, error: loadError } = useJenkinsIntegrations(projectId);
+
+  const createMutation = useCreateJenkinsIntegration();
+  const updateMutation = useUpdateJenkinsIntegration();
+  const deleteMutation = useDeleteJenkinsIntegration();
+  const triggerBuildMutation = useTriggerJenkinsBuild();
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -281,6 +293,9 @@ export function JenkinsIntegrationsPage() {
   const [viewBuildsIntegration, setViewBuildsIntegration] = useState<JenkinsIntegration | null>(null);
   const [consoleLogBuild, setConsoleLogBuild] = useState<JenkinsBuild | null>(null);
   const [consoleLog, setConsoleLog] = useState<string>('');
+
+  // Use React Query for builds when viewing
+  const { data: builds = [] as JenkinsBuild[], isLoading: buildsLoading } = useJenkinsBuilds(viewBuildsIntegration?.id);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -294,46 +309,6 @@ export function JenkinsIntegrationsPage() {
   });
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Build history
-  const [builds, setBuilds] = useState<JenkinsBuild[]>([]);
-  const [buildsLoading, setBuildsLoading] = useState(false);
-
-  // Load integrations
-  useEffect(() => {
-    if (currentProject?.id) {
-      loadIntegrations();
-    }
-  }, [currentProject?.id]);
-
-  const loadIntegrations = async () => {
-    if (!currentProject?.id) return;
-
-    try {
-      setLoading(true);
-      const result = await api.getProjectJenkinsIntegrations(currentProject.id);
-      setIntegrations(result.data || []);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load integrations');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadBuilds = async (integrationId: string) => {
-    try {
-      setBuildsLoading(true);
-      const result = await api.getJenkinsBuilds(integrationId, { limit: 20 });
-      setBuilds(result.data || []);
-    } catch (err) {
-      console.error('Failed to load builds:', err);
-    } finally {
-      setBuildsLoading(false);
-    }
-  };
 
   const testConnection = async () => {
     try {
@@ -348,7 +323,7 @@ export function JenkinsIntegrationsPage() {
         success: result.data.success,
         message: result.data.success ? `Connected! ${result.data.version || ''}` : result.data.error || 'Connection failed',
       });
-    } catch (err) {
+    } catch {
       setConnectionResult({
         success: false,
         message: 'Connection test failed',
@@ -358,76 +333,56 @@ export function JenkinsIntegrationsPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentProject?.id) return;
+    if (!projectId) return;
 
-    try {
-      setSubmitting(true);
+    const payload = {
+      integrationName: formData.integrationName,
+      serverUrl: formData.serverUrl,
+      username: formData.username,
+      apiToken: formData.apiToken || undefined,
+      jobPath: formData.jobPath,
+      defaultEnvironment: formData.defaultEnvironment || undefined,
+      defaultBrowser: formData.defaultBrowser || undefined,
+    };
 
-      if (editingIntegration) {
-        await api.updateJenkinsIntegration(editingIntegration.id, {
-          integrationName: formData.integrationName,
-          serverUrl: formData.serverUrl,
-          username: formData.username,
-          apiToken: formData.apiToken || undefined,
-          jobPath: formData.jobPath,
-          defaultEnvironment: formData.defaultEnvironment || undefined,
-          defaultBrowser: formData.defaultBrowser || undefined,
-        });
-      } else {
-        await api.createJenkinsIntegration({
-          projectId: currentProject.id,
-          integrationName: formData.integrationName,
-          serverUrl: formData.serverUrl,
-          username: formData.username,
-          apiToken: formData.apiToken,
-          jobPath: formData.jobPath,
-          defaultEnvironment: formData.defaultEnvironment || undefined,
-          defaultBrowser: formData.defaultBrowser || undefined,
-        });
-      }
+    const onSuccess = () => closeModal();
 
-      await loadIntegrations();
-      closeModal();
-    } catch (err) {
-      console.error('Failed to save integration:', err);
-    } finally {
-      setSubmitting(false);
+    if (editingIntegration) {
+      updateMutation.mutate({ id: editingIntegration.id, data: payload }, { onSuccess });
+    } else {
+      createMutation.mutate({ ...payload, projectId }, { onSuccess });
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deletingIntegration) return;
-
-    try {
-      await api.deleteJenkinsIntegration(deletingIntegration.id);
-      await loadIntegrations();
-      setDeletingIntegration(null);
-    } catch (err) {
-      console.error('Failed to delete integration:', err);
-    }
+    deleteMutation.mutate(deletingIntegration.id, {
+      onSuccess: () => setDeletingIntegration(null),
+    });
   };
 
-  const handleTriggerBuild = async (integration: JenkinsIntegration) => {
-    try {
-      await api.triggerJenkinsBuild(integration.id, {
-        environment: integration.defaultEnvironment,
-        browser: integration.defaultBrowser,
-      });
-      // Open builds panel to see the new build
-      setViewBuildsIntegration(integration);
-      await loadBuilds(integration.id);
-    } catch (err) {
-      console.error('Failed to trigger build:', err);
-    }
+  const handleTriggerBuild = (integration: JenkinsIntegration) => {
+    triggerBuildMutation.mutate(
+      {
+        integrationId: integration.id,
+        params: {
+          environment: integration.defaultEnvironment,
+          browser: integration.defaultBrowser,
+        },
+      },
+      {
+        onSuccess: () => {
+          setViewBuildsIntegration(integration);
+        },
+      }
+    );
   };
 
   const handlePollBuild = async (buildId: string) => {
     try {
-      const result = await api.pollJenkinsBuildStatus(buildId);
-      // Update build in list
-      setBuilds(prev => prev.map(b => b.id === buildId ? result.data : b));
+      await api.pollJenkinsBuildStatus(buildId);
     } catch (err) {
       console.error('Failed to poll build status:', err);
     }
@@ -438,7 +393,7 @@ export function JenkinsIntegrationsPage() {
       setConsoleLogBuild(build);
       const result = await api.getJenkinsBuildConsoleLog(build.id);
       setConsoleLog(result.data?.log || 'No console log available');
-    } catch (err) {
+    } catch {
       setConsoleLog('Failed to load console log');
     }
   };
@@ -449,7 +404,7 @@ export function JenkinsIntegrationsPage() {
       integrationName: integration.integrationName,
       serverUrl: integration.serverUrl,
       username: integration.username,
-      apiToken: '', // Don't show existing token
+      apiToken: '',
       jobPath: integration.jobPath,
       defaultEnvironment: integration.defaultEnvironment || '',
       defaultBrowser: integration.defaultBrowser || '',
@@ -476,6 +431,8 @@ export function JenkinsIntegrationsPage() {
     setEditingIntegration(null);
     setConnectionResult(null);
   };
+
+  const submitting = createMutation.isPending || updateMutation.isPending;
 
   if (!currentProject) {
     return (
@@ -505,21 +462,21 @@ export function JenkinsIntegrationsPage() {
       </div>
 
       {/* Error */}
-      {error && (
+      {loadError && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-          {error}
+          Failed to load integrations
         </div>
       )}
 
       {/* Loading */}
-      {loading && (
+      {isLoading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
         </div>
       )}
 
       {/* Integrations Grid */}
-      {!loading && integrations.length === 0 && (
+      {!isLoading && (integrations as JenkinsIntegration[]).length === 0 && (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
           <Settings2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No integrations yet</h3>
@@ -534,19 +491,16 @@ export function JenkinsIntegrationsPage() {
         </div>
       )}
 
-      {!loading && integrations.length > 0 && (
+      {!isLoading && (integrations as JenkinsIntegration[]).length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {integrations.map(integration => (
+          {(integrations as JenkinsIntegration[]).map(integration => (
             <IntegrationCard
               key={integration.id}
               integration={integration}
               onEdit={() => openEditModal(integration)}
               onDelete={() => setDeletingIntegration(integration)}
               onTrigger={() => handleTriggerBuild(integration)}
-              onViewBuilds={() => {
-                setViewBuildsIntegration(integration);
-                loadBuilds(integration.id);
-              }}
+              onViewBuilds={() => setViewBuildsIntegration(integration)}
             />
           ))}
         </div>
@@ -564,152 +518,58 @@ export function JenkinsIntegrationsPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Integration Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.integrationName}
-                  onChange={e => setFormData({ ...formData, integrationName: e.target.value })}
-                  placeholder="e.g., Production CI"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Integration Name</label>
+                <input type="text" value={formData.integrationName} onChange={e => setFormData({ ...formData, integrationName: e.target.value })} placeholder="e.g., Production CI" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Jenkins Server URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.serverUrl}
-                  onChange={e => setFormData({ ...formData, serverUrl: e.target.value })}
-                  placeholder="https://jenkins.example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Jenkins Server URL</label>
+                <input type="url" value={formData.serverUrl} onChange={e => setFormData({ ...formData, serverUrl: e.target.value })} placeholder="https://jenkins.example.com" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.username}
-                    onChange={e => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="jenkins-user"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                  <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} placeholder="jenkins-user" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    API Token {editingIntegration && '(leave empty to keep)'}
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.apiToken}
-                    onChange={e => setFormData({ ...formData, apiToken: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required={!editingIntegration}
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">API Token {editingIntegration && '(leave empty to keep)'}</label>
+                  <input type="password" value={formData.apiToken} onChange={e => setFormData({ ...formData, apiToken: e.target.value })} placeholder="••••••••" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required={!editingIntegration} />
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Job Path
-                </label>
-                <input
-                  type="text"
-                  value={formData.jobPath}
-                  onChange={e => setFormData({ ...formData, jobPath: e.target.value })}
-                  placeholder="/job/my-pipeline"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                  required
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Job Path</label>
+                <input type="text" value={formData.jobPath} onChange={e => setFormData({ ...formData, jobPath: e.target.value })} placeholder="/job/my-pipeline" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm" required />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Default Environment
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.defaultEnvironment}
-                    onChange={e => setFormData({ ...formData, defaultEnvironment: e.target.value })}
-                    placeholder="staging"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Default Environment</label>
+                  <input type="text" value={formData.defaultEnvironment} onChange={e => setFormData({ ...formData, defaultEnvironment: e.target.value })} placeholder="staging" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Default Browser
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.defaultBrowser}
-                    onChange={e => setFormData({ ...formData, defaultBrowser: e.target.value })}
-                    placeholder="chrome"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Default Browser</label>
+                  <input type="text" value={formData.defaultBrowser} onChange={e => setFormData({ ...formData, defaultBrowser: e.target.value })} placeholder="chrome" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                 </div>
               </div>
 
               {/* Test Connection */}
               <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={testConnection}
-                  disabled={testingConnection || !formData.serverUrl || !formData.username || !formData.apiToken}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {testingConnection ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Activity className="w-4 h-4" />
-                  )}
+                <button type="button" onClick={testConnection} disabled={testingConnection || !formData.serverUrl || !formData.username || !formData.apiToken} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {testingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
                   Test Connection
                 </button>
-
                 {connectionResult && (
-                  <div className={cn(
-                    'mt-2 p-2 rounded-lg text-sm',
-                    connectionResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                  )}>
+                  <div className={cn('mt-2 p-2 rounded-lg text-sm', connectionResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
                     {connectionResult.success ? (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle className="w-4 h-4" />
-                        {connectionResult.message}
-                      </span>
+                      <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4" />{connectionResult.message}</span>
                     ) : (
-                      <span className="flex items-center gap-1">
-                        <XCircle className="w-4 h-4" />
-                        {connectionResult.message}
-                      </span>
+                      <span className="flex items-center gap-1"><XCircle className="w-4 h-4" />{connectionResult.message}</span>
                     )}
                   </div>
                 )}
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
+                <button type="button" onClick={closeModal} className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
+                <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
                   {submitting ? 'Saving...' : editingIntegration ? 'Update' : 'Create'}
                 </button>
               </div>
@@ -728,18 +588,8 @@ export function JenkinsIntegrationsPage() {
               This will also delete all associated build history.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setDeletingIntegration(null)}
-                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete
-              </button>
+              <button onClick={() => setDeletingIntegration(null)} className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
+              <button onClick={handleDelete} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete</button>
             </div>
           </div>
         </div>
@@ -754,23 +604,17 @@ export function JenkinsIntegrationsPage() {
                 <h2 className="text-lg font-semibold text-gray-900">Build History</h2>
                 <p className="text-sm text-gray-500">{viewBuildsIntegration.integrationName}</p>
               </div>
-              <button
-                onClick={() => setViewBuildsIntegration(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
+              <button onClick={() => setViewBuildsIntegration(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto">
               {buildsLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                 </div>
-              ) : builds.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  No builds yet. Trigger a build to get started.
-                </div>
+              ) : (builds as JenkinsBuild[]).length === 0 ? (
+                <div className="text-center py-12 text-gray-500">No builds yet. Trigger a build to get started.</div>
               ) : (
                 <table className="w-full">
                   <thead className="bg-gray-50 sticky top-0">
@@ -784,7 +628,7 @@ export function JenkinsIntegrationsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {builds.map(build => (
+                    {(builds as JenkinsBuild[]).map(build => (
                       <BuildRow
                         key={build.id}
                         build={build}
@@ -809,14 +653,10 @@ export function JenkinsIntegrationsPage() {
                 <h2 className="text-lg font-semibold text-gray-900">Console Log</h2>
                 <p className="text-sm text-gray-500">Build #{consoleLogBuild.jenkinsBuildNumber}</p>
               </div>
-              <button
-                onClick={() => setConsoleLogBuild(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
+              <button onClick={() => setConsoleLogBuild(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-
             <div className="flex-1 overflow-auto p-4 bg-gray-900">
               <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">
                 {consoleLog || 'Loading...'}

@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useDiagnoseFailure, useFixLocator } from '../hooks/queries';
 import { Card, Button, Input } from '../components/ui';
 import { Heart, AlertTriangle, Wrench, Search, CheckCircle, XCircle, Lightbulb } from 'lucide-react';
 
@@ -70,11 +70,11 @@ export function SelfHealingPage() {
 }
 
 function DiagnosePanel({ projectId }: { projectId: string }) {
+  const diagnoseFailure = useDiagnoseFailure();
   const [testCaseId, setTestCaseId] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [stackTrace, setStackTrace] = useState('');
   const [screenshot, setScreenshot] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     diagnosis?: {
       category: string;
@@ -92,15 +92,12 @@ function DiagnosePanel({ projectId }: { projectId: string }) {
 
   const handleDiagnose = async () => {
     if (!errorMessage.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.diagnoseFailure(projectId, testCaseId || 'unknown', errorMessage, screenshot || undefined);
+      const response = await diagnoseFailure.mutateAsync({ projectId, testCaseId: testCaseId || 'unknown', errorMessage, screenshot: screenshot || undefined }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to diagnose failure');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -170,7 +167,7 @@ function DiagnosePanel({ projectId }: { projectId: string }) {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <Button onClick={handleDiagnose} isLoading={loading} className="w-full bg-red-600 hover:bg-red-700">
+          <Button onClick={handleDiagnose} isLoading={diagnoseFailure.isPending} className="w-full bg-red-600 hover:bg-red-700">
             <Search className="w-4 h-4 mr-2" />
             Diagnose Failure
           </Button>
@@ -257,10 +254,10 @@ function DiagnosePanel({ projectId }: { projectId: string }) {
 }
 
 function FixLocatorPanel({ projectId }: { projectId: string }) {
+  const fixLocator = useFixLocator();
   const [testCaseId, setTestCaseId] = useState('');
   const [oldLocator, setOldLocator] = useState('');
   const [pageHtml, setPageHtml] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     newLocator?: string;
     alternatives?: string[];
@@ -270,15 +267,12 @@ function FixLocatorPanel({ projectId }: { projectId: string }) {
 
   const handleFix = async () => {
     if (!oldLocator.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.fixLocator(projectId, testCaseId || 'unknown', oldLocator, pageHtml || undefined);
+      const response = await fixLocator.mutateAsync({ projectId, testCaseId: testCaseId || 'unknown', oldLocator, pageHtml: pageHtml || undefined }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to fix locator');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -324,7 +318,7 @@ function FixLocatorPanel({ projectId }: { projectId: string }) {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <Button onClick={handleFix} isLoading={loading} className="w-full bg-red-600 hover:bg-red-700">
+          <Button onClick={handleFix} isLoading={fixLocator.isPending} className="w-full bg-red-600 hover:bg-red-700">
             <Wrench className="w-4 h-4 mr-2" />
             Find New Locator
           </Button>

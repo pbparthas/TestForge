@@ -3,8 +3,20 @@
  * Sprint 17: Report generation, templates, scheduling, and quality gates
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
+import {
+  useReports,
+  useReportTemplates,
+  useReportSchedules,
+  useQualityGates,
+  useQualityGateSummary,
+  useGenerateReport,
+  useDeleteReport,
+  useCreateQualityGate,
+  useSetDefaultQualityGate,
+  useDeleteQualityGate,
+} from '../hooks/queries';
 import { api } from '../services/api';
 import { Card, Badge, Button, Input } from '../components/ui';
 
@@ -106,16 +118,23 @@ const METRIC_LABELS: Record<string, string> = {
 
 export function ReportsPage() {
   const { currentProject } = useProjectStore();
-  const [reports, setReports] = useState<Report[]>([]);
-  const [templates, setTemplates] = useState<ReportTemplate[]>([]);
-  const [schedules, setSchedules] = useState<ReportSchedule[]>([]);
-  const [qualityGates, setQualityGates] = useState<QualityGate[]>([]);
-  const [summary, setSummary] = useState<QualityGateSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const projectId = currentProject?.id;
+
+  const { data: reports = [] as Report[], isLoading } = useReports(projectId);
+  const { data: templates = [] as ReportTemplate[] } = useReportTemplates(projectId);
+  const { data: schedules = [] as ReportSchedule[] } = useReportSchedules(projectId);
+  const { data: qualityGates = [] as QualityGate[] } = useQualityGates(projectId);
+  const { data: summary } = useQualityGateSummary(projectId) as { data: QualityGateSummary | null | undefined };
+
+  const generateReportMutation = useGenerateReport();
+  const deleteReportMutation = useDeleteReport();
+  const createQualityGateMutation = useCreateQualityGate();
+  const setDefaultGateMutation = useSetDefaultQualityGate();
+  const deleteQualityGateMutation = useDeleteQualityGate();
+
   const [activeTab, setActiveTab] = useState<'reports' | 'templates' | 'schedules' | 'quality-gates'>('reports');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showQualityGateModal, setShowQualityGateModal] = useState(false);
-  const [generating, setGenerating] = useState(false);
 
   // Generate report form state
   const [reportType, setReportType] = useState<string>('execution_summary');
@@ -133,54 +152,23 @@ export function ReportsPage() {
     severity: string;
   }>>([{ metric: 'pass_rate', operator: 'gte', threshold: 90, severity: 'error' }]);
 
-  useEffect(() => {
-    if (currentProject) {
-      loadData();
-    }
-  }, [currentProject]);
-
-  const loadData = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    try {
-      const [reportsRes, templatesRes, schedulesRes, gatesRes, summaryRes] = await Promise.all([
-        api.getReports({ projectId: currentProject.id, limit: 20 }),
-        api.getReportTemplates(currentProject.id),
-        api.getReportSchedules(currentProject.id),
-        api.getProjectQualityGates(currentProject.id),
-        api.getQualityGateSummary(currentProject.id, 30),
-      ]);
-      setReports(reportsRes.data?.data || []);
-      setTemplates(templatesRes.data || []);
-      setSchedules(schedulesRes.data || []);
-      setQualityGates(gatesRes.data || []);
-      setSummary(summaryRes.data || null);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateReport = async () => {
-    if (!currentProject) return;
-    setGenerating(true);
-    try {
-      await api.generateReport({
-        projectId: currentProject.id,
-        type: reportType as Report['type'],
-        format: reportFormat as Report['format'],
+  const handleGenerateReport = () => {
+    if (!projectId) return;
+    generateReportMutation.mutate(
+      {
+        projectId,
+        type: reportType,
+        format: reportFormat,
         title: reportTitle || `${REPORT_TYPE_COLORS[reportType]?.label || reportType} Report`,
         parameters: { trendDays },
-      });
-      setShowGenerateModal(false);
-      setReportTitle('');
-      loadData();
-    } catch (error) {
-      console.error('Failed to generate report:', error);
-    } finally {
-      setGenerating(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          setShowGenerateModal(false);
+          setReportTitle('');
+        },
+      }
+    );
   };
 
   const handleDownloadReport = async (report: Report) => {
@@ -200,57 +188,38 @@ export function ReportsPage() {
     }
   };
 
-  const handleDeleteReport = async (id: string) => {
+  const handleDeleteReport = (id: string) => {
     if (!confirm('Are you sure you want to delete this report?')) return;
-    try {
-      await api.deleteReport(id);
-      loadData();
-    } catch (error) {
-      console.error('Failed to delete report:', error);
-    }
+    deleteReportMutation.mutate(id);
   };
 
-  const handleCreateQualityGate = async () => {
-    if (!currentProject || !gateName) return;
-    try {
-      await api.createQualityGate({
-        projectId: currentProject.id,
+  const handleCreateQualityGate = () => {
+    if (!projectId || !gateName) return;
+    createQualityGateMutation.mutate(
+      {
+        projectId,
         name: gateName,
         description: gateDescription || undefined,
-        conditions: gateConditions.map(c => ({
-          metric: c.metric as 'pass_rate' | 'coverage' | 'flakiness' | 'duration' | 'failed_count' | 'critical_failures',
-          operator: c.operator as 'gte' | 'lte' | 'gt' | 'lt' | 'eq',
-          threshold: c.threshold,
-          severity: c.severity as 'error' | 'warning',
-        })),
-      });
-      setShowQualityGateModal(false);
-      setGateName('');
-      setGateDescription('');
-      setGateConditions([{ metric: 'pass_rate', operator: 'gte', threshold: 90, severity: 'error' }]);
-      loadData();
-    } catch (error) {
-      console.error('Failed to create quality gate:', error);
-    }
+        conditions: gateConditions,
+      },
+      {
+        onSuccess: () => {
+          setShowQualityGateModal(false);
+          setGateName('');
+          setGateDescription('');
+          setGateConditions([{ metric: 'pass_rate', operator: 'gte', threshold: 90, severity: 'error' }]);
+        },
+      }
+    );
   };
 
-  const handleSetDefaultGate = async (id: string) => {
-    try {
-      await api.setDefaultQualityGate(id);
-      loadData();
-    } catch (error) {
-      console.error('Failed to set default:', error);
-    }
+  const handleSetDefaultGate = (id: string) => {
+    setDefaultGateMutation.mutate(id);
   };
 
-  const handleDeleteQualityGate = async (id: string) => {
+  const handleDeleteQualityGate = (id: string) => {
     if (!confirm('Are you sure you want to delete this quality gate?')) return;
-    try {
-      await api.deleteQualityGate(id);
-      loadData();
-    } catch (error) {
-      console.error('Failed to delete quality gate:', error);
-    }
+    deleteQualityGateMutation.mutate(id);
   };
 
   const addCondition = () => {
@@ -315,10 +284,10 @@ export function ReportsPage() {
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-6">
         {[
-          { id: 'reports', label: 'Reports', count: reports.length },
-          { id: 'templates', label: 'Templates', count: templates.length },
-          { id: 'schedules', label: 'Schedules', count: schedules.length },
-          { id: 'quality-gates', label: 'Quality Gates', count: qualityGates.length },
+          { id: 'reports', label: 'Reports', count: (reports as Report[]).length },
+          { id: 'templates', label: 'Templates', count: (templates as ReportTemplate[]).length },
+          { id: 'schedules', label: 'Schedules', count: (schedules as ReportSchedule[]).length },
+          { id: 'quality-gates', label: 'Quality Gates', count: (qualityGates as QualityGate[]).length },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -339,7 +308,7 @@ export function ReportsPage() {
         ))}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-500">Loading...</p>
@@ -349,12 +318,12 @@ export function ReportsPage() {
           {/* Reports Tab */}
           {activeTab === 'reports' && (
             <div className="space-y-4">
-              {reports.length === 0 ? (
+              {(reports as Report[]).length === 0 ? (
                 <Card>
                   <p className="text-gray-500 text-center py-8">No reports yet. Generate your first report!</p>
                 </Card>
               ) : (
-                reports.map((report) => (
+                (reports as Report[]).map((report) => (
                   <Card key={report.id}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -397,12 +366,12 @@ export function ReportsPage() {
           {/* Templates Tab */}
           {activeTab === 'templates' && (
             <div className="space-y-4">
-              {templates.length === 0 ? (
+              {(templates as ReportTemplate[]).length === 0 ? (
                 <Card>
                   <p className="text-gray-500 text-center py-8">No templates created yet.</p>
                 </Card>
               ) : (
-                templates.map((template) => (
+                (templates as ReportTemplate[]).map((template) => (
                   <Card key={template.id}>
                     <div className="flex items-center justify-between">
                       <div>
@@ -427,12 +396,12 @@ export function ReportsPage() {
           {/* Schedules Tab */}
           {activeTab === 'schedules' && (
             <div className="space-y-4">
-              {schedules.length === 0 ? (
+              {(schedules as ReportSchedule[]).length === 0 ? (
                 <Card>
                   <p className="text-gray-500 text-center py-8">No scheduled reports.</p>
                 </Card>
               ) : (
-                schedules.map((schedule) => (
+                (schedules as ReportSchedule[]).map((schedule) => (
                   <Card key={schedule.id}>
                     <div className="flex items-center justify-between">
                       <div>
@@ -502,12 +471,12 @@ export function ReportsPage() {
               )}
 
               {/* Quality Gates List */}
-              {qualityGates.length === 0 ? (
+              {(qualityGates as QualityGate[]).length === 0 ? (
                 <Card>
                   <p className="text-gray-500 text-center py-8">No quality gates configured. Create one to enforce quality thresholds.</p>
                 </Card>
               ) : (
-                qualityGates.map((gate) => (
+                (qualityGates as QualityGate[]).map((gate) => (
                   <Card key={gate.id}>
                     <div className="flex items-start justify-between mb-4">
                       <div>
@@ -622,8 +591,8 @@ export function ReportsPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="secondary" onClick={() => setShowGenerateModal(false)}>Cancel</Button>
-              <Button onClick={handleGenerateReport} disabled={generating}>
-                {generating ? 'Generating...' : 'Generate'}
+              <Button onClick={handleGenerateReport} disabled={generateReportMutation.isPending}>
+                {generateReportMutation.isPending ? 'Generating...' : 'Generate'}
               </Button>
             </div>
           </Card>

@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useBugPatternAnalyze, useBugPatternRootCause, useBugPatternPredict, useBugPatternReport, useBugPatternCluster } from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import {
   Bug, Search, AlertTriangle, FileText, Layers,
@@ -516,7 +516,7 @@ function PatternsPanel({ projectId }: { projectId: string }) {
   const [timeRangeTo, setTimeRangeTo] = useState('');
   const [components, setComponents] = useState('');
   const [severities, setSeverities] = useState<BugSeverity[]>([]);
-  const [loading, setLoading] = useState(false);
+  const mutation = useBugPatternAnalyze();
   const [result, setResult] = useState<PatternAnalysisOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -534,10 +534,9 @@ function PatternsPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: PatternAnalysisOutput }>('/bug-patterns/analyze', {
+      const response = await mutation.mutateAsync({
         projectId,
         bugs: parsedBugs,
         options: {
@@ -545,13 +544,10 @@ function PatternsPanel({ projectId }: { projectId: string }) {
           components: components ? components.split(',').map(c => c.trim()) : undefined,
           severities: severities.length > 0 ? severities : undefined,
         },
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze patterns');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -644,7 +640,7 @@ function PatternsPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={mutation.isPending}
             disabled={!bugsJson.trim()}
             className="w-full bg-red-600 hover:bg-red-700"
           >
@@ -806,7 +802,7 @@ function RootCausePanel({ projectId }: { projectId: string }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [stackTrace, setStackTrace] = useState('');
   const [codeChangesJson, setCodeChangesJson] = useState('');
-  const [loading, setLoading] = useState(false);
+  const mutation = useBugPatternRootCause();
   const [result, setResult] = useState<RootCauseOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -835,20 +831,16 @@ function RootCausePanel({ projectId }: { projectId: string }) {
       retries: 0,
     };
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: RootCauseOutput }>('/bug-patterns/root-cause', {
+      const response = await mutation.mutateAsync({
         projectId,
         failure,
         context: codeChanges,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze root cause');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -937,7 +929,7 @@ function RootCausePanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={mutation.isPending}
             disabled={!testId.trim() || !testName.trim() || !errorMessage.trim()}
             className="w-full bg-red-600 hover:bg-red-700"
           >
@@ -1064,7 +1056,7 @@ function RootCausePanel({ projectId }: { projectId: string }) {
 function PredictionsPanel({ projectId }: { projectId: string }) {
   const [codeChangesJson, setCodeChangesJson] = useState('');
   const [historicalBugsJson, setHistoricalBugsJson] = useState('');
-  const [loading, setLoading] = useState(false);
+  const mutation = useBugPatternPredict();
   const [result, setResult] = useState<BugPredictionOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -1093,20 +1085,16 @@ function PredictionsPanel({ projectId }: { projectId: string }) {
       }
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: BugPredictionOutput }>('/bug-patterns/predict', {
+      const response = await mutation.mutateAsync({
         projectId,
         codeChanges,
         historicalBugs,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to generate predictions');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1140,7 +1128,7 @@ function PredictionsPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handlePredict}
-            isLoading={loading}
+            isLoading={mutation.isPending}
             disabled={!codeChangesJson.trim()}
             className="w-full bg-red-600 hover:bg-red-700"
           >
@@ -1326,7 +1314,7 @@ function ReportPanel({ projectId }: { projectId: string }) {
   const [format, setFormat] = useState<'detailed' | 'summary' | 'executive'>('detailed');
   const [includeCharts, setIncludeCharts] = useState(true);
   const [focusAreas, setFocusAreas] = useState('');
-  const [loading, setLoading] = useState(false);
+  const mutation = useBugPatternReport();
   const [result, setResult] = useState<BugReportOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -1344,10 +1332,9 @@ function ReportPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: BugReportOutput }>('/bug-patterns/report', {
+      const response = await mutation.mutateAsync({
         projectId,
         bugs: parsedBugs,
         options: {
@@ -1355,13 +1342,10 @@ function ReportPanel({ projectId }: { projectId: string }) {
           includeCharts,
           focusAreas: focusAreas ? focusAreas.split(',').map(a => a.trim()) : undefined,
         },
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to generate report');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1425,7 +1409,7 @@ function ReportPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleGenerate}
-            isLoading={loading}
+            isLoading={mutation.isPending}
             disabled={!bugsJson.trim()}
             className="w-full bg-red-600 hover:bg-red-700"
           >
@@ -1601,7 +1585,7 @@ function ClusterPanel({ projectId }: { projectId: string }) {
   const [bugsJson, setBugsJson] = useState('');
   const [minClusterSize, setMinClusterSize] = useState(2);
   const [similarityThreshold, setSimilarityThreshold] = useState(70);
-  const [loading, setLoading] = useState(false);
+  const mutation = useBugPatternCluster();
   const [result, setResult] = useState<BugClusterOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -1619,23 +1603,19 @@ function ClusterPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: BugClusterOutput }>('/bug-patterns/cluster', {
+      const response = await mutation.mutateAsync({
         projectId,
         bugs: parsedBugs,
         options: {
           minClusterSize,
           similarityThreshold,
         },
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to cluster bugs');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1689,7 +1669,7 @@ function ClusterPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleCluster}
-            isLoading={loading}
+            isLoading={mutation.isPending}
             disabled={!bugsJson.trim()}
             className="w-full bg-red-600 hover:bg-red-700"
           >

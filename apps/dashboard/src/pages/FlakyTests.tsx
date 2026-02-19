@@ -3,9 +3,17 @@
  * Sprint 14: Dashboard for managing flaky tests with AI analysis
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import {
+  useFlakyTests,
+  useFlakySummary,
+  useFlakyPatterns,
+  useFlakyTrends,
+  useQuarantineTest,
+  useUnquarantineTest,
+  useMarkTestFixed,
+} from '../hooks/queries';
 import { Card, Badge, Button, Input } from '../components/ui';
 
 // Types
@@ -75,11 +83,15 @@ const FIX_STATUS_COLORS: Record<string, { bg: string; text: string; label: strin
 
 export function FlakyTestsPage() {
   const { currentProject } = useProjectStore();
-  const [flakyTests, setFlakyTests] = useState<FlakyTest[]>([]);
-  const [summary, setSummary] = useState<FlakySummary | null>(null);
-  const [patterns, setPatterns] = useState<FlakyPattern[]>([]);
-  const [trends, setTrends] = useState<FlakyTrend[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: flakyTests = [] as FlakyTest[], isLoading } = useFlakyTests(currentProject?.id);
+  const { data: summary } = useFlakySummary(currentProject?.id) as { data: FlakySummary | null | undefined };
+  const { data: patterns = [] as FlakyPattern[] } = useFlakyPatterns(currentProject?.id);
+  const { data: trends = [] as FlakyTrend[] } = useFlakyTrends(currentProject?.id, 14);
+
+  const quarantineMutation = useQuarantineTest();
+  const unquarantineMutation = useUnquarantineTest();
+  const markFixedMutation = useMarkTestFixed();
+
   const [filter, setFilter] = useState<string>('all');
   const [patternFilter, setPatternFilter] = useState<string>('all');
   const [selectedTest, setSelectedTest] = useState<FlakyTest | null>(null);
@@ -87,69 +99,33 @@ export function FlakyTestsPage() {
   const [quarantineReason, setQuarantineReason] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'tests' | 'patterns' | 'trends'>('overview');
 
-  useEffect(() => {
-    if (currentProject) {
-      loadData();
-    }
-  }, [currentProject]);
-
-  const loadData = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    try {
-      const [testsRes, summaryRes, patternsRes, trendsRes] = await Promise.all([
-        api.getFlakyTests(currentProject.id),
-        api.getFlakyTestSummary(currentProject.id),
-        api.getFlakyPatterns(currentProject.id),
-        api.getFlakyTestTrends(currentProject.id, 14),
-      ]);
-      setFlakyTests(testsRes.data || []);
-      setSummary(summaryRes.data || null);
-      setPatterns(patternsRes.data || []);
-      setTrends(trendsRes.data || []);
-    } catch (err) {
-      console.error('Failed to load flaky test data', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuarantine = async (test: FlakyTest) => {
+  const handleQuarantine = (test: FlakyTest) => {
     setSelectedTest(test);
     setShowQuarantineModal(true);
   };
 
-  const confirmQuarantine = async () => {
+  const confirmQuarantine = () => {
     if (!selectedTest || !quarantineReason.trim()) return;
-    try {
-      await api.quarantineTest(selectedTest.id, quarantineReason);
-      setShowQuarantineModal(false);
-      setQuarantineReason('');
-      loadData();
-    } catch (err) {
-      console.error('Failed to quarantine test', err);
-    }
+    quarantineMutation.mutate(
+      { testId: selectedTest.id, reason: quarantineReason },
+      {
+        onSuccess: () => {
+          setShowQuarantineModal(false);
+          setQuarantineReason('');
+        },
+      }
+    );
   };
 
-  const handleUnquarantine = async (test: FlakyTest) => {
-    try {
-      await api.unquarantineTest(test.id);
-      loadData();
-    } catch (err) {
-      console.error('Failed to unquarantine test', err);
-    }
+  const handleUnquarantine = (test: FlakyTest) => {
+    unquarantineMutation.mutate(test.id);
   };
 
-  const handleMarkFixed = async (test: FlakyTest) => {
-    try {
-      await api.markTestAsFixed(test.id);
-      loadData();
-    } catch (err) {
-      console.error('Failed to mark test as fixed', err);
-    }
+  const handleMarkFixed = (test: FlakyTest) => {
+    markFixedMutation.mutate(test.id);
   };
 
-  const filteredTests = flakyTests.filter(test => {
+  const filteredTests = (flakyTests as FlakyTest[]).filter(test => {
     if (filter === 'quarantined' && !test.isQuarantined) return false;
     if (filter === 'open' && test.fixStatus !== 'open') return false;
     if (filter === 'investigating' && test.fixStatus !== 'investigating') return false;
@@ -174,8 +150,8 @@ export function FlakyTestsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Flaky Tests</h1>
           <p className="text-gray-500 mt-1">Monitor and manage test flakiness</p>
         </div>
-        <Button onClick={loadData} variant="secondary" disabled={loading}>
-          {loading ? 'Loading...' : 'Refresh'}
+        <Button variant="secondary" disabled={isLoading}>
+          {isLoading ? 'Loading...' : 'Refresh'}
         </Button>
       </div>
 
@@ -262,11 +238,11 @@ export function FlakyTestsPage() {
           </Card>
 
           {/* Pattern Distribution */}
-          {patterns.length > 0 && (
+          {(patterns as FlakyPattern[]).length > 0 && (
             <Card>
               <h3 className="text-lg font-semibold mb-4">Pattern Distribution</h3>
               <div className="grid grid-cols-4 gap-4">
-                {patterns.map(pattern => (
+                {(patterns as FlakyPattern[]).map(pattern => (
                   <div
                     key={pattern.patternType}
                     className={`p-4 rounded-lg ${PATTERN_COLORS[pattern.patternType]?.bg || 'bg-gray-100'}`}
@@ -312,7 +288,7 @@ export function FlakyTestsPage() {
 
           {/* Test List */}
           <Card>
-            {loading ? (
+            {isLoading ? (
               <p className="text-center py-8 text-gray-500">Loading...</p>
             ) : filteredTests.length === 0 ? (
               <p className="text-center py-8 text-gray-500">No flaky tests found</p>
@@ -336,12 +312,12 @@ export function FlakyTestsPage() {
       {/* Patterns Tab */}
       {activeTab === 'patterns' && (
         <div className="space-y-4">
-          {patterns.length === 0 ? (
+          {(patterns as FlakyPattern[]).length === 0 ? (
             <Card>
               <p className="text-gray-500 text-center py-8">No patterns detected yet</p>
             </Card>
           ) : (
-            patterns.map(pattern => (
+            (patterns as FlakyPattern[]).map(pattern => (
               <Card key={pattern.patternType}>
                 <div className="flex items-start justify-between">
                   <div>
@@ -374,7 +350,7 @@ export function FlakyTestsPage() {
         <div className="space-y-4">
           <Card>
             <h3 className="text-lg font-semibold mb-4">14-Day Trend</h3>
-            {trends.length === 0 ? (
+            {(trends as FlakyTrend[]).length === 0 ? (
               <p className="text-gray-500 text-center py-8">No trend data available</p>
             ) : (
               <div className="space-y-2">
@@ -392,7 +368,7 @@ export function FlakyTestsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {trends.map(trend => (
+                      {(trends as FlakyTrend[]).map(trend => (
                         <tr key={trend.date}>
                           <td className="px-3 py-2 text-sm text-gray-900">{trend.date}</td>
                           <td className="px-3 py-2 text-sm text-right text-gray-900">{trend.totalFlaky}</td>

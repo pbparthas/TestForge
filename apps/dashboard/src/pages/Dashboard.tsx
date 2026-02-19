@@ -3,9 +3,9 @@
  * Rebuilt with tabs, charts, and analytics widgets
  */
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useProjects, useDashboardStats } from '../hooks/queries';
 import { Card, Badge } from '../components/ui';
 import {
   TestExecutionChart,
@@ -18,7 +18,6 @@ import {
   RecentTests,
 } from '../components/dashboard';
 import type { ExecutionDataPoint, Activity, QuickAction, RecentTest } from '../components/dashboard';
-import type { Project, CoverageData, ExecutionSummary } from '../types';
 import {
   LayoutDashboard,
   BarChart3,
@@ -114,14 +113,14 @@ const generatePassRateTrend = () => {
 
 export function DashboardPage() {
   const { currentProject, setCurrentProject } = useProjectStore();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [stats, setStats] = useState<{
-    coverage?: CoverageData;
-    executions?: ExecutionSummary;
-    bugs?: { open: number; total: number };
-  }>({});
-  const [loading, setLoading] = useState(true);
+  const { data: projects = [], isLoading } = useProjects();
+  const { data: stats = {} as Record<string, any> } = useDashboardStats(currentProject?.id);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+
+  // Set first project as current if none selected
+  if (!currentProject && projects.length > 0) {
+    setCurrentProject(projects[0]!);
+  }
 
   // Demo data
   const executionData = useMemo(() => generateExecutionData(), []);
@@ -183,50 +182,7 @@ export function DashboardPage() {
     },
   ];
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  useEffect(() => {
-    if (currentProject) {
-      loadProjectStats(currentProject.id);
-    }
-  }, [currentProject]);
-
-  const loadProjects = async () => {
-    try {
-      const response = await api.getProjects();
-      const projectsList = response.data?.data || response.data?.items || response.data || [];
-      setProjects(Array.isArray(projectsList) ? projectsList : []);
-      if (!currentProject && projectsList.length > 0) {
-        setCurrentProject(projectsList[0]);
-      }
-    } catch (err) {
-      console.error('Failed to load projects', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadProjectStats = async (projectId: string) => {
-    try {
-      const [coverageRes, execRes, bugRes] = await Promise.all([
-        api.getCoverage(projectId).catch(() => null),
-        api.getExecutionStats(projectId).catch(() => null),
-        api.getBugStats(projectId).catch(() => null),
-      ]);
-
-      setStats({
-        coverage: coverageRes?.data,
-        executions: execRes?.data,
-        bugs: bugRes?.data,
-      });
-    } catch (err) {
-      console.error('Failed to load stats', err);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Loading...</div>;
   }
 

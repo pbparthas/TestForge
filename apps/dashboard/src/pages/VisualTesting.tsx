@@ -5,7 +5,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useVisualCompare, useVisualAnalyzeRegression, useVisualDetectElements, useVisualGenerateTestCase } from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import {
   Eye, Image, Layers, FileCode, AlertCircle, Check,
@@ -320,10 +320,10 @@ function ImageDropzone({
 
 // Compare Panel - Upload baseline and current screenshots
 function ComparePanel({ projectId }: { projectId: string }) {
+  const compareMutation = useVisualCompare();
   const [baseline, setBaseline] = useState<ScreenshotData | null>(null);
   const [current, setCurrent] = useState<ScreenshotData | null>(null);
   const [context, setContext] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CompareOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -352,21 +352,17 @@ function ComparePanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: CompareOutput }>('/visual/compare', {
+      const response = await compareMutation.mutateAsync({
         projectId,
         baseline: { base64: baseline.base64, mediaType: baseline.mediaType },
         current: { base64: current.base64, mediaType: current.mediaType },
         context: context || undefined,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to compare screenshots');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -411,7 +407,7 @@ function ComparePanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleCompare}
-            isLoading={loading}
+            isLoading={compareMutation.isPending}
             disabled={!baseline || !current}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
@@ -534,11 +530,11 @@ function DifferenceCard({ difference }: { difference: VisualDifference }) {
 
 // Analyze Panel - Analyze a specific difference for regression vs intentional
 function AnalyzePanel({ projectId }: { projectId: string }) {
+  const analyzeMutation = useVisualAnalyzeRegression();
   const [baseline, setBaseline] = useState<ScreenshotData | null>(null);
   const [current, setCurrent] = useState<ScreenshotData | null>(null);
   const [differenceDescription, setDifferenceDescription] = useState('');
   const [changeContext, setChangeContext] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RegressionAnalysisOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -567,10 +563,9 @@ function AnalyzePanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: RegressionAnalysisOutput }>('/visual/analyze-regression', {
+      const response = await analyzeMutation.mutateAsync({
         projectId,
         baseline: { base64: baseline.base64, mediaType: baseline.mediaType },
         current: { base64: current.base64, mediaType: current.mediaType },
@@ -582,13 +577,10 @@ function AnalyzePanel({ projectId }: { projectId: string }) {
           confidence: 1.0,
         },
         changeContext: changeContext || undefined,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze regression');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -661,7 +653,7 @@ function AnalyzePanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={analyzeMutation.isPending}
             disabled={!baseline || !current || !differenceDescription.trim()}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
@@ -759,9 +751,9 @@ function AnalyzePanel({ projectId }: { projectId: string }) {
 
 // Detect Elements Panel
 function DetectPanel({ projectId }: { projectId: string }) {
+  const detectMutation = useVisualDetectElements();
   const [screenshot, setScreenshot] = useState<ScreenshotData | null>(null);
   const [context, setContext] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DetectElementsOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -782,22 +774,18 @@ function DetectPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: DetectElementsOutput }>('/visual/detect-elements', {
+      const response = await detectMutation.mutateAsync({
         projectId,
         screenshot: { base64: screenshot.base64, mediaType: screenshot.mediaType },
         context: context || undefined,
         detectNested: true,
         minConfidence: 0.7,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to detect elements');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -834,7 +822,7 @@ function DetectPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleDetect}
-            isLoading={loading}
+            isLoading={detectMutation.isPending}
             disabled={!screenshot}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
@@ -1009,10 +997,10 @@ function ElementCard({ element }: { element: DetectedElement }) {
 
 // Generate Tests Panel
 function GeneratePanel({ projectId }: { projectId: string }) {
+  const generateMutation = useVisualGenerateTestCase();
   const [screenshot, setScreenshot] = useState<ScreenshotData | null>(null);
   const [feature, setFeature] = useState('');
   const [includeResponsive, setIncludeResponsive] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateVisualTestCaseOutput | null>(null);
   const [error, setError] = useState('');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -1034,22 +1022,18 @@ function GeneratePanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: GenerateVisualTestCaseOutput }>('/visual/generate-test-case', {
+      const response = await generateMutation.mutateAsync({
         projectId,
         screenshot: { base64: screenshot.base64, mediaType: screenshot.mediaType },
         feature: feature || undefined,
         includeResponsive,
         maxTestCases: 5,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to generate test cases');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1109,7 +1093,7 @@ function GeneratePanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleGenerate}
-            isLoading={loading}
+            isLoading={generateMutation.isPending}
             disabled={!screenshot}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >

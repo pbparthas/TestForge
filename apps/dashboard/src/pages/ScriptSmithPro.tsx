@@ -9,9 +9,10 @@
  * 4. Save to Framework - Save generated files to project
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useScriptSmithSessions, useCreateScriptSmithSession, useDeleteScriptSmithSession, useUpdateScriptSmithInput, useTransformScriptSmithSession, useSaveScriptSmithSession } from '../hooks/queries';
 import { Card, Button, Input } from '../components/ui';
 import {
   Sparkles,
@@ -98,10 +99,13 @@ const INPUT_METHODS: { id: InputMethod; name: string; description: string; icon:
 
 export function ScriptSmithProPage() {
   const { currentProject } = useProjectStore();
+  const queryClient = useQueryClient();
+  const { data: sessionsData = [] } = useScriptSmithSessions(currentProject?.id);
+  const createSessionMutation = useCreateScriptSmithSession();
+  const deleteSessionMutation = useDeleteScriptSmithSession();
   const [currentStep, setCurrentStep] = useState(1);
   const [session, setSession] = useState<ScriptSmithSession | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<InputMethod | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Transform options
@@ -115,42 +119,23 @@ export function ScriptSmithProPage() {
   });
 
   // Session history
-  const [sessions, setSessions] = useState<ScriptSmithSession[]>([]);
+  const sessions = (sessionsData as any)?.data || sessionsData || [];
   const [showHistory, setShowHistory] = useState(false);
-
-  // Load user's sessions
-  useEffect(() => {
-    if (currentProject) {
-      loadSessions();
-    }
-  }, [currentProject]);
-
-  const loadSessions = async () => {
-    try {
-      const response = await api.getScriptSmithSessions({ projectId: currentProject?.id, limit: 10 });
-      setSessions(response.data?.data || []);
-    } catch {
-      // Ignore - sessions list is optional
-    }
-  };
 
   const startNewSession = async (method: InputMethod) => {
     if (!currentProject) return;
-    setLoading(true);
     setError(null);
 
     try {
-      const response = await api.createScriptSmithSession({
+      const response = await createSessionMutation.mutateAsync({
         projectId: currentProject.id,
         inputMethod: method,
-      });
+      }) as any;
       setSession(response.data);
       setSelectedMethod(method);
       setCurrentStep(2);
     } catch (err) {
       setError('Failed to create session');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -182,8 +167,7 @@ export function ScriptSmithProPage() {
 
   const deleteSession = async (sessionId: string) => {
     try {
-      await api.deleteScriptSmithSession(sessionId);
-      setSessions(sessions.filter(s => s.id !== sessionId));
+      await deleteSessionMutation.mutateAsync(sessionId);
       if (session?.id === sessionId) {
         resetWizard();
       }
@@ -246,7 +230,7 @@ export function ScriptSmithProPage() {
             <p className="text-gray-500 text-center py-4">No previous sessions</p>
           ) : (
             <div className="space-y-2">
-              {sessions.map((s) => (
+              {sessions.map((s: ScriptSmithSession) => (
                 <div
                   key={s.id}
                   className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
@@ -300,7 +284,7 @@ export function ScriptSmithProPage() {
           methods={INPUT_METHODS}
           selectedMethod={selectedMethod}
           onSelect={startNewSession}
-          loading={loading}
+          loading={createSessionMutation.isPending}
         />
       )}
 
@@ -337,7 +321,7 @@ export function ScriptSmithProPage() {
           session={session}
           onBack={() => setCurrentStep(3)}
           onComplete={() => {
-            loadSessions();
+            queryClient.invalidateQueries({ queryKey: ['scriptSmithSessions'] });
             resetWizard();
           }}
           setError={setError}
@@ -474,7 +458,7 @@ function ProvideInputStep({
   onNext: (session: ScriptSmithSession) => void;
   setError: (error: string | null) => void;
 }) {
-  const [loading, setLoading] = useState(false);
+  const updateInputMutation = useUpdateScriptSmithInput();
 
   // Input state varies by method
   const [description, setDescription] = useState('');
@@ -484,7 +468,6 @@ function ProvideInputStep({
   const [screenshots, setScreenshots] = useState<File[]>([]);
 
   const handleSubmit = async () => {
-    setLoading(true);
     setError(null);
 
     try {
@@ -494,7 +477,6 @@ function ProvideInputStep({
         case 'describe':
           if (!description.trim()) {
             setError('Please provide a description');
-            setLoading(false);
             return;
           }
           input = { description };
@@ -503,7 +485,6 @@ function ProvideInputStep({
         case 'edit':
           if (!existingScript.trim() || !editInstruction.trim()) {
             setError('Please provide both script and edit instructions');
-            setLoading(false);
             return;
           }
           input = { existingScript, editInstruction };
@@ -512,7 +493,6 @@ function ProvideInputStep({
         case 'upload':
           if (!file) {
             setError('Please upload a file');
-            setLoading(false);
             return;
           }
           // For demo: read file content
@@ -523,7 +503,6 @@ function ProvideInputStep({
         case 'screenshot':
           if (screenshots.length === 0) {
             setError('Please upload at least one screenshot');
-            setLoading(false);
             return;
           }
           // Convert first screenshot to base64
@@ -550,12 +529,10 @@ function ProvideInputStep({
           break;
       }
 
-      const response = await api.updateScriptSmithSessionInput(session.id, input);
+      const response = await updateInputMutation.mutateAsync({ sessionId: session.id, input }) as any;
       onNext(response.data);
     } catch (err) {
       setError('Failed to update input');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -591,7 +568,7 @@ function ProvideInputStep({
             <ChevronLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <Button onClick={handleSubmit} isLoading={loading} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={handleSubmit} isLoading={updateInputMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
             Continue
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
@@ -785,7 +762,7 @@ function TransformReviewStep({
   onNext: (session: ScriptSmithSession) => void;
   setError: (error: string | null) => void;
 }) {
-  const [loading, setLoading] = useState(false);
+  const transformMutation = useTransformScriptSmithSession();
   const [transformedSession, setTransformedSession] = useState<ScriptSmithSession | null>(
     session.status === 'reviewing' ? session : null
   );
@@ -793,16 +770,13 @@ function TransformReviewStep({
   const [showOptions, setShowOptions] = useState(false);
 
   const handleTransform = async () => {
-    setLoading(true);
     setError(null);
 
     try {
-      const response = await api.transformScriptSmithSession(session.id, projectId, options);
+      const response = await transformMutation.mutateAsync({ sessionId: session.id, projectId, options: options as unknown as Record<string, unknown> }) as any;
       setTransformedSession(response.data);
     } catch (err) {
       setError('Failed to transform input');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -905,7 +879,7 @@ function TransformReviewStep({
 
         {!transformedSession && (
           <div className="mt-4">
-            <Button onClick={handleTransform} isLoading={loading} className="bg-purple-600 hover:bg-purple-700">
+            <Button onClick={handleTransform} isLoading={transformMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
               <Wand2 className="w-4 h-4 mr-2" />
               Transform to Script
             </Button>
@@ -914,7 +888,7 @@ function TransformReviewStep({
       </Card>
 
       {/* Loading State */}
-      {loading && (
+      {transformMutation.isPending && (
         <Card>
           <div className="text-center py-12">
             <Loader2 className="w-12 h-12 animate-spin text-purple-600 mx-auto mb-4" />
@@ -1021,7 +995,7 @@ function SaveStep({
 }) {
   const [targetDir, setTargetDir] = useState(session.projectPath || './tests');
   const [overwrite, setOverwrite] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const saveMutation = useSaveScriptSmithSession();
   const [saved, setSaved] = useState(false);
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
   const [skippedFiles, setSkippedFiles] = useState<string[]>([]);
@@ -1032,18 +1006,15 @@ function SaveStep({
       return;
     }
 
-    setLoading(true);
     setError(null);
 
     try {
-      const response = await api.saveScriptSmithSession(session.id, targetDir, overwrite);
+      const response = await saveMutation.mutateAsync({ sessionId: session.id, targetDir, overwrite }) as any;
       setSavedFiles(response.data?.savedFiles || []);
       setSkippedFiles(response.data?.skipped || []);
       setSaved(true);
     } catch (err) {
       setError('Failed to save files');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1150,7 +1121,7 @@ function SaveStep({
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <Button onClick={handleSave} isLoading={loading} className="bg-purple-600 hover:bg-purple-700">
+        <Button onClick={handleSave} isLoading={saveMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
           <Save className="w-4 h-4 mr-2" />
           Save Files
         </Button>

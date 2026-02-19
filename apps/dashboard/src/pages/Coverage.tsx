@@ -2,40 +2,15 @@
  * Coverage Page
  */
 
-import { useEffect, useState } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useCoverage, useCoverageGaps } from '../hooks/queries';
 import { Card, Badge } from '../components/ui';
-import type { CoverageData } from '../types';
 
 export function CoveragePage() {
   const { currentProject } = useProjectStore();
-  const [coverage, setCoverage] = useState<CoverageData | null>(null);
-  const [gaps, setGaps] = useState<{ id: string; title: string; priority: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (currentProject) {
-      loadCoverage();
-    }
-  }, [currentProject]);
-
-  const loadCoverage = async () => {
-    if (!currentProject) return;
-    setLoading(true);
-    try {
-      const [coverageRes, gapsRes] = await Promise.all([
-        api.getCoverage(currentProject.id),
-        api.getCoverageGaps(currentProject.id),
-      ]);
-      setCoverage(coverageRes.data);
-      setGaps(gapsRes.data?.requirements || []);
-    } catch (err) {
-      console.error('Failed to load coverage', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: coverage, isLoading: coverageLoading } = useCoverage(currentProject?.id);
+  const { data: gaps = [], isLoading: gapsLoading } = useCoverageGaps(currentProject?.id);
+  const loading = coverageLoading || gapsLoading;
 
   if (!currentProject) {
     return (

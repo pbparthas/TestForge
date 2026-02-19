@@ -6,6 +6,15 @@ import { useState, useEffect } from 'react';
 import { useProjectStore } from '../stores/project';
 import { useAuthStore } from '../stores/auth';
 import { api } from '../services/api';
+import {
+  useTestPilotWorkflows,
+  useTestPilotExecutions,
+  useTestPilotCustomWorkflows,
+  useTestPilotEstimate,
+  useTestPilotExecute,
+  useCreateTestPilotWorkflow,
+  useDeleteTestPilotWorkflow,
+} from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import {
   Workflow,
@@ -230,27 +239,9 @@ function WorkflowsPanel({
   projectId: string;
   onSelectWorkflow: (workflow: Workflow) => void;
 }) {
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    const fetchWorkflows = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await api.get<{ data: Workflow[] }>('/testpilot/workflows', { projectId });
-        setWorkflows(response.data.data || getMockWorkflows());
-      } catch (err) {
-        console.error('Failed to fetch workflows:', err);
-        // Use mock data for development
-        setWorkflows(getMockWorkflows());
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchWorkflows();
-  }, [projectId]);
-  if (loading) {
+  const { data: workflowsData, isLoading, error } = useTestPilotWorkflows(projectId);
+  const workflows = ((workflowsData as any) || getMockWorkflows()) as Workflow[];
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
@@ -261,7 +252,7 @@ function WorkflowsPanel({
     return (
       <div className="flex items-center justify-center gap-2 py-16 text-red-600">
         <AlertCircle className="w-5 h-5" />
-        <span>{error}</span>
+        <span>{error.message}</span>
       </div>
     );
   }
@@ -379,26 +370,15 @@ function ExecutePanel({
   selectedWorkflow: Workflow | null;
   onWorkflowChange: (workflow: Workflow | null) => void;
 }) {
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const { data: workflowsData } = useTestPilotWorkflows(projectId);
+  const workflows = ((workflowsData as any) || getMockWorkflows()) as Workflow[];
+  const estimateMutation = useTestPilotEstimate();
+  const executeMutation = useTestPilotExecute();
   const [input, setInput] = useState('');
   const [inputType, setInputType] = useState<'natural_language' | 'json'>('natural_language');
   const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
   const [execution, setExecution] = useState<Execution | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState('');
-  // Fetch workflows for selector
-  useEffect(() => {
-    const fetchWorkflows = async () => {
-      try {
-        const response = await api.get<{ data: Workflow[] }>('/testpilot/workflows', { projectId });
-        setWorkflows(response.data.data || getMockWorkflows());
-      } catch {
-        setWorkflows(getMockWorkflows());
-      }
-    };
-    fetchWorkflows();
-  }, [projectId]);
   // Poll execution status
   useEffect(() => {
     if (!execution || execution.status === 'completed' || execution.status === 'failed' || execution.status === 'cancelled') {
@@ -419,17 +399,16 @@ function ExecutePanel({
       setError('Please select a workflow and provide input');
       return;
     }
-    setEstimating(true);
     setError('');
     setCostEstimate(null);
     try {
-      const response = await api.post<{ data: CostEstimate }>('/testpilot/estimate', {
+      const response = await estimateMutation.mutateAsync({
         workflowId: selectedWorkflow.id,
         input: {
           projectId,
           ...(inputType === 'json' ? JSON.parse(input) : { specification: input }),
         },
-      });
+      }) as any;
       setCostEstimate(response.data.data);
     } catch (err) {
       // Mock estimate for development
@@ -445,8 +424,6 @@ function ExecutePanel({
           tokens: 5000,
         })),
       });
-    } finally {
-      setEstimating(false);
     }
   };
   const handleExecute = async () => {
@@ -454,23 +431,20 @@ function ExecutePanel({
       setError('Please select a workflow and provide input');
       return;
     }
-    setLoading(true);
     setError('');
     setExecution(null);
     try {
-      const response = await api.post<{ data: Execution }>('/testpilot/execute', {
+      const response = await executeMutation.mutateAsync({
         workflowId: selectedWorkflow.id,
         input: {
           projectId,
           ...(inputType === 'json' ? JSON.parse(input) : { specification: input }),
         },
-      });
+      }) as any;
       setExecution(response.data.data);
     } catch (err) {
       // Mock execution for development
       setExecution(getMockExecution(selectedWorkflow));
-    } finally {
-      setLoading(false);
     }
   };
   return (
@@ -592,7 +566,7 @@ function ExecutePanel({
           <div className="flex gap-2">
             <Button
               onClick={handleEstimate}
-              isLoading={estimating}
+              isLoading={estimateMutation.isPending}
               disabled={!selectedWorkflow || !input.trim()}
               variant="secondary"
               className="flex-1"
@@ -602,7 +576,7 @@ function ExecutePanel({
             </Button>
             <Button
               onClick={handleExecute}
-              isLoading={loading}
+              isLoading={executeMutation.isPending}
               disabled={!selectedWorkflow || !input.trim()}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700"
             >
@@ -750,30 +724,12 @@ function ExecutionStepItem({ step, index }: { step: ExecutionStep; index: number
 // History Panel
 // ============================================================================
 function HistoryPanel({ projectId }: { projectId: string }) {
-  const [executions, setExecutions] = useState<Execution[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [, setError] = useState('');
+  const { data: executionsData, isLoading } = useTestPilotExecutions(projectId);
+  const allExecutions = ((executionsData as any) || getMockExecutions()) as Execution[];
   const [statusFilter, setStatusFilter] = useState<ExecutionStatus | 'all'>('all');
   const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null);
-  useEffect(() => {
-    const fetchExecutions = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await api.get<{ data: Execution[] }>('/testpilot/executions', {
-          projectId,
-          status: statusFilter === 'all' ? undefined : statusFilter,
-        });
-        setExecutions(response.data.data || getMockExecutions());
-      } catch {
-        setExecutions(getMockExecutions());
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchExecutions();
-  }, [projectId, statusFilter]);
-  if (loading) {
+  const executions = statusFilter === 'all' ? allExecutions : allExecutions.filter(e => e.status === statusFilter);
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
@@ -909,28 +865,16 @@ function HistoryPanel({ projectId }: { projectId: string }) {
 // Custom Workflows Panel (Admin Only)
 // ============================================================================
 function CustomWorkflowsPanel({ projectId }: { projectId: string }) {
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: workflowsData, isLoading } = useTestPilotCustomWorkflows(projectId);
+  const workflows = (((workflowsData as any) || getMockWorkflows()).filter((w: Workflow) => w.isCustom)) as Workflow[];
+  const createWorkflowMutation = useCreateTestPilotWorkflow();
+  const deleteWorkflowMutation = useDeleteTestPilotWorkflow();
   const [showCreate, setShowCreate] = useState(false);
   const [newWorkflow, setNewWorkflow] = useState({
     name: '',
     description: '',
     steps: [] as WorkflowStep[],
   });
-  useEffect(() => {
-    const fetchWorkflows = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get<{ data: Workflow[] }>('/testpilot/workflows', { projectId, custom: true });
-        setWorkflows((response.data.data || getMockWorkflows()).filter((w) => w.isCustom));
-      } catch {
-        setWorkflows(getMockWorkflows().filter((w) => w.isCustom));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchWorkflows();
-  }, [projectId]);
   const handleAddStep = (type: StepType) => {
     const newStep: WorkflowStep = {
       id: `step-${Date.now()}`,
@@ -961,35 +905,22 @@ function CustomWorkflowsPanel({ projectId }: { projectId: string }) {
   const handleDeleteWorkflow = async (workflowId: string) => {
     if (!confirm('Are you sure you want to delete this workflow?')) return;
     try {
-      await api.delete(`/testpilot/workflows/${workflowId}`);
-      setWorkflows((prev) => prev.filter((w) => w.id !== workflowId));
+      await deleteWorkflowMutation.mutateAsync(workflowId);
     } catch {
-      // Mock delete
-      setWorkflows((prev) => prev.filter((w) => w.id !== workflowId));
+      // Mutation auto-invalidates queries
     }
   };
   const handleCreateWorkflow = async () => {
     if (!newWorkflow.name.trim()) return;
     try {
-      const response = await api.post<{ data: Workflow }>('/testpilot/workflows', {
+      await createWorkflowMutation.mutateAsync({
         projectId,
         ...newWorkflow,
       });
-      setWorkflows((prev) => [...prev, response.data.data]);
       setNewWorkflow({ name: '', description: '', steps: [] });
       setShowCreate(false);
     } catch {
-      // Mock create
-      const mockWorkflow: Workflow = {
-        id: `workflow-${Date.now()}`,
-        name: newWorkflow.name,
-        description: newWorkflow.description,
-        agents: [],
-        steps: newWorkflow.steps,
-        isCustom: true,
-        createdAt: new Date().toISOString(),
-      };
-      setWorkflows((prev) => [...prev, mockWorkflow]);
+      // Mock create fallback
       setNewWorkflow({ name: '', description: '', steps: [] });
       setShowCreate(false);
     }
@@ -1004,7 +935,7 @@ function CustomWorkflowsPanel({ projectId }: { projectId: string }) {
     { id: 'bugpattern', name: 'Bug Pattern', type: 'bugpattern' },
     { id: 'codeanalysis', name: 'Code Analysis', type: 'codeanalysis' },
   ];
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />

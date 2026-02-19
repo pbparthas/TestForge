@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useGenerateUnitTests } from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import { Shield, FileCode, FolderTree, TestTube, Percent, Plus, PanelLeftClose, PanelLeft } from 'lucide-react';
 import {
@@ -71,6 +71,7 @@ function parseCodeFunctions(file: UploadedFile): ParsedFunction[] {
 
 export function CodeGuardianPage() {
   const { currentProject } = useProjectStore();
+  const generateUnitTests = useGenerateUnitTests();
 
   // Session state
   const [sessions, setSessions] = useState<CodeGuardianSession[]>([]);
@@ -93,7 +94,6 @@ export function CodeGuardianPage() {
 
   // Generate step state
   const [generatedTests, setGeneratedTests] = useState<GeneratedTest[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   // Export state
   const [showExportModal, setShowExportModal] = useState(false);
@@ -153,16 +153,14 @@ export function CodeGuardianPage() {
   const handleGenerate = async () => {
     if (!currentProject || selectedFunctionIds.length === 0) return;
 
-    setIsGenerating(true);
     try {
       // Get selected functions' code
       const selectedFunctions: { name: string; code: string }[] = [];
       for (const fileWithFns of filesWithFunctions) {
         for (const fn of fileWithFns.functions) {
           if (selectedFunctionIds.includes(fn.id)) {
-            // Extract function code (simplified - in production use proper AST)
             const startIndex = fileWithFns.file.content.indexOf(fn.signature);
-            const endIndex = startIndex + 500; // Simplified
+            const endIndex = startIndex + 500;
             selectedFunctions.push({
               name: fn.name,
               code: fileWithFns.file.content.slice(startIndex, endIndex),
@@ -175,12 +173,12 @@ export function CodeGuardianPage() {
       const tests: GeneratedTest[] = [];
       for (const fn of selectedFunctions) {
         try {
-          const response = await api.generateUnitTests(
+          const response = await generateUnitTests.mutateAsync([
             currentProject.id,
             fn.code,
             language,
             framework
-          );
+          ]) as any;
           tests.push({
             id: `test-${Date.now()}-${fn.name}`,
             functionId: fn.name,
@@ -221,8 +219,8 @@ export function CodeGuardianPage() {
           } : s
         ));
       }
-    } finally {
-      setIsGenerating(false);
+    } catch {
+      // Generation failed entirely
     }
   };
 
@@ -528,7 +526,7 @@ export function CodeGuardianPage() {
               onBack={handleBack}
               onContinue={handleContinue}
               canContinue={canContinue()}
-              isGenerating={isGenerating}
+              isGenerating={generateUnitTests.isPending}
               isExporting={isExporting}
             />
           </div>

@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useRecorderConvert, useRecorderOptimize, useRecorderAssertions, useRecorderProcess } from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import {
   Video, Code, Wand2, Shield, Zap,
@@ -333,13 +333,13 @@ function CodeOutput({
 
 // Convert Panel
 function ConvertPanel({ projectId }: { projectId: string }) {
+  const convertMutation = useRecorderConvert();
   const [recording, setRecording] = useState('');
   const [framework, setFramework] = useState<AutomationFramework>('playwright');
   const [language, setLanguage] = useState<OutputLanguage>('typescript');
   const [includePageObjects, setIncludePageObjects] = useState(false);
   const [includeComments, setIncludeComments] = useState(true);
   const [selectorPreference, setSelectorPreference] = useState<string>('role');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GeneratedScript | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -358,10 +358,9 @@ function ConvertPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: GeneratedScript }>('/recorder/convert', {
+      const response = await convertMutation.mutateAsync({
         projectId,
         recording: parsedRecording,
         options: {
@@ -371,13 +370,10 @@ function ConvertPanel({ projectId }: { projectId: string }) {
           includeComments,
           selectorPreference: [selectorPreference, 'testid', 'text', 'css'],
         },
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to convert recording');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -481,7 +477,7 @@ function ConvertPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleConvert}
-            isLoading={loading}
+            isLoading={convertMutation.isPending}
             disabled={!recording.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
@@ -592,13 +588,13 @@ function PageObjectCard({ pageObject }: { pageObject: { name: string; code: stri
 
 // Optimize Panel
 function OptimizePanel({ projectId }: { projectId: string }) {
+  const optimizeMutation = useRecorderOptimize();
   const [recording, setRecording] = useState('');
   const [removeDuplicates, setRemoveDuplicates] = useState(true);
   const [mergeTypeActions, setMergeTypeActions] = useState(true);
   const [removeUnnecessaryScrolls, setRemoveUnnecessaryScrolls] = useState(true);
   const [improveSelectors, setImproveSelectors] = useState(true);
   const [addSmartWaits, setAddSmartWaits] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OptimizedRecording | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -617,10 +613,9 @@ function OptimizePanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: OptimizedRecording }>('/recorder/optimize', {
+      const response = await optimizeMutation.mutateAsync({
         projectId,
         recording: parsedRecording,
         options: {
@@ -630,13 +625,10 @@ function OptimizePanel({ projectId }: { projectId: string }) {
           improveSelectors,
           addSmartWaits,
         },
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to optimize recording');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -721,7 +713,7 @@ function OptimizePanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleOptimize}
-            isLoading={loading}
+            isLoading={optimizeMutation.isPending}
             disabled={!recording.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
@@ -832,9 +824,9 @@ function OptimizePanel({ projectId }: { projectId: string }) {
 
 // Assertions Panel
 function AssertionsPanel({ projectId }: { projectId: string }) {
+  const assertionsMutation = useRecorderAssertions();
   const [recording, setRecording] = useState('');
   const [hints, setHints] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AssertionResult | null>(null);
   const [error, setError] = useState('');
 
@@ -856,20 +848,16 @@ function AssertionsPanel({ projectId }: { projectId: string }) {
       ? hints.split('\n').filter(h => h.trim()).map(h => ({ description: h.trim() }))
       : undefined;
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: AssertionResult }>('/recorder/assertions', {
+      const response = await assertionsMutation.mutateAsync({
         projectId,
         recording: parsedRecording,
         hints: parsedHints,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to generate assertions');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -905,7 +893,7 @@ function AssertionsPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleGenerate}
-            isLoading={loading}
+            isLoading={assertionsMutation.isPending}
             disabled={!recording.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
@@ -1035,12 +1023,12 @@ function AssertionCard({ assertion }: { assertion: GeneratedAssertion }) {
 
 // Pipeline Panel
 function PipelinePanel({ projectId }: { projectId: string }) {
+  const processMutation = useRecorderProcess();
   const [recording, setRecording] = useState('');
   const [framework, setFramework] = useState<AutomationFramework>('playwright');
   const [language, setLanguage] = useState<OutputLanguage>('typescript');
   const [skipOptimization, setSkipOptimization] = useState(false);
   const [skipAssertions, setSkipAssertions] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -1059,10 +1047,9 @@ function PipelinePanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: PipelineResult }>('/recorder/process', {
+      const response = await processMutation.mutateAsync({
         projectId,
         recording: parsedRecording,
         options: {
@@ -1074,13 +1061,10 @@ function PipelinePanel({ projectId }: { projectId: string }) {
           skipOptimization,
           skipAssertions,
         },
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to process recording');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1168,7 +1152,7 @@ function PipelinePanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleProcess}
-            isLoading={loading}
+            isLoading={processMutation.isPending}
             disabled={!recording.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >

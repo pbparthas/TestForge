@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useTestEvolutionHealth, useTestEvolutionCoverage, useTestEvolutionStale, useTestEvolutionRisk } from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import {
   AlertTriangle,
@@ -483,11 +483,11 @@ function CopyButton({ text }: { text: string }) {
 // ============================================================================
 
 function TestHealthPanel({ projectId }: { projectId: string }) {
+  const healthMutation = useTestEvolutionHealth();
   const [testsJson, setTestsJson] = useState('');
   const [historyJson, setHistoryJson] = useState('');
   const [includeFlaky, setIncludeFlaky] = useState(true);
   const [timeWindow, setTimeWindow] = useState(30);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TestHealthOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -516,24 +516,17 @@ function TestHealthPanel({ projectId }: { projectId: string }) {
       }
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: TestHealthOutput }>('/test-evolution/health', {
+      const response = await healthMutation.mutateAsync({
         projectId,
         tests,
         history,
-        options: {
-          includeFlaky,
-          timeWindow,
-        },
-      });
+        options: { includeFlaky, timeWindow },
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze test health');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -594,7 +587,7 @@ function TestHealthPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={healthMutation.isPending}
             disabled={!testsJson.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
@@ -786,10 +779,10 @@ function FlakyTestCard({ test }: { test: TestHealthOutput['flakyTests'][0] }) {
 // ============================================================================
 
 function CoverageEvolutionPanel({ projectId }: { projectId: string }) {
+  const coverageMutation = useTestEvolutionCoverage();
   const [coverageJson, setCoverageJson] = useState('');
   const [targetCoverage, setTargetCoverage] = useState(80);
   const [includeHistory, setIncludeHistory] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CoverageEvolutionOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -807,23 +800,16 @@ function CoverageEvolutionPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: CoverageEvolutionOutput }>('/test-evolution/coverage', {
+      const response = await coverageMutation.mutateAsync({
         projectId,
         coverageData,
-        options: {
-          targetCoverage,
-          includeHistory,
-        },
-      });
+        options: { targetCoverage, includeHistory },
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze coverage evolution');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -876,7 +862,7 @@ function CoverageEvolutionPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={coverageMutation.isPending}
             disabled={!coverageJson.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
@@ -1029,10 +1015,10 @@ function CoverageEvolutionPanel({ projectId }: { projectId: string }) {
 // ============================================================================
 
 function StaleTestsPanel({ projectId }: { projectId: string }) {
+  const staleMutation = useTestEvolutionStale();
   const [testsJson, setTestsJson] = useState('');
   const [staleThreshold, setStaleThreshold] = useState(90);
   const [includeOrphans, setIncludeOrphans] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<StaleTestsOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -1050,23 +1036,16 @@ function StaleTestsPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: StaleTestsOutput }>('/test-evolution/stale', {
+      const response = await staleMutation.mutateAsync({
         projectId,
         tests,
-        options: {
-          staleThreshold,
-          includeOrphans,
-        },
-      });
+        options: { staleThreshold, includeOrphans },
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze stale tests');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1119,7 +1098,7 @@ function StaleTestsPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={staleMutation.isPending}
             disabled={!testsJson.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
@@ -1315,10 +1294,10 @@ function StaleTestCard({ test }: { test: StaleTestsOutput['staleTests'][0] }) {
 // ============================================================================
 
 function RiskScoringPanel({ projectId }: { projectId: string }) {
+  const riskMutation = useTestEvolutionRisk();
   const [testsJson, setTestsJson] = useState('');
   const [coverageJson, setCoverageJson] = useState('');
   const [historyJson, setHistoryJson] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RiskScoringOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -1357,21 +1336,17 @@ function RiskScoringPanel({ projectId }: { projectId: string }) {
       }
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: RiskScoringOutput }>('/test-evolution/risk', {
+      const response = await riskMutation.mutateAsync({
         projectId,
         tests,
         coverageData,
         history,
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to calculate risk scores');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1413,7 +1388,7 @@ function RiskScoringPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={riskMutation.isPending}
             disabled={!testsJson.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >

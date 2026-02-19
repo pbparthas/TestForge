@@ -3,10 +3,16 @@
  * Sprint 18: HITL Approval Workflows - Review queue, artifacts, SLA tracking
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import {
+  useReviewQueue,
+  useArtifacts,
+  useClaimArtifact,
+  useApproveArtifact,
+  useRejectArtifact,
+} from '../hooks/queries';
 import { Card, Badge, Button, Input } from '../components/ui';
 
 // Types
@@ -81,81 +87,54 @@ const SLA_COLORS: Record<string, { variant: 'default' | 'success' | 'warning' | 
 export function ApprovalsPage() {
   const navigate = useNavigate();
   const { currentProject } = useProjectStore();
-  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
-  const [reviewQueue, setReviewQueue] = useState<ReviewQueue | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: reviewQueue, isLoading } = useReviewQueue() as { data: ReviewQueue | undefined; isLoading: boolean };
+  const { data: artifacts = [] as Artifact[] } = useArtifacts(currentProject?.id);
+
+  const claimMutation = useClaimArtifact();
+  const approveMutation = useApproveArtifact();
+  const rejectMutation = useRejectArtifact();
+
   const [activeTab, setActiveTab] = useState<'queue' | 'all' | 'sla'>('queue');
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewComment, setReviewComment] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [currentProject]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [queueRes, artifactsRes] = await Promise.all([
-        api.getReviewQueue(),
-        api.getArtifacts({ projectId: currentProject?.id, limit: 50 }),
-      ]);
-      setReviewQueue(queueRes.data);
-      setArtifacts(artifactsRes.data?.data || []);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleClaim = (artifact: Artifact) => {
+    claimMutation.mutate(artifact.id);
   };
 
-  const handleClaim = async (artifact: Artifact) => {
-    setProcessing(true);
-    try {
-      await api.claimArtifact(artifact.id);
-      loadData();
-    } catch (error) {
-      console.error('Failed to claim:', error);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleApprove = async () => {
+  const handleApprove = () => {
     if (!selectedArtifact) return;
-    setProcessing(true);
-    try {
-      await api.approveArtifact(selectedArtifact.id, reviewComment);
-      setShowReviewModal(false);
-      setSelectedArtifact(null);
-      setReviewComment('');
-      loadData();
-    } catch (error) {
-      console.error('Failed to approve:', error);
-    } finally {
-      setProcessing(false);
-    }
+    approveMutation.mutate(
+      { id: selectedArtifact.id, comment: reviewComment },
+      {
+        onSuccess: () => {
+          setShowReviewModal(false);
+          setSelectedArtifact(null);
+          setReviewComment('');
+        },
+      }
+    );
   };
 
-  const handleReject = async () => {
+  const handleReject = () => {
     if (!selectedArtifact || !rejectionReason) return;
-    setProcessing(true);
-    try {
-      await api.rejectArtifact(selectedArtifact.id, rejectionReason, [
-        { category: 'other', severity: 'moderate', description: rejectionReason },
-      ]);
-      setShowReviewModal(false);
-      setSelectedArtifact(null);
-      setReviewComment('');
-      setRejectionReason('');
-      loadData();
-    } catch (error) {
-      console.error('Failed to reject:', error);
-    } finally {
-      setProcessing(false);
-    }
+    rejectMutation.mutate(
+      {
+        id: selectedArtifact.id,
+        reason: rejectionReason,
+        findings: [{ category: 'other', severity: 'moderate', description: rejectionReason }],
+      },
+      {
+        onSuccess: () => {
+          setShowReviewModal(false);
+          setSelectedArtifact(null);
+          setReviewComment('');
+          setRejectionReason('');
+        },
+      }
+    );
   };
 
   const openReviewModal = (artifact: Artifact) => {
@@ -178,6 +157,8 @@ export function ApprovalsPage() {
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
   };
+
+  const processing = claimMutation.isPending || approveMutation.isPending || rejectMutation.isPending;
 
   const renderArtifactCard = (artifact: Artifact, showActions = true) => (
     <Card key={artifact.id} className="mb-4">
@@ -265,8 +246,8 @@ export function ApprovalsPage() {
       <div className="flex border-b border-gray-200 mb-6">
         {[
           { id: 'queue', label: 'Review Queue', count: (reviewQueue?.pending.length || 0) + (reviewQueue?.inReview.length || 0) },
-          { id: 'all', label: 'All Artifacts', count: artifacts.length },
-          { id: 'sla', label: 'SLA Tracking', count: artifacts.filter(a => a.slaTracking?.status === 'approaching_sla' || a.slaTracking?.status === 'breached').length },
+          { id: 'all', label: 'All Artifacts', count: (artifacts as Artifact[]).length },
+          { id: 'sla', label: 'SLA Tracking', count: (artifacts as Artifact[]).filter(a => a.slaTracking?.status === 'approaching_sla' || a.slaTracking?.status === 'breached').length },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -289,7 +270,7 @@ export function ApprovalsPage() {
         ))}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-500">Loading...</p>
@@ -299,7 +280,6 @@ export function ApprovalsPage() {
           {/* Review Queue Tab */}
           {activeTab === 'queue' && reviewQueue && (
             <div className="space-y-6">
-              {/* Pending Review */}
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4">
                   Pending Review ({reviewQueue.pending.length})
@@ -309,11 +289,10 @@ export function ApprovalsPage() {
                     <p className="text-gray-500 text-center py-4">No artifacts pending review</p>
                   </Card>
                 ) : (
-                  reviewQueue.pending.map((artifact) => renderArtifactCard(artifact))
+                  reviewQueue.pending.map((artifact) => renderArtifactCard(artifact as Artifact))
                 )}
               </div>
 
-              {/* In Review */}
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4">
                   In Review ({reviewQueue.inReview.length})
@@ -323,17 +302,16 @@ export function ApprovalsPage() {
                     <p className="text-gray-500 text-center py-4">No artifacts currently being reviewed</p>
                   </Card>
                 ) : (
-                  reviewQueue.inReview.map((artifact) => renderArtifactCard(artifact))
+                  reviewQueue.inReview.map((artifact) => renderArtifactCard(artifact as Artifact))
                 )}
               </div>
 
-              {/* Recently Reviewed */}
               {reviewQueue.recentlyReviewed.length > 0 && (
                 <div>
                   <h2 className="text-lg font-medium text-gray-900 mb-4">
                     Recently Reviewed ({reviewQueue.recentlyReviewed.length})
                   </h2>
-                  {reviewQueue.recentlyReviewed.map((artifact) => renderArtifactCard(artifact, false))}
+                  {reviewQueue.recentlyReviewed.map((artifact) => renderArtifactCard(artifact as Artifact, false))}
                 </div>
               )}
             </div>
@@ -342,12 +320,12 @@ export function ApprovalsPage() {
           {/* All Artifacts Tab */}
           {activeTab === 'all' && (
             <div>
-              {artifacts.length === 0 ? (
+              {(artifacts as Artifact[]).length === 0 ? (
                 <Card>
                   <p className="text-gray-500 text-center py-8">No artifacts found</p>
                 </Card>
               ) : (
-                artifacts.map((artifact) => renderArtifactCard(artifact))
+                (artifacts as Artifact[]).map((artifact) => renderArtifactCard(artifact))
               )}
             </div>
           )}
@@ -355,33 +333,31 @@ export function ApprovalsPage() {
           {/* SLA Tracking Tab */}
           {activeTab === 'sla' && (
             <div className="space-y-6">
-              {/* Breached */}
               <div>
                 <h2 className="text-lg font-medium text-red-600 mb-4">
-                  SLA Breached ({artifacts.filter(a => a.slaTracking?.status === 'breached' || a.slaTracking?.status === 'escalated').length})
+                  SLA Breached ({(artifacts as Artifact[]).filter(a => a.slaTracking?.status === 'breached' || a.slaTracking?.status === 'escalated').length})
                 </h2>
-                {artifacts.filter(a => a.slaTracking?.status === 'breached' || a.slaTracking?.status === 'escalated').length === 0 ? (
+                {(artifacts as Artifact[]).filter(a => a.slaTracking?.status === 'breached' || a.slaTracking?.status === 'escalated').length === 0 ? (
                   <Card>
                     <p className="text-gray-500 text-center py-4">No breached SLAs</p>
                   </Card>
                 ) : (
-                  artifacts
+                  (artifacts as Artifact[])
                     .filter(a => a.slaTracking?.status === 'breached' || a.slaTracking?.status === 'escalated')
                     .map((artifact) => renderArtifactCard(artifact))
                 )}
               </div>
 
-              {/* Approaching */}
               <div>
                 <h2 className="text-lg font-medium text-yellow-600 mb-4">
-                  Approaching Deadline ({artifacts.filter(a => a.slaTracking?.status === 'approaching_sla').length})
+                  Approaching Deadline ({(artifacts as Artifact[]).filter(a => a.slaTracking?.status === 'approaching_sla').length})
                 </h2>
-                {artifacts.filter(a => a.slaTracking?.status === 'approaching_sla').length === 0 ? (
+                {(artifacts as Artifact[]).filter(a => a.slaTracking?.status === 'approaching_sla').length === 0 ? (
                   <Card>
                     <p className="text-gray-500 text-center py-4">No approaching deadlines</p>
                   </Card>
                 ) : (
-                  artifacts
+                  (artifacts as Artifact[])
                     .filter(a => a.slaTracking?.status === 'approaching_sla')
                     .map((artifact) => renderArtifactCard(artifact))
                 )}

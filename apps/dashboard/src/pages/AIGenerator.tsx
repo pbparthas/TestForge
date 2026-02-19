@@ -6,7 +6,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useGenerateTestWeaver, useBatchTestWeaver, useEvolveTestCases } from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import {
   Wand2, FileText, Sparkles, RefreshCw, Copy, Check,
@@ -122,7 +122,7 @@ function GeneratePanel({ projectId }: { projectId: string }) {
   const [requirement, setRequirement] = useState('');
   const [testTypes, setTestTypes] = useState<string[]>(['functional']);
   const [includeMapping, setIncludeMapping] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const mutation = useGenerateTestWeaver();
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState('');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -179,7 +179,6 @@ function GeneratePanel({ projectId }: { projectId: string }) {
   };
 
   const handleGenerate = async () => {
-    setLoading(true);
     setError('');
     try {
       const payload: Record<string, unknown> = {
@@ -196,14 +195,12 @@ function GeneratePanel({ projectId }: { projectId: string }) {
       if (inputMethod === 'natural_language' || inputMethod === 'specification') {
         if (!requirement.trim()) {
           setError('Please enter a requirement');
-          setLoading(false);
           return;
         }
         payload.specification = requirement;
       } else if (inputMethod === 'screenshot') {
         if (!screenshot) {
           setError('Please upload a screenshot');
-          setLoading(false);
           return;
         }
         payload.screenshot = {
@@ -214,7 +211,6 @@ function GeneratePanel({ projectId }: { projectId: string }) {
       } else if (inputMethod === 'file_upload') {
         if (!uploadedFile) {
           setError('Please upload a file');
-          setLoading(false);
           return;
         }
         payload.fileUpload = {
@@ -225,19 +221,15 @@ function GeneratePanel({ projectId }: { projectId: string }) {
       } else if (inputMethod === 'conversation') {
         if (conversation.length === 0) {
           setError('Please add at least one message');
-          setLoading(false);
           return;
         }
         payload.conversation = conversation;
       }
 
-      const response = await api.post<{ data: GenerateResult }>('/ai/test-weaver/generate', payload);
+      const response = await mutation.mutateAsync(payload) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to generate test cases');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -491,7 +483,7 @@ function GeneratePanel({ projectId }: { projectId: string }) {
             </div>
           )}
 
-          <Button onClick={handleGenerate} isLoading={loading} className="w-full bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleGenerate} isLoading={mutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700">
             <Sparkles className="w-4 h-4 mr-2" />
             Generate Test Cases
           </Button>
@@ -669,7 +661,7 @@ function BatchPanel({ projectId }: { projectId: string }) {
   const [specifications, setSpecifications] = useState<Array<{ id: string; content: string }>>([
     { id: '1', content: '' }
   ]);
-  const [loading, setLoading] = useState(false);
+  const mutation = useBatchTestWeaver();
   const [result, setResult] = useState<{
     results: Array<{ id: string; success: boolean; output?: GenerateResult; error?: string }>;
     summary: { total: number; successful: number; failed: number; totalTestCases: number };
@@ -696,14 +688,9 @@ function BatchPanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      type BatchResult = {
-        results: Array<{ id: string; success: boolean; output?: GenerateResult; error?: string }>;
-        summary: { total: number; successful: number; failed: number; totalTestCases: number };
-      };
-      const response = await api.post<{ data: BatchResult }>('/ai/test-weaver/batch', {
+      const response = await mutation.mutateAsync({
         projectId,
         specifications: validSpecs.map(s => ({
           id: s.id,
@@ -714,13 +701,10 @@ function BatchPanel({ projectId }: { projectId: string }) {
           includeNegativeCases: true,
           includeEdgeCases: true,
         },
-      });
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to batch generate test cases');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -768,7 +752,7 @@ function BatchPanel({ projectId }: { projectId: string }) {
             </div>
           )}
 
-          <Button onClick={handleBatchGenerate} isLoading={loading} className="w-full bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleBatchGenerate} isLoading={mutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700">
             <Layers className="w-4 h-4 mr-2" />
             Generate All ({specifications.filter(s => s.content.trim()).length})
           </Button>
@@ -850,21 +834,18 @@ function BatchPanel({ projectId }: { projectId: string }) {
 function EvolvePanel({ projectId }: { projectId: string }) {
   const [existingTests, setExistingTests] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [loading, setLoading] = useState(false);
+  const mutation = useEvolveTestCases();
   const [result, setResult] = useState<{ evolvedTests?: Array<{ title: string; changes: string }> } | null>(null);
   const [error, setError] = useState('');
 
   const handleEvolve = async () => {
     if (!existingTests.trim() || !feedback.trim()) return;
-    setLoading(true);
     setError('');
     try {
-      const response = await api.evolveTestCases(projectId, existingTests, feedback);
+      const response = await mutation.mutateAsync({ projectId, existingTests, feedback }) as any;
       setResult(response.data);
     } catch (err) {
       setError('Failed to evolve test cases');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -898,7 +879,7 @@ function EvolvePanel({ projectId }: { projectId: string }) {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <Button onClick={handleEvolve} isLoading={loading} className="w-full bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleEvolve} isLoading={mutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700">
             <RefreshCw className="w-4 h-4 mr-2" />
             Evolve Test Cases
           </Button>

@@ -3,8 +3,8 @@
  * View and filter audit logs (admin/lead only)
  */
 
-import { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import { useState } from 'react';
+import { useAuditLogs } from '../hooks/queries';
 import { Card, Badge, Button, Input } from '../components/ui';
 import {
   Shield,
@@ -56,9 +56,6 @@ const SEVERITY_CONFIG = {
 };
 
 export function AuditLogsPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
 
@@ -68,28 +65,9 @@ export function AuditLogsPage() {
   const [action, setAction] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    loadLogs();
-  }, [page, category, severity]);
-
-  const loadLogs = async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, unknown> = { page, limit };
-      if (category) params.category = category;
-      if (severity) params.severity = severity;
-      if (action) params.action = action;
-
-      const response = await api.get<{ data: AuditLog[]; total: number }>('/audit', { params });
-      setLogs(response.data.data);
-      setTotal(response.data.total);
-    } catch (err) {
-      console.error('Failed to load audit logs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const { data, isLoading } = useAuditLogs(page, limit, { category, severity, action });
+  const logs = (data?.logs || []) as AuditLog[];
+  const total = data?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
   const formatDate = (dateStr: string) => {
@@ -170,7 +148,7 @@ export function AuditLogsPage() {
             </div>
 
             <div className="flex items-end">
-              <Button onClick={() => { setPage(1); loadLogs(); }}>
+              <Button onClick={() => setPage(1)}>
                 <Search className="w-4 h-4 mr-2" />
                 Search
               </Button>
@@ -235,7 +213,7 @@ export function AuditLogsPage() {
 
       {/* Logs Table */}
       <Card>
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-12 text-gray-500">Loading audit logs...</div>
         ) : logs.length === 0 ? (
           <div className="text-center py-12 text-gray-500">

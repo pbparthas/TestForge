@@ -4,9 +4,14 @@
  * Admin-only access
  */
 
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuthStore } from '../stores/auth';
-import { api } from '../services/api';
+import {
+  useAdminConversations,
+  useConversation,
+  useAdminReply,
+  useUpdateConversationStatus,
+} from '../hooks/queries';
 import { Card, Badge, Button } from '../components/ui';
 import {
   Shield,
@@ -87,27 +92,21 @@ const STATUS_CONFIG = {
 
 export function AdminFeedbackPage() {
   const { user } = useAuthStore();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [sendingReply, setSendingReply] = useState(false);
-
-  // Filters
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Stats
-  const [stats, setStats] = useState({
-    total: 0,
-    bugs: 0,
-    features: 0,
-    help: 0,
-    open: 0,
-    closed: 0,
+  const { data: conversations = [] as Conversation[], isLoading } = useAdminConversations({
+    category: categoryFilter,
+    status: statusFilter,
   });
+  const { data: selectedConversation } = useConversation(selectedConversationId || undefined) as { data: Conversation | undefined };
+  const messages = selectedConversation?.messages || [];
+
+  const replyMutation = useAdminReply();
+  const statusMutation = useUpdateConversationStatus();
 
   // Check admin access
   if (user?.role !== 'admin') {
@@ -122,77 +121,26 @@ export function AdminFeedbackPage() {
     );
   }
 
-  useEffect(() => {
-    loadConversations();
-  }, [categoryFilter, statusFilter]);
+  // Stats
+  const stats = useMemo(() => ({
+    total: (conversations as Conversation[]).length,
+    bugs: (conversations as Conversation[]).filter(c => c.category === 'bug_report').length,
+    features: (conversations as Conversation[]).filter(c => c.category === 'feature_request').length,
+    help: (conversations as Conversation[]).filter(c => c.category === 'help_question').length,
+    open: (conversations as Conversation[]).filter(c => c.status === 'active').length,
+    closed: (conversations as Conversation[]).filter(c => c.status === 'closed').length,
+  }), [conversations]);
 
-  const loadConversations = async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = { limit: '100' };
-      if (categoryFilter) params.category = categoryFilter;
-      if (statusFilter) params.status = statusFilter;
-
-      const response = await api.get<{ data: Conversation[]; total: number }>('/chat/conversations/admin', { params });
-      const data = response.data.data || [];
-      setConversations(data);
-
-      // Calculate stats
-      setStats({
-        total: data.length,
-        bugs: data.filter(c => c.category === 'bug_report').length,
-        features: data.filter(c => c.category === 'feature_request').length,
-        help: data.filter(c => c.category === 'help_question').length,
-        open: data.filter(c => c.status === 'active').length,
-        closed: data.filter(c => c.status === 'closed').length,
-      });
-    } catch (err) {
-      console.error('Failed to load conversations:', err);
-    } finally {
-      setLoading(false);
-    }
+  const sendReply = () => {
+    if (!replyText.trim() || !selectedConversationId) return;
+    replyMutation.mutate(
+      { conversationId: selectedConversationId, content: replyText.trim() },
+      { onSuccess: () => setReplyText('') }
+    );
   };
 
-  const loadConversation = async (id: string) => {
-    try {
-      const response = await api.getConversation(id);
-      setSelectedConversation(response.data);
-      setMessages(response.data.messages || []);
-    } catch (err) {
-      console.error('Failed to load conversation:', err);
-    }
-  };
-
-  const sendReply = async () => {
-    if (!replyText.trim() || !selectedConversation) return;
-
-    setSendingReply(true);
-    try {
-      // Admin replies are stored as system messages
-      await api.post(`/chat/conversations/${selectedConversation.id}/admin-reply`, {
-        content: replyText.trim(),
-      });
-
-      // Reload conversation
-      await loadConversation(selectedConversation.id);
-      setReplyText('');
-    } catch (err) {
-      console.error('Failed to send reply:', err);
-    } finally {
-      setSendingReply(false);
-    }
-  };
-
-  const updateStatus = async (conversationId: string, status: 'active' | 'closed') => {
-    try {
-      await api.patch(`/chat/conversations/${conversationId}`, { status });
-      loadConversations();
-      if (selectedConversation?.id === conversationId) {
-        setSelectedConversation({ ...selectedConversation, status });
-      }
-    } catch (err) {
-      console.error('Failed to update status:', err);
-    }
+  const updateStatus = (conversationId: string, status: 'active' | 'closed') => {
+    statusMutation.mutate({ conversationId, status });
   };
 
   const formatDate = (dateStr: string) => {
@@ -200,7 +148,7 @@ export function AdminFeedbackPage() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const filteredConversations = conversations.filter(conv => {
+  const filteredConversations = (conversations as Conversation[]).filter(conv => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesTitle = conv.title?.toLowerCase().includes(query);
@@ -227,42 +175,12 @@ export function AdminFeedbackPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-xs text-gray-500">Total</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-red-600">{stats.bugs}</p>
-            <p className="text-xs text-gray-500">Bugs</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-purple-600">{stats.features}</p>
-            <p className="text-xs text-gray-500">Features</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">{stats.help}</p>
-            <p className="text-xs text-gray-500">Help</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-yellow-600">{stats.open}</p>
-            <p className="text-xs text-gray-500">Open</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-green-600">{stats.closed}</p>
-            <p className="text-xs text-gray-500">Resolved</p>
-          </div>
-        </Card>
+        <Card><div className="text-center"><p className="text-2xl font-bold text-gray-900">{stats.total}</p><p className="text-xs text-gray-500">Total</p></div></Card>
+        <Card><div className="text-center"><p className="text-2xl font-bold text-red-600">{stats.bugs}</p><p className="text-xs text-gray-500">Bugs</p></div></Card>
+        <Card><div className="text-center"><p className="text-2xl font-bold text-purple-600">{stats.features}</p><p className="text-xs text-gray-500">Features</p></div></Card>
+        <Card><div className="text-center"><p className="text-2xl font-bold text-blue-600">{stats.help}</p><p className="text-xs text-gray-500">Help</p></div></Card>
+        <Card><div className="text-center"><p className="text-2xl font-bold text-yellow-600">{stats.open}</p><p className="text-xs text-gray-500">Open</p></div></Card>
+        <Card><div className="text-center"><p className="text-2xl font-bold text-green-600">{stats.closed}</p><p className="text-xs text-gray-500">Resolved</p></div></Card>
       </div>
 
       {/* Filters */}
@@ -280,21 +198,13 @@ export function AdminFeedbackPage() {
               />
             </div>
           </div>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
             <option value="">All Categories</option>
             <option value="bug_report">Bug Reports</option>
             <option value="feature_request">Feature Requests</option>
             <option value="help_question">Help Questions</option>
           </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
             <option value="">All Status</option>
             <option value="active">Open</option>
             <option value="closed">Resolved</option>
@@ -307,7 +217,7 @@ export function AdminFeedbackPage() {
         {/* Conversation List */}
         <div className="lg:col-span-1">
           <Card title="Conversations">
-            {loading ? (
+            {isLoading ? (
               <div className="text-center py-8 text-gray-500">Loading...</div>
             ) : filteredConversations.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -324,9 +234,9 @@ export function AdminFeedbackPage() {
                   return (
                     <div
                       key={conv.id}
-                      onClick={() => loadConversation(conv.id)}
+                      onClick={() => setSelectedConversationId(conv.id)}
                       className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors ${
-                        selectedConversation?.id === conv.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                        selectedConversationId === conv.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -458,8 +368,8 @@ export function AdminFeedbackPage() {
                 <div className="flex justify-end mt-2">
                   <Button
                     onClick={sendReply}
-                    disabled={!replyText.trim() || sendingReply}
-                    isLoading={sendingReply}
+                    disabled={!replyText.trim() || replyMutation.isPending}
+                    isLoading={replyMutation.isPending}
                   >
                     <Send className="w-4 h-4 mr-2" />
                     Send Reply

@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { useProjectStore } from '../stores/project';
-import { api } from '../services/api';
+import { useCodeAnalysisComplexity, useCodeAnalysisArchitecture, useCodeAnalysisBestPractices, useCodeAnalysisTechnicalDebt } from '../hooks/queries';
 import { Card, Button } from '../components/ui';
 import {
   Code, Activity, Layers,
@@ -455,11 +455,11 @@ function CopyButton({ text }: { text: string }) {
 // ============================================================================
 
 function ComplexityPanel({ projectId }: { projectId: string }) {
+  const complexityMutation = useCodeAnalysisComplexity();
   const [codeJson, setCodeJson] = useState('');
   const [language, setLanguage] = useState('typescript');
   const [includeMetrics, setIncludeMetrics] = useState(true);
   const [thresholds, setThresholds] = useState({ cyclomatic: 10, cognitive: 15 });
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ComplexityOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -471,31 +471,21 @@ function ComplexityPanel({ projectId }: { projectId: string }) {
 
     let files: CodeFile[];
     try {
-      // Try to parse as JSON array of files
       files = JSON.parse(codeJson);
     } catch {
-      // If not JSON, treat as single file content
       files = [{ path: 'input.ts', content: codeJson, language }];
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: ComplexityOutput }>('/code-analysis/complexity', {
+      const response = await complexityMutation.mutateAsync({
         projectId,
         files,
-        options: {
-          language,
-          includeMetrics,
-          thresholds,
-        },
-      });
+        options: { language, includeMetrics, thresholds },
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze complexity');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -562,7 +552,7 @@ function ComplexityPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={complexityMutation.isPending}
             disabled={!codeJson.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
@@ -722,10 +712,10 @@ function FileComplexityCard({ file }: { file: ComplexityOutput['files'][0] }) {
 // ============================================================================
 
 function ArchitecturePanel({ projectId }: { projectId: string }) {
+  const architectureMutation = useCodeAnalysisArchitecture();
   const [codeJson, setCodeJson] = useState('');
   const [analyzePatterns, setAnalyzePatterns] = useState(true);
   const [checkDependencies, setCheckDependencies] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ArchitectureOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -743,23 +733,16 @@ function ArchitecturePanel({ projectId }: { projectId: string }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: ArchitectureOutput }>('/code-analysis/architecture', {
+      const response = await architectureMutation.mutateAsync({
         projectId,
         files,
-        options: {
-          analyzePatterns,
-          checkDependencies,
-        },
-      });
+        options: { analyzePatterns, checkDependencies },
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze architecture');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -813,7 +796,7 @@ function ArchitecturePanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={architectureMutation.isPending}
             disabled={!codeJson.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
@@ -966,10 +949,10 @@ function ArchitecturePanel({ projectId }: { projectId: string }) {
 // ============================================================================
 
 function BestPracticesPanel({ projectId }: { projectId: string }) {
+  const bestPracticesMutation = useCodeAnalysisBestPractices();
   const [codeJson, setCodeJson] = useState('');
   const [language, setLanguage] = useState('typescript');
   const [rulesets, setRulesets] = useState<string[]>(['recommended']);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BestPracticesOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -986,23 +969,16 @@ function BestPracticesPanel({ projectId }: { projectId: string }) {
       files = [{ path: 'input.ts', content: codeJson, language }];
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: BestPracticesOutput }>('/code-analysis/best-practices', {
+      const response = await bestPracticesMutation.mutateAsync({
         projectId,
         files,
-        options: {
-          language,
-          rulesets,
-        },
-      });
+        options: { language, rulesets },
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze best practices');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1073,7 +1049,7 @@ function BestPracticesPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={bestPracticesMutation.isPending}
             disabled={!codeJson.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
@@ -1215,10 +1191,10 @@ function BestPracticesPanel({ projectId }: { projectId: string }) {
 // ============================================================================
 
 function TechnicalDebtPanel({ projectId }: { projectId: string }) {
+  const technicalDebtMutation = useCodeAnalysisTechnicalDebt();
   const [codeJson, setCodeJson] = useState('');
   const [includeHistory, setIncludeHistory] = useState(false);
   const [debtTypes, setDebtTypes] = useState<string[]>(['code_smell', 'bug_risk', 'maintainability']);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TechnicalDebtOutput | null>(null);
   const [error, setError] = useState('');
 
@@ -1235,23 +1211,16 @@ function TechnicalDebtPanel({ projectId }: { projectId: string }) {
       files = [{ path: 'input.ts', content: codeJson }];
     }
 
-    setLoading(true);
     setError('');
     try {
-      const response = await api.post<{ data: TechnicalDebtOutput }>('/code-analysis/technical-debt', {
+      const response = await technicalDebtMutation.mutateAsync({
         projectId,
         files,
-        options: {
-          includeHistory,
-          debtTypes,
-        },
-      });
+        options: { includeHistory, debtTypes },
+      }) as any;
       setResult(response.data.data);
     } catch (err) {
       setError('Failed to analyze technical debt');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1316,7 +1285,7 @@ function TechnicalDebtPanel({ projectId }: { projectId: string }) {
 
           <Button
             onClick={handleAnalyze}
-            isLoading={loading}
+            isLoading={technicalDebtMutation.isPending}
             disabled={!codeJson.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
