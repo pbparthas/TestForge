@@ -1,5 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
+const isIntegrationDbRun = process.argv.some((arg) => arg.includes('tests/integration-db/'));
+
 export default defineConfig({
   test: {
     globals: true,
@@ -28,5 +30,17 @@ export default defineConfig({
       },
     },
     setupFiles: ['./tests/setup.ts'],
+    // Integration DB suites share one postgres and execute TRUNCATE-based cleanup.
+    // Force single-file execution for that target to prevent lock contention/deadlocks.
+    fileParallelism: isIntegrationDbRun ? false : true,
+    sequence: {
+      concurrent: false,
+    },
+    pool: isIntegrationDbRun ? 'forks' : undefined,
+    poolOptions: isIntegrationDbRun ? {
+      forks: {
+        singleFork: true,
+      },
+    } : undefined,
   },
 });

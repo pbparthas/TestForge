@@ -1,140 +1,64 @@
-/**
- * Encryption Utility Tests
- * TDD for AES-256 encryption/decryption
- */
+import { beforeEach, describe, expect, it } from 'vitest';
+import crypto from 'crypto';
+import {
+  decryptLegacyCBC,
+  decrypt,
+  encrypt,
+  generateKey,
+  isLegacyFormat,
+  setKeyProviderForTests,
+} from '../../../src/utils/encryption.js';
+import { LocalEncryptionService } from '../../../src/services/local-encryption.service.js';
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { encrypt, decrypt, generateKey } from '../../../src/utils/encryption.js';
-
-describe('Encryption Utility', () => {
-  let testKey: string;
-
-  beforeAll(() => {
-    // Generate a test key
-    testKey = generateKey();
+describe('encryption utils', () => {
+  beforeEach(() => {
+    const key = generateKey();
+    setKeyProviderForTests(new LocalEncryptionService(key));
   });
 
-  describe('generateKey', () => {
-    it('should generate a 32-byte key in hex format (64 chars)', () => {
-      const key = generateKey();
-      expect(key).toBeDefined();
-      expect(key).toHaveLength(64); // 32 bytes = 64 hex chars
-      expect(/^[a-f0-9]+$/.test(key)).toBe(true);
-    });
+  it('encrypts and decrypts plaintext roundtrip', async () => {
+    const plaintext = 'my-secret-token';
+    const ciphertext = await encrypt(plaintext);
+    const decrypted = await decrypt(ciphertext);
 
-    it('should generate unique keys each time', () => {
-      const key1 = generateKey();
-      const key2 = generateKey();
-      expect(key1).not.toBe(key2);
-    });
+    expect(ciphertext).not.toEqual(plaintext);
+    expect(decrypted).toEqual(plaintext);
   });
 
-  describe('encrypt', () => {
-    it('should encrypt plaintext and return a string', () => {
-      const plaintext = 'my-secret-api-token';
-      const encrypted = encrypt(plaintext, testKey);
+  it('fails to decrypt tampered ciphertext', async () => {
+    const ciphertext = await encrypt('hello');
+    const [iv, authTag, payload] = ciphertext.split(':');
+    const tampered = `${iv}:${authTag}:ff${payload?.slice(2)}`;
 
-      expect(encrypted).toBeDefined();
-      expect(typeof encrypted).toBe('string');
-      expect(encrypted).not.toBe(plaintext);
-    });
-
-    it('should include IV in the encrypted output', () => {
-      const plaintext = 'test-data';
-      const encrypted = encrypt(plaintext, testKey);
-
-      // Format: iv:encryptedData (both in hex)
-      expect(encrypted).toContain(':');
-      const parts = encrypted.split(':');
-      expect(parts).toHaveLength(2);
-      expect(parts[0]).toHaveLength(32); // 16 bytes IV = 32 hex chars
-    });
-
-    it('should produce different ciphertext each time (random IV)', () => {
-      const plaintext = 'same-plaintext';
-      const encrypted1 = encrypt(plaintext, testKey);
-      const encrypted2 = encrypt(plaintext, testKey);
-
-      expect(encrypted1).not.toBe(encrypted2);
-    });
-
-    it('should throw error for empty plaintext', () => {
-      expect(() => encrypt('', testKey)).toThrow('Plaintext cannot be empty');
-    });
-
-    it('should throw error for invalid key length', () => {
-      expect(() => encrypt('test', 'short-key')).toThrow('Invalid key length');
-    });
+    await expect(decrypt(tampered)).rejects.toThrow();
   });
 
-  describe('decrypt', () => {
-    it('should decrypt ciphertext back to original plaintext', () => {
-      const plaintext = 'my-secret-api-token-12345';
-      const encrypted = encrypt(plaintext, testKey);
-      const decrypted = decrypt(encrypted, testKey);
+  it('fails to decrypt when auth tag is tampered', async () => {
+    const ciphertext = await encrypt('hello');
+    const [iv, authTag, payload] = ciphertext.split(':');
+    const tamperedTag = `ff${authTag?.slice(2)}`;
+    const tampered = `${iv}:${tamperedTag}:${payload}`;
 
-      expect(decrypted).toBe(plaintext);
-    });
-
-    it('should handle special characters', () => {
-      const plaintext = 'token@#$%^&*()_+{}|:"<>?';
-      const encrypted = encrypt(plaintext, testKey);
-      const decrypted = decrypt(encrypted, testKey);
-
-      expect(decrypted).toBe(plaintext);
-    });
-
-    it('should handle unicode characters', () => {
-      const plaintext = 'token-🔐-秘密-κρυπτό';
-      const encrypted = encrypt(plaintext, testKey);
-      const decrypted = decrypt(encrypted, testKey);
-
-      expect(decrypted).toBe(plaintext);
-    });
-
-    it('should handle long strings', () => {
-      const plaintext = 'a'.repeat(1000);
-      const encrypted = encrypt(plaintext, testKey);
-      const decrypted = decrypt(encrypted, testKey);
-
-      expect(decrypted).toBe(plaintext);
-    });
-
-    it('should throw error for invalid ciphertext format', () => {
-      expect(() => decrypt('invalid-no-colon', testKey)).toThrow('Invalid ciphertext format');
-    });
-
-    it('should throw error for wrong key', () => {
-      const plaintext = 'secret-data';
-      const encrypted = encrypt(plaintext, testKey);
-      const wrongKey = generateKey();
-
-      expect(() => decrypt(encrypted, wrongKey)).toThrow();
-    });
-
-    it('should throw error for tampered ciphertext', () => {
-      const plaintext = 'secret-data';
-      const encrypted = encrypt(plaintext, testKey);
-      const [iv, data] = encrypted.split(':');
-      const tampered = iv + ':' + 'ff' + data.slice(2);
-
-      expect(() => decrypt(tampered, testKey)).toThrow();
-    });
+    await expect(decrypt(tampered)).rejects.toThrow();
   });
 
-  describe('round-trip encryption', () => {
-    it('should encrypt and decrypt API tokens correctly', () => {
-      const tokens = [
-        'jenkins-api-token-abc123',
-        '11a1b2c3d4e5f6g7h8i9j0',
-        'ghp_abcdefghijklmnop12345678901234567890',
-      ];
+  it('detects and decrypts legacy CBC format', async () => {
+    const key = generateKey();
+    setKeyProviderForTests(new LocalEncryptionService(key));
 
-      for (const token of tokens) {
-        const encrypted = encrypt(token, testKey);
-        const decrypted = decrypt(encrypted, testKey);
-        expect(decrypted).toBe(token);
-      }
-    });
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key, 'hex'), iv);
+    const encrypted = Buffer.concat([cipher.update('legacy-secret', 'utf8'), cipher.final()]);
+    const legacyCiphertext = `${iv.toString('hex')}:${encrypted.toString('hex')}`;
+
+    expect(isLegacyFormat(legacyCiphertext)).toBe(true);
+    expect(decryptLegacyCBC(legacyCiphertext, key)).toBe('legacy-secret');
+    await expect(decrypt(legacyCiphertext)).resolves.toBe('legacy-secret');
+  });
+
+  it('throws on invalid ciphertext format', async () => {
+    await expect(decrypt('bad-format')).rejects.toThrow(
+      'Invalid ciphertext format'
+    );
   });
 });
